@@ -85,7 +85,8 @@ def get_page_info(page: dict) -> dict:
             "id": page["id"],
             "title": title,
             "created_time": page["created_time"],
-            "last_edited_time": page["last_edited_time"]
+            "last_edited_time": page["last_edited_time"],
+            "parent_id": page.get("parent", {}).get("page_id")
         }
     except (KeyError, IndexError) as e:
         logger.warning(f"Error extracting page info: {e}")

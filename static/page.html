@@ -226,7 +226,7 @@
                 </div>
                 <div class="mt-8 pt-6 border-t border-gray-200">
                     <div class="flex justify-between items-center">
-                        <a href="/static/pages.html" class="text-blue-500 hover:text-blue-600 flex items-center">
+                        <a href="/static/pages.html" class="back-button text-blue-500 hover:text-blue-600 flex items-center">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                             </svg>
@@ -248,6 +248,7 @@
         // Add loading progress tracking
         let totalBlocks = 0;
         let loadedBlocks = 0;
+        let parentPageId = null;  // Add variable to store parent page ID
         
         function updateLoadingProgress(progress) {
             const progressBar = document.getElementById('loadingProgressBar');
@@ -547,6 +548,28 @@
                 // Update page title
                 document.title = data.page.title;
                 document.getElementById('pageTitle').textContent = data.page.title;
+                
+                // Update back button based on parent page
+                const backButton = document.querySelector('.back-button');
+                if (data.page.parent_id) {
+                    parentPageId = data.page.parent_id;
+                    backButton.href = `javascript:loadChildPage('${parentPageId}', 'Parent Page')`;
+                    backButton.innerHTML = `
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                        Back to Parent Page
+                    `;
+                } else {
+                    parentPageId = null;
+                    backButton.href = "/static/pages.html";
+                    backButton.innerHTML = `
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                        Back to Pages
+                    `;
+                }
                 
                 // Initialize block counting
                 totalBlocks = data.blocks.length;
