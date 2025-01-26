@@ -100,15 +100,25 @@ def process_block_content(block: dict) -> dict:
     elif block_type == "callout":
         result["icon"] = content.get("icon", {})
     elif block_type == "child_page":
-        # 处理子页面
-        result["title"] = content.get("title", "")
-        result["page_id"] = block["id"]
-        result["text"] = content.get("title", "")  # 使用页面标题作为显示文本
+        # 获取子页面信息
+        try:
+            child_page = notion.pages.retrieve(page_id=block["id"])
+            result["title"] = child_page["properties"]["Name"]["title"][0]["text"]["content"]
+            result["page_id"] = block["id"]  # 使用块 ID 作为页面 ID
+        except Exception as e:
+            logger.error(f"Error retrieving child page info: {e}")
+            result["title"] = "Untitled"
+            result["page_id"] = block["id"]
     elif block_type == "child_database":
         # 处理子数据库
-        result["title"] = content.get("title", "")
-        result["database_id"] = block["id"]
-        result["text"] = content.get("title", "")  # 使用数据库标题作为显示文本
+        try:
+            child_db = notion.databases.retrieve(database_id=block["id"])
+            result["title"] = child_db["title"][0]["plain_text"]
+            result["database_id"] = block["id"]
+        except Exception as e:
+            logger.error(f"Error retrieving child database info: {e}")
+            result["title"] = "Untitled Database"
+            result["database_id"] = block["id"]
     
     return result
 
