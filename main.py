@@ -86,26 +86,83 @@ def process_block_content(block: dict) -> dict:
     block_type = block["type"]
     content = block[block_type]
     
-    if "rich_text" in content:
-        text_content = "".join([text["plain_text"] for text in content["rich_text"]])
-    else:
-        text_content = ""
-    
+    # 基本信息
     result = {
         "id": block["id"],
         "type": block_type,
-        "text": text_content,
         "has_children": block["has_children"]
     }
     
-    # Handle specific block types
+    # 处理包含 rich_text 的块
+    if "rich_text" in content:
+        result["text"] = "".join([text["plain_text"] for text in content["rich_text"]])
+    
+    # 处理包含 color 的块
+    if "color" in content:
+        result["color"] = content["color"]
+    
+    # 处理特定类型的块
     if block_type == "image":
-        result["image_url"] = content.get("file", {}).get("url", "")
+        if content.get("type") == "external":
+            result["image_url"] = content.get("external", {}).get("url", "")
+        else:
+            result["image_url"] = content.get("file", {}).get("url", "")
+            
     elif block_type == "code":
         result["language"] = content.get("language", "")
+        
     elif block_type == "callout":
         result["icon"] = content.get("icon", {})
-    
+        
+    elif block_type == "bookmark":
+        result["url"] = content.get("url", "")
+        result["caption"] = "".join([text["plain_text"] for text in content.get("caption", [])])
+        
+    elif block_type == "equation":
+        result["expression"] = content.get("expression", "")
+        
+    elif block_type == "video":
+        if content.get("type") == "external":
+            result["video_url"] = content.get("external", {}).get("url", "")
+        else:
+            result["video_url"] = content.get("file", {}).get("url", "")
+            
+    elif block_type == "file":
+        if content.get("type") == "external":
+            result["file_url"] = content.get("external", {}).get("url", "")
+        else:
+            result["file_url"] = content.get("file", {}).get("url", "")
+        result["caption"] = "".join([text["plain_text"] for text in content.get("caption", [])])
+        
+    elif block_type == "pdf":
+        if content.get("type") == "external":
+            result["pdf_url"] = content.get("external", {}).get("url", "")
+        else:
+            result["pdf_url"] = content.get("file", {}).get("url", "")
+            
+    elif block_type == "embed":
+        result["url"] = content.get("url", "")
+        
+    elif block_type == "table":
+        result["table_width"] = content.get("table_width", 0)
+        result["has_column_header"] = content.get("has_column_header", False)
+        result["has_row_header"] = content.get("has_row_header", False)
+        
+    elif block_type == "table_row":
+        result["cells"] = content.get("cells", [])
+        
+    elif block_type == "to_do":
+        result["checked"] = content.get("checked", False)
+        
+    elif block_type == "child_page":
+        result["title"] = content.get("title", "")
+        
+    elif block_type == "child_database":
+        result["title"] = content.get("title", "")
+        
+    elif block_type == "link_preview":
+        result["url"] = content.get("url", "")
+        
     return result
 
 @app.get("/images")

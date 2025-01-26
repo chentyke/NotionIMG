@@ -202,19 +202,24 @@
 
         // Render block content
         async function renderBlock(block) {
+            let content = '';
+            
+            // 添加颜色样式
+            const colorClass = block.color ? `text-${block.color.replace('_', '-')}` : '';
+            
             switch (block.type) {
                 case 'paragraph':
-                    return `<p>${block.text || ''}</p>`;
+                    return `<p class="${colorClass}">${block.text || ''}</p>`;
                 case 'heading_1':
-                    return `<h1>${block.text}</h1>`;
+                    return `<h1 class="${colorClass}">${block.text}</h1>`;
                 case 'heading_2':
-                    return `<h2>${block.text}</h2>`;
+                    return `<h2 class="${colorClass}">${block.text}</h2>`;
                 case 'heading_3':
-                    return `<h3>${block.text}</h3>`;
+                    return `<h3 class="${colorClass}">${block.text}</h3>`;
                 case 'bulleted_list_item':
-                    return `<li>• ${block.text}</li>`;
+                    return `<li class="${colorClass}">• ${block.text}</li>`;
                 case 'numbered_list_item':
-                    return `<li>1. ${block.text}</li>`;
+                    return `<li class="${colorClass}">1. ${block.text}</li>`;
                 case 'code':
                     return `<pre><code class="language-${block.language}">${block.text}</code></pre>`;
                 case 'image':
@@ -234,11 +239,98 @@
                 case 'divider':
                     return `<hr class="my-6">`;
                 case 'quote':
-                    return `<blockquote>${block.text}</blockquote>`;
+                    return `<blockquote class="${colorClass}">${block.text}</blockquote>`;
                 case 'callout':
                     return `<div class="bg-gray-50 p-4 rounded-lg my-4 flex items-start">
                         <div class="mr-4">${block.icon?.emoji || '💡'}</div>
-                        <div>${block.text}</div>
+                        <div class="${colorClass}">${block.text}</div>
+                    </div>`;
+                case 'bookmark':
+                    return `<div class="border rounded-lg p-4 my-4 hover:bg-gray-50">
+                        <a href="${block.url}" target="_blank" class="text-blue-600 hover:underline block">
+                            ${block.url}
+                        </a>
+                        ${block.caption ? `<p class="text-gray-500 mt-2">${block.caption}</p>` : ''}
+                    </div>`;
+                case 'equation':
+                    return `<div class="bg-gray-50 p-4 rounded-lg my-4 font-mono">
+                        ${block.expression}
+                    </div>`;
+                case 'video':
+                    return `<div class="my-4">
+                        <iframe 
+                            src="${block.video_url}"
+                            class="w-full aspect-video rounded-lg"
+                            frameborder="0" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                            allowfullscreen>
+                        </iframe>
+                    </div>`;
+                case 'file':
+                    return `<div class="border rounded-lg p-4 my-4 hover:bg-gray-50">
+                        <a href="${block.file_url}" target="_blank" class="text-blue-600 hover:underline flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            Download File
+                        </a>
+                        ${block.caption ? `<p class="text-gray-500 mt-2">${block.caption}</p>` : ''}
+                    </div>`;
+                case 'pdf':
+                    return `<div class="my-4">
+                        <iframe 
+                            src="${block.pdf_url}"
+                            class="w-full h-[600px] rounded-lg"
+                            frameborder="0">
+                        </iframe>
+                    </div>`;
+                case 'embed':
+                    return `<div class="my-4">
+                        <iframe 
+                            src="${block.url}"
+                            class="w-full h-[500px] rounded-lg"
+                            frameborder="0">
+                        </iframe>
+                    </div>`;
+                case 'table':
+                    return `<div class="overflow-x-auto my-4">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <!-- Table content will be added by table_row blocks -->
+                        </table>
+                    </div>`;
+                case 'table_row':
+                    const cells = block.cells.map(cell => 
+                        `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${cell}</td>`
+                    ).join('');
+                    return `<tr>${cells}</tr>`;
+                case 'to_do':
+                    return `<div class="flex items-center my-2">
+                        <input type="checkbox" ${block.checked ? 'checked' : ''} disabled class="mr-2">
+                        <span class="${colorClass} ${block.checked ? 'line-through text-gray-400' : ''}">${block.text}</span>
+                    </div>`;
+                case 'child_page':
+                    return `<div class="border rounded-lg p-4 my-4 hover:bg-gray-50">
+                        <a href="/static/page.html?id=${block.id}" class="text-blue-600 hover:underline flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            ${block.title}
+                        </a>
+                    </div>`;
+                case 'child_database':
+                    return `<div class="border rounded-lg p-4 my-4 bg-gray-50">
+                        <div class="flex items-center text-gray-600">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"></path>
+                            </svg>
+                            ${block.title}
+                        </div>
+                    </div>`;
+                case 'link_preview':
+                    return `<div class="border rounded-lg p-4 my-4 hover:bg-gray-50">
+                        <a href="${block.url}" target="_blank" class="text-blue-600 hover:underline block">
+                            ${block.url}
+                        </a>
                     </div>`;
                 default:
                     return '';
