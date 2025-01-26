@@ -213,6 +213,7 @@
             border-radius: 0.375rem;
             margin: 0.5rem 0;
             font-size: inherit;
+            position: relative;
         }
         .toggle-header {
             display: flex;
@@ -223,6 +224,7 @@
             transition: background-color 0.2s;
             min-height: 1.5em;
             color: inherit;
+            width: 100%;
         }
         .toggle-header:hover {
             background-color: rgba(55, 53, 47, 0.08);
@@ -247,18 +249,18 @@
         .toggle-content {
             margin-left: 1.5rem;
             overflow: hidden;
-            max-height: 0;
+            height: 0;
             opacity: 0;
-            transition: max-height 0.15s ease-out, opacity 0.15s ease-out;
+            transition: height 0.15s ease-out, opacity 0.15s ease-out;
         }
         .toggle-block.open .toggle-icon {
             transform: rotate(90deg);
             opacity: 0.8;
         }
         .toggle-block.open .toggle-content {
-            max-height: none;
+            height: auto;
             opacity: 1;
-            transition: max-height 0.25s ease-in, opacity 0.25s ease-in;
+            transition: height 0.25s ease-in, opacity 0.25s ease-in;
         }
         .toggle-block .toggle-block {
             margin-left: 0;
@@ -601,8 +603,10 @@
                                 </svg>
                                 <div class="toggle-text">${block.text || ''}</div>
                             </div>
-                            <div class="toggle-content prose">
-                                ${toggleContent}
+                            <div class="toggle-content">
+                                <div class="toggle-content-inner prose">
+                                    ${toggleContent}
+                                </div>
                             </div>
                         </div>`;
                 default:
@@ -711,23 +715,24 @@
         function toggleBlock(id) {
             const block = document.getElementById(id);
             const content = block.querySelector('.toggle-content');
+            const contentInner = content.querySelector('.toggle-content-inner');
             const isOpen = block.classList.contains('open');
             
             if (isOpen) {
                 // Closing animation
-                content.style.maxHeight = content.scrollHeight + 'px';
+                content.style.height = content.scrollHeight + 'px';
                 // Force reflow
                 content.offsetHeight;
-                content.style.maxHeight = '0px';
+                content.style.height = '0';
                 block.classList.remove('open');
             } else {
                 // Opening animation
                 block.classList.add('open');
-                content.style.maxHeight = content.scrollHeight + 'px';
-                // Reset maxHeight after animation
+                content.style.height = contentInner.offsetHeight + 'px';
+                // Reset height after animation
                 setTimeout(() => {
                     if (block.classList.contains('open')) {
-                        content.style.maxHeight = 'none';
+                        content.style.height = 'auto';
                     }
                 }, 250);
             }
