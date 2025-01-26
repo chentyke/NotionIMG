@@ -161,13 +161,10 @@ def process_block_content(block: dict) -> dict:
         result["checked"] = content.get("checked", False)
         
     elif block_type == "child_page":
-        result["title"] = content.get("title", "")
-        try:
-            page = notion.pages.retrieve(page_id=block["id"])
-            if "properties" in page and "Name" in page["properties"]:
-                result["title"] = page["properties"]["Name"]["title"][0]["text"]["content"]
-        except Exception as e:
-            logger.warning(f"Error retrieving child page info: {e}")
+        # Get the title directly from the child_page block
+        result["title"] = content.get("title", "Untitled")
+        # The block ID is the page ID for child_page blocks
+        result["page_id"] = block["id"]
         
     elif block_type == "child_database":
         result["title"] = content.get("title", "")

@@ -200,6 +200,41 @@
         const urlParams = new URLSearchParams(window.location.search);
         const pageId = urlParams.get('id');
 
+        // Close modal when pressing Escape
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeImageModal();
+            }
+        });
+
+        // Add popstate listener for browser history
+        window.addEventListener('popstate', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const newPageId = urlParams.get('id');
+            if (newPageId) {
+                loadPage(newPageId);
+            }
+        });
+
+        // Load child page
+        async function loadChildPage(pageId, title) {
+            // Update browser history
+            window.history.pushState({}, "", `/static/page.html?id=${pageId}`);
+            
+            // Show loading state
+            document.getElementById('pageContent').innerHTML = `
+                <div class="flex justify-center py-8">
+                    <div class="loading-spinner"></div>
+                </div>`;
+            
+            // Update page title immediately
+            document.title = title;
+            document.getElementById('pageTitle').textContent = title;
+            
+            // Load the new page content
+            await loadPage(pageId);
+        }
+
         // Render block content
         async function renderBlock(block) {
             let content = '';
@@ -336,15 +371,17 @@
                         </div>`;
                 case 'child_page':
                     return `
-                        <div class="border rounded-lg p-4 my-4 hover:bg-gray-50">
-                            <a href="#" class="flex items-center text-blue-600 hover:underline">
+                        <div class="border rounded-lg p-4 my-4 hover:bg-gray-50" 
+                             onclick="loadChildPage('${block.page_id}', '${block.title}')"
+                             style="cursor: pointer;">
+                            <div class="flex items-center text-blue-600">
                                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
                                           d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
                                     </path>
                                 </svg>
                                 ${block.title}
-                            </a>
+                            </div>
                         </div>`;
                 case 'link_preview':
                     return `
@@ -365,8 +402,10 @@
         }
 
         // Load page content
-        async function loadPage() {
-            if (!pageId) {
+        async function loadPage(pageId = null) {
+            const targetPageId = pageId || urlParams.get('id');
+            
+            if (!targetPageId) {
                 document.getElementById('pageContent').innerHTML = `
                     <div class="text-center text-red-500">
                         <p>No page ID provided.</p>
@@ -376,7 +415,7 @@
             }
 
             try {
-                const response = await fetch(`/page/${pageId}`);
+                const response = await fetch(`/page/${targetPageId}`);
                 const data = await response.json();
                 
                 // Update page title
@@ -395,17 +434,11 @@
                 document.getElementById('pageContent').innerHTML = `
                     <div class="text-center text-red-500">
                         <p>Error loading page content.</p>
+                        <p class="text-sm mt-2">${error.message}</p>
                     </div>
                 `;
             }
         }
-
-        // Close modal when pressing Escape
-        document.addEventListener('keydown', function(event) {
-            if (event.key === 'Escape') {
-                closeImageModal();
-            }
-        });
 
         // Load page on start
         loadPage();
