@@ -579,141 +579,41 @@
 
         // Load child page
         async function loadChildPage(pageId, title) {
-            // Update browser history
-            window.history.pushState({}, "", `/static/page.html?id=${pageId}`);
-            
-            // Show loading state
-            document.getElementById('pageContent').innerHTML = `
-                <div class="flex justify-center py-8">
-                    <div class="loading-spinner"></div>
-                </div>`;
-            
-            // Update page title immediately
-            document.title = title;
-            document.getElementById('pageTitle').textContent = title;
-            
-            // Load the new page content
-            await loadPage(pageId);
-        }
+            if (!pageId) {
+                console.error('No page ID provided for child page');
+                return;
+            }
 
-        // Optimize block rendering
-        async function renderBlock(block) {
-            loadedBlocks++;
-            updateLoadingProgress((loadedBlocks / totalBlocks) * 100);
-            
-            let content = '';
-            const colorStyle = block.color && block.color !== 'default' 
-                ? `style="color: ${block.color === 'gray' ? '#9CA3AF' : block.color};"` 
-                : '';
-
-            switch (block.type) {
-                case 'paragraph':
-                    return `<p ${colorStyle}>${block.text || ''}</p>`;
-                case 'heading_1':
-                    return `<h1 ${colorStyle}>${block.text}</h1>`;
-                case 'heading_2':
-                    return `<h2 ${colorStyle}>${block.text}</h2>`;
-                case 'heading_3':
-                    return `<h3 ${colorStyle}>${block.text}</h3>`;
-                case 'bulleted_list_item':
-                case 'numbered_list_item':
-                    let listContent = block.text || '';
-                    
-                    if (block.children && block.children.length > 0) {
-                        const nestedContent = await Promise.all(block.children.map(async child => {
-                            if (child.type === 'bulleted_list_item' || child.type === 'numbered_list_item') {
-                                const listType = child.type === 'bulleted_list_item' ? 'ul' : 'ol';
-                                return `<${listType}>${await renderBlock(child)}</${listType}>`;
-                            }
-                            return await renderBlock(child);
-                        }));
-                        listContent += nestedContent.join('');
-                    }
-                    
-                    return `<li ${colorStyle}>${listContent}</li>`;
-                case 'code':
-                    return `<pre><code class="language-${block.language}">${block.text}</code><button class="copy-button" onclick="copyCode(this)">Copy</button></pre>`;
-                case 'image':
-                    return `<figure>
-                        <img class="opacity-0 transition-opacity duration-300" 
-                            data-src="${block.image_url}" 
-                            alt="${block.caption || 'Page image'}" 
-                            onclick="openImageModal('${block.image_url}')"
-                            title="Click to view full size">
-                        ${block.caption ? `<figcaption class="text-sm text-gray-500 mt-2">${block.caption}</figcaption>` : ''}
-                    </figure>`;
-                case 'divider':
-                    return `<hr class="my-6">`;
-                case 'quote':
-                    return `<blockquote ${colorStyle}>${block.text}</blockquote>`;
-                case 'callout':
-                    return `<div class="bg-gray-50 p-4 rounded-lg my-4 flex items-start" ${colorStyle}>
-                        <div class="mr-4">${block.icon?.emoji || '💡'}</div>
-                        <div>${block.text}</div>
+            try {
+                // Update browser history
+                window.history.pushState({}, "", `/static/page.html?id=${pageId}`);
+                
+                // Show loading state
+                document.getElementById('pageContent').innerHTML = `
+                    <div class="flex justify-center py-8">
+                        <div class="loading-spinner"></div>
                     </div>`;
-                case 'bookmark':
-                    return `
-                        <div class="border rounded-lg p-4 my-4 hover:bg-gray-50">
-                            <a href="${block.url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">
-                                ${block.url}
-                            </a>
-                            ${block.caption ? `<div class="text-sm text-gray-500 mt-2">${block.caption}</div>` : ''}
-                        </div>`;
-                case 'equation':
-                    return `<div class="my-4 p-2 bg-gray-50 rounded overflow-x-auto">
-                        <code>${block.expression}</code>
+                
+                // Update page title immediately if provided
+                if (title) {
+                    document.title = title;
+                    document.getElementById('pageTitle').textContent = title;
+                }
+                
+                // Load the new page content
+                await loadPage(pageId);
+                
+            } catch (error) {
+                console.error('Error loading child page:', error);
+                document.getElementById('pageContent').innerHTML = `
+                    <div class="text-center text-red-500">
+                        <p>Error loading child page.</p>
+                        <p class="text-sm mt-2">${error.message}</p>
+                        <button onclick="loadChildPage('${pageId}', '${title}')" 
+                                class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
+                            Try Again
+                        </button>
                     </div>`;
-                case 'video':
-                    const videoUrl = block.video_url;
-                    if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
-                        const videoId = videoUrl.includes('youtu.be') 
-                            ? videoUrl.split('/').pop()
-                            : new URLSearchParams(new URL(videoUrl).search).get('v');
-                        return `
-                            <div class="aspect-w-16 aspect-h-9 my-4">
-                                <iframe src="https://www.youtube.com/embed/${videoId}" 
-                                    frameborder="0" 
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                    allowfullscreen>
-                                </iframe>
-                            </div>`;
-                    } else {
-                        return `<video src="${videoUrl}" controls class="w-full my-4 rounded-lg"></video>`;
-                    }
-                case 'file':
-                    return `
-                        <div class="border rounded-lg p-4 my-4">
-                            <a href="${block.file_url}" target="_blank" rel="noopener noreferrer" 
-                               class="flex items-center text-blue-600 hover:underline">
-                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                          d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
-                                    </path>
-                                </svg>
-                                Download File
-                            </a>
-                            ${block.caption ? `<div class="text-sm text-gray-500 mt-2">${block.caption}</div>` : ''}
-                        </div>`;
-                case 'child_page':
-                    return `
-                        <div class="border rounded-lg p-4 my-4 hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
-                             onclick="loadChildPage('${block.id}', '${block.title}')"
-                             role="button"
-                             tabindex="0">
-                            <div class="flex items-center">
-                                <svg class="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
-                                    </path>
-                                </svg>
-                                <span class="text-lg font-medium text-gray-900 hover:text-blue-600">${block.title}</span>
-                            </div>
-                        </div>`;
-                case 'pdf':
-                    return `
-                        <div class="border rounded-lg p-4 my-4">
-                            <iframe src="${block.pdf_url}" class="w-full h-96 rounded-lg"></iframe>
-                        </div>`;
             }
         }
 
@@ -734,31 +634,42 @@
                 const response = await fetch(`/page/${targetPageId}`);
                 const data = await response.json();
                 
+                if (!response.ok) {
+                    throw new Error(data.message || 'Failed to load page');
+                }
+
                 updateLoadingProgress(30);
                 
+                // Safely get page title and parent ID
+                const pageTitle = data.page?.title || data.title || 'Untitled';
+                const parentId = data.page?.parent_id || data.parent_id;
+                
                 // Update page title
-                document.title = data.page.title;
-                document.getElementById('pageTitle').textContent = data.page.title;
+                document.title = pageTitle;
+                document.getElementById('pageTitle').textContent = pageTitle;
                 
                 // Update back button based on parent page
                 const backButton = document.querySelector('.back-button');
-                if (data.page.parent_id) {
+                if (parentId) {
                     backButton.href = `javascript:void(0)`;
-                    backButton.onclick = () => loadChildPage(data.page.parent_id, '');
+                    backButton.onclick = () => loadChildPage(parentId, '');
                 } else {
                     backButton.href = "/static/pages.html";
                     backButton.onclick = null;
                 }
 
-                // Initialize block counting
-                totalBlocks = data.blocks.length;
+                // Safely get blocks
+                const blocks = data.blocks || [];
+                totalBlocks = blocks.length;
                 loadedBlocks = 0;
                 
                 // Render content
                 let content = '';
                 let currentList = null;
                 
-                for (const block of data.blocks) {
+                for (const block of blocks) {
+                    if (!block) continue; // Skip null/undefined blocks
+                    
                     if (block.type === 'bulleted_list_item' || block.type === 'numbered_list_item') {
                         if (!currentList || currentList.type !== block.type) {
                             if (currentList) {
@@ -784,6 +695,10 @@
                     content += `</${currentList.tag}>`;
                 }
                 
+                if (!content.trim()) {
+                    content = '<p class="text-gray-500 text-center">This page is empty.</p>';
+                }
+                
                 document.getElementById('pageContent').innerHTML = content;
                 
                 // Initialize lazy loading for images
@@ -791,12 +706,18 @@
                     imageObserver.observe(img);
                 });
                 
+                updateLoadingProgress(100);
+                
             } catch (error) {
                 console.error('Error loading page content:', error);
                 document.getElementById('pageContent').innerHTML = `
                     <div class="text-center text-red-500">
                         <p>Error loading page content.</p>
                         <p class="text-sm mt-2">${error.message}</p>
+                        <button onclick="loadPage('${targetPageId}')" 
+                                class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
+                            Try Again
+                        </button>
                     </div>`;
             }
         }
