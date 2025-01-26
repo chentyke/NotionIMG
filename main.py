@@ -2,11 +2,9 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
 from notion_client import Client
 import os
 import logging
-import json
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -30,59 +28,24 @@ app.add_middleware(
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Store configuration in memory
-config = {
-    "notion_token": os.environ.get("NOTION_TOKEN", ""),
-    "database_id": os.environ.get("NOTION_DATABASE_ID", "")
-}
-
-class Config(BaseModel):
-    notion_token: str
-    database_id: str
-
-def get_notion_client():
-    if not config["notion_token"]:
-        raise HTTPException(status_code=400, detail="Notion token not configured")
-    return Client(auth=config["notion_token"])
+# Initialize Notion client
+notion = Client(auth=os.environ.get("NOTION_TOKEN"))
+DATABASE_ID = os.environ.get("NOTION_DATABASE_ID")
 
 @app.get("/")
 async def root():
     return {"message": "Welcome to Notion Image Bed"}
 
-@app.post("/config")
-async def update_config(new_config: Config):
-    try:
-        # Test the connection with new config
-        test_client = Client(auth=new_config.notion_token)
-        test_response = test_client.databases.retrieve(database_id=new_config.database_id)
-        logger.info(f"Database title: {test_response.get('title', [{}])[0].get('plain_text', 'Untitled')}")
-        
-        config["notion_token"] = new_config.notion_token
-        config["database_id"] = new_config.database_id
-        return {"status": "success"}
-    except Exception as e:
-        logger.error(f"Error updating config: {str(e)}")
-        raise HTTPException(status_code=400, detail=str(e))
-
-@app.get("/config")
-async def get_config():
-    return {
-        "notion_token": config["notion_token"][-4:] if config["notion_token"] else "",
-        "database_id": config["database_id"]
-    }
-
 @app.get("/images")
 async def list_images():
     try:
-        if not config["database_id"]:
-            raise HTTPException(status_code=400, detail="Database ID not configured")
+        if not DATABASE_ID:
+            raise HTTPException(status_code=500, detail="Database ID not configured")
             
-        notion = get_notion_client()
-        
         # Query the database
-        logger.info(f"Querying database: {config['database_id']}")
+        logger.info(f"Querying database: {DATABASE_ID}")
         response = notion.databases.query(
-            database_id=config["database_id"]
+            database_id=DATABASE_ID
         )
         
         logger.info(f"Found {len(response['results'])} pages")
@@ -123,8 +86,6 @@ async def list_images():
 @app.get("/image/{image_id}")
 async def get_image(image_id: str):
     try:
-        notion = get_notion_client()
-        
         # Get the page
         page = notion.pages.retrieve(page_id=image_id)
         
@@ -150,8 +111,6 @@ async def get_image(image_id: str):
 @app.get("/direct-image/{image_id}")
 async def get_direct_image_url(image_id: str):
     try:
-        notion = get_notion_client()
-        
         # Get the page
         page = notion.pages.retrieve(page_id=image_id)
         

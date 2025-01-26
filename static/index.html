@@ -21,50 +21,19 @@
 <body class="bg-gray-100 min-h-screen">
     <div class="container mx-auto px-4 py-8">
         <h1 class="text-3xl font-bold mb-8 text-center">Notion Image Bed</h1>
-        
-        <!-- Configuration Section -->
-        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
-            <h2 class="text-xl font-semibold mb-4">Configuration</h2>
-            <form id="configForm" class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Notion Token</label>
-                    <input type="password" id="notionToken" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" required>
-                    <p class="text-sm text-gray-500 mt-1">Get your token from <a href="https://www.notion.so/my-integrations" target="_blank" class="text-blue-500">Notion Integrations</a></p>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Database ID</label>
-                    <input type="text" id="databaseId" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" required>
-                    <p class="text-sm text-gray-500 mt-1">Found in your Notion database URL</p>
-                </div>
-                <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">Save Configuration</button>
-            </form>
-        </div>
 
         <!-- Instructions Section -->
         <div class="bg-white rounded-lg shadow-md p-6 mb-8">
             <h2 class="text-xl font-semibold mb-4">Instructions</h2>
             <div class="space-y-4">
-                <div>
-                    <h3 class="font-medium">1. Create a Notion Integration</h3>
-                    <p class="text-gray-600">Visit <a href="https://www.notion.so/my-integrations" target="_blank" class="text-blue-500">Notion Integrations</a> and create a new integration. Copy the integration token.</p>
-                </div>
-                <div>
-                    <h3 class="font-medium">2. Share Your Database</h3>
-                    <p class="text-gray-600">Open your Notion database, click "..." menu, select "Add connections" and choose your integration.</p>
-                </div>
-                <div>
-                    <h3 class="font-medium">3. Get Database ID</h3>
-                    <p class="text-gray-600">Copy the database ID from your database URL (the part between the workspace name and "?")</p>
-                </div>
-                <div>
-                    <h3 class="font-medium">4. Configure Database</h3>
-                    <p class="text-gray-600">Make sure your database has:</p>
-                    <ul class="list-disc list-inside ml-4 text-gray-600">
-                        <li>Name (Title) property</li>
-                        <li>type (Text) property set to "image"</li>
-                        <li>Content (Files) property with your image</li>
-                    </ul>
-                </div>
+                <p class="text-gray-600">To add new images:</p>
+                <ul class="list-disc list-inside ml-4 text-gray-600">
+                    <li>Open your Notion database</li>
+                    <li>Create a new entry</li>
+                    <li>Set the "type" property to "image"</li>
+                    <li>Upload your image to the "Content" property</li>
+                    <li>Give it a name in the "Name" property</li>
+                </ul>
             </div>
         </div>
 
@@ -79,43 +48,6 @@
     </div>
 
     <script>
-        // Load existing configuration
-        async function loadConfig() {
-            try {
-                const response = await fetch('/config');
-                const config = await response.json();
-                document.getElementById('databaseId').value = config.database_id;
-            } catch (error) {
-                console.error('Error loading config:', error);
-            }
-        }
-
-        // Save configuration
-        document.getElementById('configForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const config = {
-                notion_token: document.getElementById('notionToken').value,
-                database_id: document.getElementById('databaseId').value
-            };
-            try {
-                const response = await fetch('/config', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(config)
-                });
-                if (response.ok) {
-                    alert('Configuration saved successfully!');
-                    loadImages();
-                } else {
-                    alert('Error saving configuration');
-                }
-            } catch (error) {
-                alert('Error saving configuration: ' + error.message);
-            }
-        });
-
         // Load images
         async function loadImages() {
             try {
@@ -178,7 +110,6 @@
         document.getElementById('refreshImages').addEventListener('click', loadImages);
 
         // Initial load
-        loadConfig();
         loadImages();
     </script>
 </body>
