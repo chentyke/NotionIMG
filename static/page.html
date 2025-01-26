@@ -731,14 +731,16 @@
                     existingDate.remove();
                 }
                 
-                if (data.page.edit_date) {
+                if (data.page.last_edited_time) {
                     const dateElement = document.createElement('div');
                     dateElement.className = 'edit-date';
-                    const date = new Date(data.page.edit_date);
+                    const date = new Date(data.page.last_edited_time);
                     dateElement.textContent = `Last edited on ${date.toLocaleDateString('en-US', { 
                         year: 'numeric', 
                         month: 'long', 
-                        day: 'numeric' 
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
                     })}`;
                     titleContainer.insertBefore(dateElement, document.getElementById('pageContent'));
                 }
