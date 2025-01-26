@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__)
 
 # Initialize FastAPI app
 app = FastAPI(
-    title="Notion Image Bed",
-    description="A simple image hosting service that reads images from Notion database"
+    title="Tyke's Drive",
+    description="A simple file hosting service that reads files from Notion database"
 )
 
 # Enable CORS
@@ -37,6 +37,35 @@ DATABASE_ID = os.environ.get("NOTION_DATABASE_ID")
 async def root():
     return RedirectResponse(url="/static/index.html")
 
+def get_file_info(page: dict) -> dict:
+    """Extract file information from a Notion page."""
+    try:
+        title = page["properties"]["Name"]["title"][0]["text"]["content"]
+        content = page["properties"].get("Content", {}).get("files", [])
+        
+        if not content:
+            return None
+            
+        file_data = content[0].get("file", {})
+        file_url = file_data.get("url")
+        
+        # Try to get preview image if available
+        preview_url = None
+        if "type" in file_data and file_data["type"] == "file":
+            preview = file_data.get("preview")
+            if preview and isinstance(preview, dict):
+                preview_url = preview.get("url")
+        
+        return {
+            "id": page["id"],
+            "title": title,
+            "preview_url": preview_url
+        } if file_url else None
+        
+    except (KeyError, IndexError) as e:
+        logger.warning(f"Error extracting file info: {e}")
+        return None
+
 @app.get("/images")
 async def get_images():
     try:
@@ -52,12 +81,9 @@ async def get_images():
         
         images = []
         for page in response["results"]:
-            try:
-                title = page["properties"]["Name"]["title"][0]["text"]["content"]
-                images.append({"id": page["id"], "title": title})
-            except (KeyError, IndexError) as e:
-                logger.warning(f"Skipping image due to missing data: {e}")
-                continue
+            file_info = get_file_info(page)
+            if file_info:
+                images.append(file_info)
                 
         return {"images": images}
     except Exception as e:
@@ -79,12 +105,9 @@ async def get_files():
         
         files = []
         for page in response["results"]:
-            try:
-                title = page["properties"]["Name"]["title"][0]["text"]["content"]
-                files.append({"id": page["id"], "title": title})
-            except (KeyError, IndexError) as e:
-                logger.warning(f"Skipping file due to missing data: {e}")
-                continue
+            file_info = get_file_info(page)
+            if file_info:
+                files.append(file_info)
                 
         return {"files": files}
     except Exception as e:
