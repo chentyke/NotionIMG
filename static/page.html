@@ -240,6 +240,24 @@
                         <div class="mr-4">${block.icon?.emoji || '💡'}</div>
                         <div>${block.text}</div>
                     </div>`;
+                case 'child_page':
+                    return `<div class="my-4 p-4 border border-gray-200 rounded-lg hover:border-blue-500 transition-colors">
+                        <a href="/static/page.html?id=${block.page_id}" class="flex items-center text-gray-900 hover:text-blue-600">
+                            <svg class="w-5 h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            <span class="font-medium">${block.title || 'Untitled'}</span>
+                        </a>
+                    </div>`;
+                case 'child_database':
+                    return `<div class="my-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                        <div class="flex items-center text-gray-700">
+                            <svg class="w-5 h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7c0-2-1-3-3-3H7c-2 0-3 1-3 3z M8 4v4M16 4v4M4 11h16"></path>
+                            </svg>
+                            <span class="font-medium">${block.title || 'Untitled Database'}</span>
+                        </div>
+                    </div>`;
                 default:
                     return '';
             }

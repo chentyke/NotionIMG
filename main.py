@@ -99,6 +99,16 @@ def process_block_content(block: dict) -> dict:
         result["language"] = content.get("language", "")
     elif block_type == "callout":
         result["icon"] = content.get("icon", {})
+    elif block_type == "child_page":
+        # 处理子页面
+        result["title"] = content.get("title", "")
+        result["page_id"] = block["id"]
+        result["text"] = content.get("title", "")  # 使用页面标题作为显示文本
+    elif block_type == "child_database":
+        # 处理子数据库
+        result["title"] = content.get("title", "")
+        result["database_id"] = block["id"]
+        result["text"] = content.get("title", "")  # 使用数据库标题作为显示文本
     
     return result
 
