@@ -320,13 +320,26 @@
                 for (const file of data.files) {
                     const card = document.createElement('div');
                     card.className = 'image-card';
-                    
-                    const previewUrl = await compressImage(`/file/${file.id}`);
                     const fullUrl = `${window.location.origin}/file/${file.id}`;
+                    
+                    let previewContent;
+                    try {
+                        const previewUrl = await compressImage(`/file/${file.id}`);
+                        previewContent = `<img src="${previewUrl}" alt="${file.title}" loading="lazy">`;
+                    } catch (err) {
+                        // 如果无法加载预览图，显示默认文件图标
+                        previewContent = `
+                            <div class="w-full h-full flex items-center justify-center">
+                                <svg class="w-20 h-20 text-gray-400 file-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                            </div>
+                        `;
+                    }
                     
                     card.innerHTML = `
                         <div class="image-preview" onclick="window.open('${fullUrl}', '_blank')">
-                            <img src="${previewUrl}" alt="${file.title}" loading="lazy">
+                            ${previewContent}
                         </div>
                         <div class="p-4">
                             <h3 class="font-medium text-gray-800 mb-3 truncate" title="${file.title}">${file.title}</h3>
