@@ -66,27 +66,11 @@
             line-height: 1.75;
         }
         .prose ul, .prose ol {
-            margin: 0.5rem 0;
+            margin: 1rem 0;
             padding-left: 1.5rem;
         }
-        .prose ul {
-            list-style-type: disc;
-        }
-        .prose ol {
-            list-style-type: decimal;
-        }
         .prose li {
-            margin: 0.25rem 0;
-            padding-left: 0.5rem;
-        }
-        .prose li > ul, .prose li > ol {
-            margin: 0.25rem 0;
-        }
-        .prose li::marker {
-            color: rgb(55, 53, 47, 0.8);
-        }
-        .prose li:hover::marker {
-            color: rgb(55, 53, 47);
+            margin: 0.5rem 0;
         }
         .image-modal {
             display: none;
@@ -469,22 +453,9 @@
                 case 'heading_3':
                     return `<h3 ${colorStyle}>${block.text}</h3>`;
                 case 'bulleted_list_item':
+                    return `<li ${colorStyle}>${block.text}</li>`;
                 case 'numbered_list_item':
-                    let listContent = block.text || '';
-                    
-                    // Handle nested content
-                    if (block.children && block.children.length > 0) {
-                        const nestedContent = await Promise.all(block.children.map(async child => {
-                            if (child.type === 'bulleted_list_item' || child.type === 'numbered_list_item') {
-                                const listType = child.type === 'bulleted_list_item' ? 'ul' : 'ol';
-                                return `<${listType}>${await renderBlock(child)}</${listType}>`;
-                            }
-                            return await renderBlock(child);
-                        }));
-                        listContent += nestedContent.join('');
-                    }
-                    
-                    return `<li ${colorStyle}>${listContent}</li>`;
+                    return `<li ${colorStyle}>${block.text}</li>`;
                 case 'code':
                     return `<pre><code class="language-${block.language}">${block.text}</code></pre>`;
                 case 'image':
@@ -611,9 +582,6 @@
                     const toggleId = `toggle-${Math.random().toString(36).substr(2, 9)}`;
                     let toggleContent = '';
                     
-                    // Get toggle text from the rich_text array
-                    const toggleText = block.toggle?.rich_text?.map(text => text.plain_text).join('') || '';
-                    
                     // Recursively render nested blocks
                     if (block.children && block.children.length > 0) {
                         const nestedContent = await Promise.all(block.children.map(async child => {
@@ -633,7 +601,7 @@
                                 <svg class="toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                                 </svg>
-                                <div class="toggle-text">${toggleText}</div>
+                                <div class="toggle-text">${block.text || ''}</div>
                             </div>
                             <div class="toggle-content">
                                 <div class="toggle-content-inner prose">
@@ -662,9 +630,6 @@
                 updateLoadingProgress(10);
                 const response = await fetch(`/page/${targetPageId}`);
                 const data = await response.json();
-                
-                // Add debug logging
-                console.log('Page data:', data);
                 
                 updateLoadingProgress(30);
                 
@@ -698,26 +663,14 @@
                 totalBlocks = data.blocks.length;
                 loadedBlocks = 0;
                 
-                // Add debug logging for blocks
-                console.log('Total blocks:', totalBlocks);
-                console.log('First few blocks:', data.blocks.slice(0, 3));
-                
                 // Render content
                 let content = '';
                 let currentList = null;
-                let listStack = [];
                 
                 for (const block of data.blocks) {
-                    // Add debug logging for each block
-                    console.log('Processing block:', block.type, block);
-                    
                     if (block.type === 'bulleted_list_item' || block.type === 'numbered_list_item') {
                         if (!currentList || currentList.type !== block.type) {
                             if (currentList) {
-                                // Close all nested lists
-                                while (listStack.length > 0) {
-                                    content += `</${listStack.pop()}>`;
-                                }
                                 content += `</${currentList.tag}>`;
                             }
                             currentList = {
@@ -727,10 +680,6 @@
                             content += `<${currentList.tag}>`;
                         }
                     } else if (currentList) {
-                        // Close all nested lists
-                        while (listStack.length > 0) {
-                            content += `</${listStack.pop()}>`;
-                        }
                         content += `</${currentList.tag}>`;
                         currentList = null;
                     }
@@ -739,10 +688,6 @@
                 }
                 
                 if (currentList) {
-                    // Close all nested lists
-                    while (listStack.length > 0) {
-                        content += `</${listStack.pop()}>`;
-                    }
                     content += `</${currentList.tag}>`;
                 }
                 
@@ -779,11 +724,13 @@
                 // Force reflow
                 content.offsetHeight;
                 content.style.height = '0';
+                content.style.opacity = '0';
                 block.classList.remove('open');
             } else {
                 // Opening animation
                 block.classList.add('open');
                 content.style.height = contentInner.offsetHeight + 'px';
+                content.style.opacity = '1';
                 // Reset height after animation
                 setTimeout(() => {
                     if (block.classList.contains('open')) {
