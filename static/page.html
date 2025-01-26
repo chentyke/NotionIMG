@@ -221,7 +221,7 @@
     </div>
 
     <script>
-        // Compress image with optimized settings
+        // Compress image
         function compressImage(url) {
             return new Promise((resolve, reject) => {
                 const img = new Image();
@@ -230,8 +230,7 @@
                     const canvas = document.createElement('canvas');
                     const ctx = canvas.getContext('2d');
                     
-                    // Optimize compression based on image size
-                    const maxSize = img.width > 2000 || img.height > 2000 ? 1200 : 800;
+                    const maxSize = 800;
                     let width = img.width;
                     let height = img.height;
                     
@@ -250,11 +249,8 @@
                     canvas.width = width;
                     canvas.height = height;
                     
-                    // Use better quality settings for smaller images
-                    const quality = width <= 800 ? 0.9 : 0.8;
-                    
                     ctx.drawImage(img, 0, 0, width, height);
-                    resolve(canvas.toDataURL('image/jpeg', quality));
+                    resolve(canvas.toDataURL('image/jpeg', 0.8));
                 };
                 img.onerror = reject;
                 img.src = url;
@@ -420,24 +416,21 @@
                             <iframe src="${block.url}" class="w-full h-96 rounded-lg"></iframe>
                         </div>`;
                 case 'table':
-                    let tableHtml = `<div class="overflow-x-auto"><table>`;
+                    let tableHtml = `<table>`;
                     if (block.children) {
-                        tableHtml += '<tbody>';
                         block.children.forEach((row, rowIndex) => {
-                            if (row.type === 'table_row' && row.cells) {
-                                const isHeader = block.has_column_header && rowIndex === 0;
-                                tableHtml += '<tr>';
-                                row.cells.forEach((cell, cellIndex) => {
-                                    const isRowHeader = block.has_row_header && cellIndex === 0;
-                                    const tag = isHeader || isRowHeader ? 'th' : 'td';
-                                    tableHtml += `<${tag}>${cell}</${tag}>`;
-                                });
-                                tableHtml += '</tr>';
-                            }
+                            const isHeader = (block.has_column_header && rowIndex === 0) || 
+                                          (block.has_row_header && row.cells && row.cells[0]);
+                            tableHtml += '<tr>';
+                            row.cells.forEach((cell, cellIndex) => {
+                                const isRowHeader = block.has_row_header && cellIndex === 0;
+                                const tag = isHeader || isRowHeader ? 'th' : 'td';
+                                tableHtml += `<${tag}>${cell}</${tag}>`;
+                            });
+                            tableHtml += '</tr>';
                         });
-                        tableHtml += '</tbody>';
                     }
-                    tableHtml += '</table></div>';
+                    tableHtml += '</table>';
                     return tableHtml;
                 case 'to_do':
                     return `
@@ -476,7 +469,7 @@
             }
         }
 
-        // Load page content with optimized rendering
+        // Load page content
         async function loadPage(pageId = null) {
             const targetPageId = pageId || urlParams.get('id');
             
@@ -492,64 +485,39 @@
                 const response = await fetch(`/page/${targetPageId}`);
                 const data = await response.json();
                 
-                // Update page title immediately
+                // Update page title
                 document.title = data.page.title;
                 document.getElementById('pageTitle').textContent = data.page.title;
                 
-                // Prepare content container
-                const contentElement = document.getElementById('pageContent');
-                contentElement.innerHTML = '';
-                
-                // Create a document fragment for better performance
-                const fragment = document.createDocumentFragment();
+                // Render content
+                let content = '';
                 let currentList = null;
-                let currentListElement = null;
                 
-                // Process blocks in chunks to avoid blocking the UI
-                const chunkSize = 20;
-                for (let i = 0; i < data.blocks.length; i += chunkSize) {
-                    const chunk = data.blocks.slice(i, i + chunkSize);
-                    await new Promise(resolve => {
-                        setTimeout(async () => {
-                            for (const block of chunk) {
-                                if (block.type === 'bulleted_list_item' || block.type === 'numbered_list_item') {
-                                    if (!currentList || currentList.type !== block.type) {
-                                        if (currentListElement) {
-                                            fragment.appendChild(currentListElement);
-                                        }
-                                        currentList = {
-                                            type: block.type,
-                                            tag: block.type === 'bulleted_list_item' ? 'ul' : 'ol'
-                                        };
-                                        currentListElement = document.createElement(currentList.tag);
-                                    }
-                                    const content = await renderBlock(block);
-                                    currentListElement.insertAdjacentHTML('beforeend', content);
-                                } else {
-                                    if (currentListElement) {
-                                        fragment.appendChild(currentListElement);
-                                        currentList = null;
-                                        currentListElement = null;
-                                    }
-                                    const content = await renderBlock(block);
-                                    const wrapper = document.createElement('div');
-                                    wrapper.innerHTML = content;
-                                    fragment.appendChild(wrapper.firstChild);
-                                }
+                for (const block of data.blocks) {
+                    if (block.type === 'bulleted_list_item' || block.type === 'numbered_list_item') {
+                        if (!currentList || currentList.type !== block.type) {
+                            if (currentList) {
+                                content += `</${currentList.tag}>`;
                             }
-                            resolve();
-                        }, 0);
-                    });
+                            currentList = {
+                                type: block.type,
+                                tag: block.type === 'bulleted_list_item' ? 'ul' : 'ol'
+                            };
+                            content += `<${currentList.tag}>`;
+                        }
+                    } else if (currentList) {
+                        content += `</${currentList.tag}>`;
+                        currentList = null;
+                    }
                     
-                    // Append the fragment after each chunk
-                    contentElement.appendChild(fragment.cloneNode(true));
+                    content += await renderBlock(block);
                 }
                 
-                // Append any remaining list
-                if (currentListElement) {
-                    contentElement.appendChild(currentListElement);
+                if (currentList) {
+                    content += `</${currentList.tag}>`;
                 }
                 
+                document.getElementById('pageContent').innerHTML = content;
             } catch (error) {
                 console.error('Error loading page content:', error);
                 document.getElementById('pageContent').innerHTML = `
