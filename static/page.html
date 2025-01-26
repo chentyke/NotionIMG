@@ -416,21 +416,24 @@
                             <iframe src="${block.url}" class="w-full h-96 rounded-lg"></iframe>
                         </div>`;
                 case 'table':
-                    let tableHtml = `<table>`;
+                    let tableHtml = `<div class="overflow-x-auto"><table>`;
                     if (block.children) {
+                        tableHtml += '<tbody>';
                         block.children.forEach((row, rowIndex) => {
-                            const isHeader = (block.has_column_header && rowIndex === 0) || 
-                                          (block.has_row_header && row.cells && row.cells[0]);
-                            tableHtml += '<tr>';
-                            row.cells.forEach((cell, cellIndex) => {
-                                const isRowHeader = block.has_row_header && cellIndex === 0;
-                                const tag = isHeader || isRowHeader ? 'th' : 'td';
-                                tableHtml += `<${tag}>${cell}</${tag}>`;
-                            });
-                            tableHtml += '</tr>';
+                            if (row.type === 'table_row' && row.cells) {
+                                const isHeader = block.has_column_header && rowIndex === 0;
+                                tableHtml += '<tr>';
+                                row.cells.forEach((cell, cellIndex) => {
+                                    const isRowHeader = block.has_row_header && cellIndex === 0;
+                                    const tag = isHeader || isRowHeader ? 'th' : 'td';
+                                    tableHtml += `<${tag}>${cell}</${tag}>`;
+                                });
+                                tableHtml += '</tr>';
+                            }
                         });
+                        tableHtml += '</tbody>';
                     }
-                    tableHtml += '</table>';
+                    tableHtml += '</table></div>';
                     return tableHtml;
                 case 'to_do':
                     return `
