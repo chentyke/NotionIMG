@@ -40,12 +40,6 @@
             overflow-x: auto;
             position: relative;
         }
-        .prose pre code {
-            display: block;
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-            font-size: 0.875rem;
-            line-height: 1.5;
-        }
         .prose blockquote {
             border-left: 4px solid #e5e7eb;
             padding-left: 1rem;
@@ -292,9 +286,7 @@
         .toggle-block .toggle-block {
             margin-left: 0;
         }
-        .code-block-wrapper {
-            position: relative;
-        }
+        
         .copy-button {
             position: absolute;
             top: 0.5rem;
@@ -303,29 +295,25 @@
             background-color: #ffffff;
             border: 1px solid #e5e7eb;
             border-radius: 0.25rem;
-            font-size: 0.75rem;
+            font-size: 0.875rem;
             color: #6b7280;
             cursor: pointer;
+            transition: all 0.2s;
             opacity: 0;
-            transition: opacity 0.2s ease-in-out;
-            display: flex;
-            align-items: center;
-            gap: 0.25rem;
         }
-        .code-block-wrapper:hover .copy-button {
+
+        .prose pre:hover .copy-button {
             opacity: 1;
         }
+
         .copy-button:hover {
             background-color: #f9fafb;
             color: #374151;
         }
-        .copy-button svg {
-            width: 0.875rem;
-            height: 0.875rem;
-        }
+
         .copy-button.copied {
             background-color: #10b981;
-            color: #ffffff;
+            color: white;
             border-color: #059669;
         }
     </style>
@@ -533,17 +521,10 @@
                     
                     return `<li ${colorStyle}>${listContent}</li>`;
                 case 'code':
-                    const codeId = `code-${Math.random().toString(36).substr(2, 9)}`;
-                    return `
-                        <div class="code-block-wrapper">
-                            <pre><code id="${codeId}" class="language-${block.language}">${block.text}</code></pre>
-                            <button class="copy-button" onclick="copyCode('${codeId}')">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                </svg>
-                                <span>Copy</span>
-                            </button>
-                        </div>`;
+                    return `<pre>
+                        <button class="copy-button" onclick="copyCode(this)">Copy</button>
+                        <code class="language-${block.language}">${block.text}</code>
+                    </pre>`;
                 case 'image':
                     return `<figure>
                         <img class="opacity-0 transition-opacity duration-300" 
@@ -613,42 +594,28 @@
             }
         }
 
-        // Add copy code function
-        async function copyCode(id) {
-            const codeElement = document.getElementById(id);
-            const button = codeElement.parentElement.parentElement.querySelector('.copy-button');
-            
-            try {
-                await navigator.clipboard.writeText(codeElement.textContent);
-                
-                // Update button state
+        // Add copy code function before the closing </script> tag
+        function copyCode(button) {
+            const pre = button.parentElement;
+            const code = pre.querySelector('code');
+            const text = code.textContent;
+
+            navigator.clipboard.writeText(text).then(() => {
+                button.textContent = 'Copied!';
                 button.classList.add('copied');
-                button.innerHTML = `
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span>Copied!</span>
-                `;
                 
-                // Reset button after 2 seconds
                 setTimeout(() => {
+                    button.textContent = 'Copy';
                     button.classList.remove('copied');
-                    button.innerHTML = `
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                        </svg>
-                        <span>Copy</span>
-                    `;
                 }, 2000);
-            } catch (err) {
-                console.error('Failed to copy code:', err);
-                button.innerHTML = `
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                    <span>Error!</span>
-                `;
-            }
+            }).catch(err => {
+                console.error('Failed to copy text:', err);
+                button.textContent = 'Failed';
+                
+                setTimeout(() => {
+                    button.textContent = 'Copy';
+                }, 2000);
+            });
         }
     </script>
 </body>
