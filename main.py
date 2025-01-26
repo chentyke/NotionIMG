@@ -156,27 +156,26 @@ def process_block_content(block: dict) -> dict:
         else:
             text = ""
 
-        # Process children if present
-        children = []
-        if "has_children" in block and block["has_children"]:
-            try:
-                child_blocks = notion.blocks.children.list(block_id=block["id"])["results"]
-                for child_block in child_blocks:
-                    child_content = process_block_content(child_block)
-                    if child_content:
-                        children.append(child_content)
-            except Exception as e:
-                logger.warning(f"Error processing child blocks: {e}")
-
+        # Initialize result
         result = {
             "type": block_type,
             "text": text,
             "color": color
         }
 
-        # Add children if they exist
-        if children:
-            result["children"] = children
+        # Process children if present
+        if block.get("has_children", False):
+            try:
+                child_blocks = notion.blocks.children.list(block_id=block["id"])["results"]
+                children = []
+                for child_block in child_blocks:
+                    child_content = process_block_content(child_block)
+                    if child_content:
+                        children.append(child_content)
+                if children:
+                    result["children"] = children
+            except Exception as e:
+                logger.warning(f"Error processing child blocks: {e}")
 
         # Handle specific block types
         if block_type == "image":
@@ -191,8 +190,15 @@ def process_block_content(block: dict) -> dict:
         elif block_type == "toggle":
             # For toggle blocks, we need both the text and children
             result["text"] = text
-            if children:
-                result["children"] = children
+        elif block_type == "table":
+            result["has_column_header"] = block_content.get("has_column_header", False)
+            result["has_row_header"] = block_content.get("has_row_header", False)
+        elif block_type == "table_row":
+            cells = []
+            for cell in block_content.get("cells", []):
+                cell_text = process_rich_text(cell)
+                cells.append(cell_text)
+            result["cells"] = cells
 
         return result
     except Exception as e:
@@ -312,20 +318,9 @@ async def get_page_content(page_id: str):
                 response = notion.blocks.children.list(block_id=page_id)
             
             for block in response["results"]:
-                block_content = process_block_content(block)
-                if block_content:  # Only add non-None blocks
-                    blocks.append(block_content)
-                
-                # If block has children, recursively get them
-                if block["has_children"]:
-                    child_blocks = []
-                    child_response = notion.blocks.children.list(block_id=block["id"])
-                    for child_block in child_response["results"]:
-                        child_content = process_block_content(child_block)
-                        if child_content:  # Only add non-None blocks
-                            child_blocks.append(child_content)
-                    if child_blocks:  # Only add children if there are any
-                        block_content["children"] = child_blocks
+                processed_block = process_block_content(block)
+                if processed_block:
+                    blocks.append(processed_block)
             
             has_more = response["has_more"]
             if has_more:
@@ -335,9 +330,8 @@ async def get_page_content(page_id: str):
             "page": page_info,
             "blocks": blocks
         }
-        
     except Exception as e:
-        logger.error(f"Error retrieving page {page_id}: {e}")
+        logger.error(f"Error getting page content: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/image/{image_id}")
