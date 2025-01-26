@@ -92,159 +92,112 @@ def get_page_info(page: dict) -> dict:
         logger.warning(f"Error extracting page info: {e}")
         return None
 
+def process_rich_text(rich_text_array):
+    """Process rich text array to include formatting."""
+    if not rich_text_array:
+        return ""
+    
+    formatted_text = []
+    for text in rich_text_array:
+        # Get the text content
+        content = text.get("plain_text", "")
+        
+        # Start with an empty list of HTML tags
+        tags = []
+        
+        # Process annotations
+        annotations = text.get("annotations", {})
+        if annotations.get("bold"):
+            tags.append(("strong", {}))
+        if annotations.get("italic"):
+            tags.append(("em", {}))
+        if annotations.get("strikethrough"):
+            tags.append(("del", {}))
+        if annotations.get("underline"):
+            tags.append(("u", {}))
+        if annotations.get("code"):
+            tags.append(("code", {"class": "inline-code"}))
+        
+        # Process color
+        color = annotations.get("color", "default")
+        if color != "default":
+            if color.endswith("_background"):
+                tags.append(("span", {"class": f"bg-{color.replace('_background', '')}"}))
+            else:
+                tags.append(("span", {"class": f"text-{color}"}))
+        
+        # Process links
+        href = text.get("href")
+        if href:
+            tags.append(("a", {"href": href, "target": "_blank", "rel": "noopener noreferrer"}))
+        
+        # Apply all the formatting
+        formatted = content
+        for tag, attrs in reversed(tags):
+            attr_str = " ".join([f'{k}="{v}"' for k, v in attrs.items()])
+            formatted = f"<{tag} {attr_str}>{formatted}</{tag}>" if attr_str else f"<{tag}>{formatted}</{tag}>"
+        
+        formatted_text.append(formatted)
+    
+    return "".join(formatted_text)
+
 def process_block_content(block: dict) -> dict:
-    """Process block content to extract relevant information."""
-    block_type = block["type"]
-    content = block[block_type]
-    
-    def process_rich_text(rich_text_array):
-        """Process rich text array to include formatting."""
-        if not rich_text_array:
-            return ""
+    """Process block content."""
+    try:
+        block_type = block["type"]
+        block_content = block[block_type]
         
-        formatted_text = []
-        for text in rich_text_array:
-            # Get the text content
-            content = text.get("plain_text", "")
-            
-            # Start with an empty list of HTML tags
-            tags = []
-            
-            # Process annotations
-            annotations = text.get("annotations", {})
-            if annotations.get("bold"):
-                tags.append(("strong", {}))
-            if annotations.get("italic"):
-                tags.append(("em", {}))
-            if annotations.get("strikethrough"):
-                tags.append(("del", {}))
-            if annotations.get("underline"):
-                tags.append(("u", {}))
-            if annotations.get("code"):
-                tags.append(("code", {"class": "inline-code"}))
-            
-            # Process color
-            color = annotations.get("color", "default")
-            if color != "default":
-                if color.endswith("_background"):
-                    tags.append(("span", {"class": f"bg-{color.replace('_background', '')}"}))
-                else:
-                    tags.append(("span", {"class": f"text-{color}"}))
-            
-            # Process links
-            href = text.get("href")
-            if href:
-                tags.append(("a", {"href": href, "target": "_blank", "rel": "noopener noreferrer"}))
-            
-            # Apply all the formatting
-            formatted = content
-            for tag, attrs in reversed(tags):
-                attr_str = " ".join([f'{k}="{v}"' for k, v in attrs.items()])
-                formatted = f"<{tag} {attr_str}>{formatted}</{tag}>" if attr_str else f"<{tag}>{formatted}</{tag}>"
-            
-            formatted_text.append(formatted)
+        # Get color if present
+        color = block.get("color", "default")
         
-        return "".join(formatted_text)
-    
-    if "rich_text" in content:
-        text_content = process_rich_text(content["rich_text"])
-    else:
-        text_content = ""
-    
-    result = {
-        "id": block["id"],
-        "type": block_type,
-        "text": text_content,
-        "has_children": block["has_children"]
-    }
-    
-    # Handle color if present
-    if "color" in content:
-        result["color"] = content["color"]
-    
-    # Handle specific block types
-    if block_type == "image":
-        if content.get("type") == "external":
-            result["image_url"] = content.get("external", {}).get("url", "")
+        # Process rich text content
+        if "rich_text" in block_content:
+            text = process_rich_text(block_content["rich_text"])
         else:
-            result["image_url"] = content.get("file", {}).get("url", "")
-        result["caption"] = process_rich_text(content.get("caption", []))
-    
-    elif block_type == "code":
-        result["language"] = content.get("language", "")
-        
-    elif block_type == "callout":
-        result["icon"] = content.get("icon", {})
-        
-    elif block_type == "bookmark":
-        result["url"] = content.get("url", "")
-        result["caption"] = process_rich_text(content.get("caption", []))
-        
-    elif block_type == "equation":
-        result["expression"] = content.get("expression", "")
-        
-    elif block_type == "video":
-        if content.get("type") == "external":
-            result["video_url"] = content.get("external", {}).get("url", "")
-        else:
-            result["video_url"] = content.get("file", {}).get("url", "")
-            
-    elif block_type == "file":
-        if content.get("type") == "external":
-            result["file_url"] = content.get("external", {}).get("url", "")
-        else:
-            result["file_url"] = content.get("file", {}).get("url", "")
-        result["caption"] = process_rich_text(content.get("caption", []))
-        
-    elif block_type == "pdf":
-        if content.get("type") == "external":
-            result["pdf_url"] = content.get("external", {}).get("url", "")
-        else:
-            result["pdf_url"] = content.get("file", {}).get("url", "")
-            
-    elif block_type == "embed":
-        result["url"] = content.get("url", "")
-        
-    elif block_type == "table":
-        result["table_width"] = content.get("table_width", 0)
-        result["has_column_header"] = content.get("has_column_header", False)
-        result["has_row_header"] = content.get("has_row_header", False)
-        
-    elif block_type == "table_row":
-        cells = []
-        for cell in content.get("cells", []):
-            cell_text = process_rich_text(cell)
-            cells.append(cell_text)
-        result["cells"] = cells
-        
-    elif block_type == "to_do":
-        result["checked"] = content.get("checked", False)
-        
-    elif block_type == "child_page":
-        result["title"] = content.get("title", "")
-        result["page_id"] = block["id"]
-        
-    elif block_type == "child_database":
-        result["title"] = content.get("title", "")
-        
-    elif block_type == "link_preview":
-        result["url"] = content.get("url", "")
-        
-    elif block_type == "synced_block":
-        if content.get("synced_from"):
+            text = ""
+
+        # Process children if present
+        children = []
+        if "has_children" in block and block["has_children"]:
             try:
-                synced_block = notion.blocks.retrieve(block_id=content["synced_from"]["block_id"])
-                result["synced_content"] = process_block_content(synced_block)
+                child_blocks = notion.blocks.children.list(block_id=block["id"])["results"]
+                for child_block in child_blocks:
+                    child_content = process_block_content(child_block)
+                    if child_content:
+                        children.append(child_content)
             except Exception as e:
-                logger.warning(f"Error retrieving synced block content: {e}")
-                
-    elif block_type == "template":
-        result["template_content"] = content.get("template", [])
-        
-    elif block_type == "breadcrumb":
-        pass
-        
-    return result
+                logger.warning(f"Error processing child blocks: {e}")
+
+        result = {
+            "type": block_type,
+            "text": text,
+            "color": color
+        }
+
+        # Add children if they exist
+        if children:
+            result["children"] = children
+
+        # Handle specific block types
+        if block_type == "image":
+            result["image_url"] = block_content.get("file", {}).get("url") or block_content.get("external", {}).get("url")
+            if "caption" in block_content and block_content["caption"]:
+                result["caption"] = process_rich_text(block_content["caption"])
+        elif block_type == "code":
+            result["language"] = block_content.get("language", "plain text")
+        elif block_type == "child_page":
+            result["page_id"] = block["id"]
+            result["title"] = block_content.get("title", "Untitled")
+        elif block_type == "toggle":
+            # For toggle blocks, we need both the text and children
+            result["text"] = text
+            if children:
+                result["children"] = children
+
+        return result
+    except Exception as e:
+        logger.warning(f"Error processing block content: {e}")
+        return None
 
 @app.get("/images")
 async def get_images():
