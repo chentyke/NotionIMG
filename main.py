@@ -96,6 +96,8 @@ def process_block_content(block: dict) -> dict:
     # 处理包含 rich_text 的块
     if "rich_text" in content:
         result["text"] = "".join([text["plain_text"] for text in content["rich_text"]])
+        # 保存完整的 rich_text 对象以支持格式化
+        result["rich_text"] = content["rich_text"]
     
     # 处理包含 color 的块
     if "color" in content:
@@ -150,27 +152,37 @@ def process_block_content(block: dict) -> dict:
         result["children"] = []  # 添加一个空的 children 数组来存储表格行
         
     elif block_type == "table_row":
-        cells = []
+        result["cells"] = []
         for cell in content.get("cells", []):
-            cell_text = "".join([text["plain_text"] for text in cell])
-            cells.append(cell_text)
-        result["cells"] = cells
+            cell_content = []
+            for text in cell:
+                cell_content.append({
+                    "text": text.get("plain_text", ""),
+                    "annotations": text.get("annotations", {}),
+                    "href": text.get("href")
+                })
+            result["cells"].append(cell_content)
         
     elif block_type == "to_do":
         result["checked"] = content.get("checked", False)
         
     elif block_type == "child_page":
-        result["title"] = content.get("title", "")
-        # 获取页面的完整信息
         try:
+            # 获取页面的完整信息
             page = notion.pages.retrieve(page_id=block["id"])
-            if "properties" in page and "Name" in page["properties"]:
-                result["title"] = page["properties"]["Name"]["title"][0]["text"]["content"]
+            result.update({
+                "page_id": block["id"],
+                "title": page["properties"].get("Name", {}).get("title", [{"plain_text": "Untitled"}])[0]["plain_text"],
+                "icon": page.get("icon"),
+                "cover": page.get("cover")
+            })
         except Exception as e:
             logger.warning(f"Error retrieving child page info: {e}")
+            result["title"] = content.get("title", "Untitled")
         
     elif block_type == "child_database":
         result["title"] = content.get("title", "")
+        result["database_id"] = block["id"]
         
     elif block_type == "link_preview":
         result["url"] = content.get("url", "")
