@@ -202,23 +202,50 @@
 
         // Render rich text content
         function renderRichText(richText) {
-            if (!richText) return '';
+            if (!richText || !Array.isArray(richText)) return '';
             
             return richText.map(text => {
-                let content = text.text || text.plain_text;
+                let content = text.plain_text;
                 const annotations = text.annotations || {};
                 const href = text.href;
                 
-                // Apply annotations
-                if (annotations.bold) content = `<strong>${content}</strong>`;
-                if (annotations.italic) content = `<em>${content}</em>`;
-                if (annotations.strikethrough) content = `<del>${content}</del>`;
-                if (annotations.underline) content = `<u>${content}</u>`;
-                if (annotations.code) content = `<code class="bg-gray-100 px-1 rounded">${content}</code>`;
+                // Apply annotations in specific order
+                if (annotations.code) {
+                    content = `<code class="bg-gray-100 px-1 rounded font-mono">${content}</code>`;
+                }
+                if (annotations.bold) {
+                    content = `<strong>${content}</strong>`;
+                }
+                if (annotations.italic) {
+                    content = `<em>${content}</em>`;
+                }
+                if (annotations.strikethrough) {
+                    content = `<del>${content}</del>`;
+                }
+                if (annotations.underline) {
+                    content = `<u>${content}</u>`;
+                }
                 
                 // Apply color
                 if (annotations.color && annotations.color !== 'default') {
-                    content = `<span class="text-${annotations.color.replace('_', '-')}">${content}</span>`;
+                    const colorClass = annotations.color.includes('background') 
+                        ? `bg-${annotations.color.replace('_background', '')}` 
+                        : `text-${annotations.color}`;
+                    content = `<span class="${colorClass}">${content}</span>`;
+                }
+                
+                // Handle different types of text
+                if (text.type === 'mention') {
+                    if (text.mention.type === 'page') {
+                        content = `<a href="/static/page.html?id=${text.mention.page.id}" class="text-blue-600 hover:underline">📄 ${content}</a>`;
+                    } else if (text.mention.type === 'user') {
+                        content = `<span class="text-purple-600">@${content}</span>`;
+                    } else if (text.mention.type === 'date') {
+                        const date = new Date(text.mention.date.start);
+                        content = `<time datetime="${date.toISOString()}" class="text-gray-500">${date.toLocaleDateString()}</time>`;
+                    }
+                } else if (text.type === 'equation') {
+                    content = `<span class="font-mono bg-gray-100 px-1 rounded">${text.equation.expression}</span>`;
                 }
                 
                 // Apply link
@@ -228,6 +255,12 @@
                 
                 return content;
             }).join('');
+        }
+
+        // Render caption
+        function renderCaption(caption) {
+            if (!caption || !Array.isArray(caption)) return '';
+            return `<div class="text-gray-500 text-sm mt-2">${renderRichText(caption)}</div>`;
         }
 
         // Render block content
@@ -249,17 +282,68 @@
             
             switch (block.type) {
                 case 'paragraph':
-                    content = `<p class="${colorClass}">${block.rich_text ? renderRichText(block.rich_text) : block.text || ''}</p>`;
-                    if (block.children) {
-                        content += await renderChildren(block.children);
-                    }
-                    return content;
+                    content = `<p class="${colorClass}">${block.rich_text ? renderRichText(block.rich_text) : ''}</p>`;
+                    break;
                 case 'heading_1':
-                    return `<h1 class="${colorClass}">${block.rich_text ? renderRichText(block.rich_text) : block.text}</h1>`;
+                    content = `<h1 class="${colorClass} text-3xl font-bold mt-8 mb-4">${renderRichText(block.rich_text)}</h1>`;
+                    break;
                 case 'heading_2':
-                    return `<h2 class="${colorClass}">${block.rich_text ? renderRichText(block.rich_text) : block.text}</h2>`;
+                    content = `<h2 class="${colorClass} text-2xl font-bold mt-6 mb-3">${renderRichText(block.rich_text)}</h2>`;
+                    break;
                 case 'heading_3':
-                    return `<h3 class="${colorClass}">${block.rich_text ? renderRichText(block.rich_text) : block.text}</h3>`;
+                    content = `<h3 class="${colorClass} text-xl font-bold mt-4 mb-2">${renderRichText(block.rich_text)}</h3>`;
+                    break;
+                case 'image':
+                    try {
+                        const compressedUrl = await compressImage(block.image_url);
+                        content = `
+                            <figure class="my-4">
+                                <img src="${compressedUrl}" 
+                                     alt="Page image" 
+                                     onclick="openImageModal('${block.image_url}')"
+                                     title="Click to view full size"
+                                     class="rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200">
+                                ${renderCaption(block.caption)}
+                            </figure>`;
+                    } catch (error) {
+                        console.error('Error compressing image:', error);
+                        content = `
+                            <figure class="my-4">
+                                <img src="${block.image_url}" 
+                                     alt="Page image" 
+                                     onclick="openImageModal('${block.image_url}')"
+                                     title="Click to view full size"
+                                     class="rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200">
+                                ${renderCaption(block.caption)}
+                            </figure>`;
+                    }
+                    break;
+                case 'child_page':
+                    const icon = block.icon?.emoji || block.icon?.external?.url || '📄';
+                    const iconHtml = block.icon?.type === 'external' 
+                        ? `<img src="${icon}" class="w-5 h-5 mr-2">` 
+                        : `<span class="mr-2">${icon}</span>`;
+                    
+                    content = `
+                        <div class="border rounded-lg p-4 my-4 hover:bg-gray-50 transition-colors duration-200">
+                            <a href="/static/page.html?id=${block.id}" class="text-blue-600 hover:underline flex items-center">
+                                ${iconHtml}
+                                <span class="truncate">${block.title || 'Untitled'}</span>
+                            </a>
+                            ${block.cover ? `
+                                <div class="mt-2">
+                                    <img src="${block.cover.external?.url || block.cover.file?.url}" 
+                                         class="w-full h-32 object-cover rounded" 
+                                         alt="${block.title}">
+                                </div>` : ''}
+                            <div class="mt-2 text-sm text-gray-500 flex items-center">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                ${new Date(block.last_edited_time).toLocaleString()}
+                            </div>
+                        </div>`;
+                    break;
                 case 'bulleted_list_item':
                     content = `<li class="${colorClass}">• ${block.rich_text ? renderRichText(block.rich_text) : block.text}</li>`;
                     if (block.children) {
@@ -274,20 +358,6 @@
                     return content;
                 case 'code':
                     return `<pre><code class="language-${block.language}">${block.text}</code></pre>`;
-                case 'image':
-                    try {
-                        const compressedUrl = await compressImage(block.image_url);
-                        return `<img src="${compressedUrl}" 
-                                    alt="Page image" 
-                                    onclick="openImageModal('${block.image_url}')"
-                                    title="Click to view full size">`;
-                    } catch (error) {
-                        console.error('Error compressing image:', error);
-                        return `<img src="${block.image_url}" 
-                                    alt="Page image" 
-                                    onclick="openImageModal('${block.image_url}')"
-                                    title="Click to view full size">`;
-                    }
                 case 'divider':
                     return `<hr class="my-6">`;
                 case 'quote':
@@ -388,28 +458,6 @@
                         content += await renderChildren(block.children);
                     }
                     return content;
-                case 'child_page':
-                    const icon = block.icon?.emoji || block.icon?.external?.url || '📄';
-                    const iconHtml = block.icon?.type === 'external' 
-                        ? `<img src="${icon}" class="w-5 h-5 mr-2">` 
-                        : `<span class="mr-2">${icon}</span>`;
-                    
-                    content = `<div class="border rounded-lg p-4 my-4 hover:bg-gray-50">
-                        <a href="/static/page.html?id=${block.id}" class="text-blue-600 hover:underline flex items-center">
-                            ${iconHtml}
-                            <span class="truncate">${block.title || 'Untitled'}</span>
-                        </a>
-                        ${block.cover ? `<div class="mt-2">
-                            <img src="${block.cover.external?.url || block.cover.file?.url}" 
-                                 class="w-full h-32 object-cover rounded" 
-                                 alt="${block.title}">
-                        </div>` : ''}
-                    </div>`;
-                    
-                    if (block.children) {
-                        content += await renderChildren(block.children);
-                    }
-                    return content;
                 case 'child_database':
                     return `<div class="border rounded-lg p-4 my-4 bg-gray-50">
                         <div class="flex items-center text-gray-600">
@@ -446,15 +494,41 @@
             }
 
             try {
-                const response = await fetch(`/page/${pageId}`);
+                const response = await fetch(`/page/${pageId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('notion_token')}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const data = await response.json();
                 
-                // Update page title
+                // Update page title and metadata
                 document.title = data.page.title;
                 document.getElementById('pageTitle').textContent = data.page.title;
                 
+                // Add page metadata
+                const metadataHtml = `
+                    <div class="text-sm text-gray-500 mb-8 flex items-center">
+                        <span class="mr-4">
+                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            Created: ${new Date(data.page.created_time).toLocaleString()}
+                        </span>
+                        <span>
+                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            Last edited: ${new Date(data.page.last_edited_time).toLocaleString()}
+                        </span>
+                    </div>`;
+                
                 // Render content
-                let content = '';
+                let content = metadataHtml;
                 for (const block of data.blocks) {
                     content += await renderBlock(block);
                 }
@@ -464,7 +538,10 @@
                 console.error('Error loading page content:', error);
                 document.getElementById('pageContent').innerHTML = `
                     <div class="text-center text-red-500">
-                        <p>Error loading page content.</p>
+                        <p>Error loading page content: ${error.message}</p>
+                        ${error.message.includes('401') ? `
+                            <p class="mt-2">Please make sure you have set your Notion token.</p>
+                        ` : ''}
                     </div>
                 `;
             }

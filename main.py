@@ -90,14 +90,21 @@ def process_block_content(block: dict) -> dict:
     result = {
         "id": block["id"],
         "type": block_type,
-        "has_children": block["has_children"]
+        "has_children": block["has_children"],
+        "created_time": block.get("created_time"),
+        "last_edited_time": block.get("last_edited_time")
     }
     
     # 处理包含 rich_text 的块
     if "rich_text" in content:
-        result["text"] = "".join([text["plain_text"] for text in content["rich_text"]])
-        # 保存完整的 rich_text 对象以支持格式化
         result["rich_text"] = content["rich_text"]
+        result["text"] = "".join([text["plain_text"] for text in content["rich_text"]])
+        
+        # 处理链接
+        for text in content["rich_text"]:
+            if text.get("href"):
+                result["href"] = text["href"]
+                break
     
     # 处理包含 color 的块
     if "color" in content:
@@ -109,16 +116,18 @@ def process_block_content(block: dict) -> dict:
             result["image_url"] = content.get("external", {}).get("url", "")
         else:
             result["image_url"] = content.get("file", {}).get("url", "")
+        result["caption"] = content.get("caption", [])
             
     elif block_type == "code":
         result["language"] = content.get("language", "")
+        result["caption"] = content.get("caption", [])
         
     elif block_type == "callout":
         result["icon"] = content.get("icon", {})
         
     elif block_type == "bookmark":
         result["url"] = content.get("url", "")
-        result["caption"] = "".join([text["plain_text"] for text in content.get("caption", [])])
+        result["caption"] = content.get("caption", [])
         
     elif block_type == "equation":
         result["expression"] = content.get("expression", "")
@@ -128,22 +137,25 @@ def process_block_content(block: dict) -> dict:
             result["video_url"] = content.get("external", {}).get("url", "")
         else:
             result["video_url"] = content.get("file", {}).get("url", "")
+        result["caption"] = content.get("caption", [])
             
     elif block_type == "file":
         if content.get("type") == "external":
             result["file_url"] = content.get("external", {}).get("url", "")
         else:
             result["file_url"] = content.get("file", {}).get("url", "")
-        result["caption"] = "".join([text["plain_text"] for text in content.get("caption", [])])
+        result["caption"] = content.get("caption", [])
         
     elif block_type == "pdf":
         if content.get("type") == "external":
             result["pdf_url"] = content.get("external", {}).get("url", "")
         else:
             result["pdf_url"] = content.get("file", {}).get("url", "")
+        result["caption"] = content.get("caption", [])
             
     elif block_type == "embed":
         result["url"] = content.get("url", "")
+        result["caption"] = content.get("caption", [])
         
     elif block_type == "table":
         result["table_width"] = content.get("table_width", 0)
@@ -152,16 +164,7 @@ def process_block_content(block: dict) -> dict:
         result["children"] = []  # 添加一个空的 children 数组来存储表格行
         
     elif block_type == "table_row":
-        result["cells"] = []
-        for cell in content.get("cells", []):
-            cell_content = []
-            for text in cell:
-                cell_content.append({
-                    "text": text.get("plain_text", ""),
-                    "annotations": text.get("annotations", {}),
-                    "href": text.get("href")
-                })
-            result["cells"].append(cell_content)
+        result["cells"] = content.get("cells", [])  # 直接保存完整的 rich_text 数组
         
     elif block_type == "to_do":
         result["checked"] = content.get("checked", False)
@@ -171,10 +174,13 @@ def process_block_content(block: dict) -> dict:
             # 获取页面的完整信息
             page = notion.pages.retrieve(page_id=block["id"])
             result.update({
-                "page_id": block["id"],
+                "id": block["id"],
                 "title": page["properties"].get("Name", {}).get("title", [{"plain_text": "Untitled"}])[0]["plain_text"],
                 "icon": page.get("icon"),
-                "cover": page.get("cover")
+                "cover": page.get("cover"),
+                "url": page.get("url"),
+                "created_time": page.get("created_time"),
+                "last_edited_time": page.get("last_edited_time")
             })
         except Exception as e:
             logger.warning(f"Error retrieving child page info: {e}")
