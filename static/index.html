@@ -5,35 +5,49 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Notion Drive</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
     <style>
         .image-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 1.5rem;
             padding: 1rem;
         }
         .image-card {
-            transition: all 0.3s ease;
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        .image-card.show {
-            opacity: 1;
-            transform: translateY(0);
+            background: white;
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
         }
         .image-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
         }
-        .image-card img {
+        .image-preview {
+            position: relative;
+            cursor: pointer;
+            overflow: hidden;
+            aspect-ratio: 16/10;
+            background: #f8fafc;
+        }
+        .image-preview img {
             width: 100%;
-            height: 200px;
+            height: 100%;
             object-fit: cover;
             transition: transform 0.3s ease;
         }
-        .image-card:hover img {
+        .image-preview:hover img {
             transform: scale(1.05);
+        }
+        .image-preview::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0);
+            transition: background 0.3s ease;
+        }
+        .image-preview:hover::after {
+            background: rgba(0,0,0,0.1);
         }
         .button-group {
             display: flex;
@@ -42,7 +56,7 @@
         .tab-button {
             position: relative;
             padding: 0.75rem 1.5rem;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
         }
         .tab-active {
             color: #3b82f6;
@@ -55,28 +69,20 @@
             width: 100%;
             height: 2px;
             background: #3b82f6;
-            animation: slideIn 0.3s ease;
-        }
-        @keyframes slideIn {
-            from {
-                transform: scaleX(0);
-            }
-            to {
-                transform: scaleX(1);
-            }
+            transition: transform 0.2s ease;
+            transform-origin: left;
         }
         .action-button {
-            transition: all 0.3s ease;
-            transform: scale(1);
+            transition: all 0.2s ease;
         }
         .action-button:hover {
-            transform: scale(1.05);
+            transform: translateY(-1px);
         }
         .file-icon {
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
         }
         .image-card:hover .file-icon {
-            transform: translateY(-5px);
+            transform: translateY(-2px);
             color: #3b82f6;
         }
         .loading-spinner {
@@ -91,15 +97,36 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        .notification {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            background: #1f2937;
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            z-index: 50;
+            opacity: 0;
+            transform: translateY(1rem);
+            transition: all 0.2s ease;
+        }
+        .notification.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
-    <div class="container mx-auto px-4 py-8 max-w-6xl">
-        <h1 class="text-4xl font-bold mb-2 text-center text-gray-800 animate__animated animate__fadeIn">Notion Drive</h1>
-        <p class="text-center text-gray-600 mb-8 animate__animated animate__fadeIn animate__delay-1s">Your personal cloud storage powered by Notion</p>
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <h1 class="text-4xl font-bold mb-2 text-center text-gray-800">Notion Drive</h1>
+        <p class="text-center text-gray-600 mb-8">Your personal cloud storage powered by Notion</p>
 
         <!-- Instructions Section -->
-        <div class="bg-white rounded-xl shadow-sm p-6 mb-8 animate__animated animate__fadeIn animate__delay-2s">
+        <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
             <h2 class="text-xl font-semibold mb-4 text-gray-800">Quick Start Guide</h2>
             <div class="space-y-4">
                 <p class="text-gray-600">To add new items to your drive:</p>
@@ -204,7 +231,7 @@
             });
         }
 
-        // Switch tabs with animation
+        // Switch tabs
         function switchTab(tab) {
             const imagesTab = document.getElementById('imagesTab');
             const filesTab = document.getElementById('filesTab');
@@ -227,10 +254,34 @@
         // Show loading state
         function showLoading(elementId) {
             const element = document.getElementById(elementId);
-            element.innerHTML = '<div class="col-span-full flex justify-center"><div class="loading-spinner"></div></div>';
+            element.innerHTML = '<div class="col-span-full flex justify-center py-12"><div class="loading-spinner"></div></div>';
         }
 
-        // Load images with animation
+        // Show notification
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.innerHTML = `
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                ${message}
+            `;
+            document.body.appendChild(notification);
+            
+            // Trigger reflow
+            notification.offsetHeight;
+            
+            notification.classList.add('show');
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 200);
+            }, 2000);
+        }
+
+        // Load images
         async function loadImages() {
             try {
                 showLoading('imageGrid');
@@ -239,35 +290,31 @@
                 const imageGrid = document.getElementById('imageGrid');
                 imageGrid.innerHTML = '';
                 
-                for (const [index, image] of data.images.entries()) {
+                for (const image of data.images) {
                     const card = document.createElement('div');
-                    card.className = 'image-card bg-white rounded-xl shadow-sm overflow-hidden';
+                    card.className = 'image-card';
                     
                     const previewUrl = await compressImage(`/image/${image.id}`);
+                    const fullUrl = `${window.location.origin}/image/${image.id}`;
                     
                     card.innerHTML = `
-                        <div class="overflow-hidden">
+                        <div class="image-preview" onclick="window.open('${fullUrl}', '_blank')">
                             <img src="${previewUrl}" alt="${image.title}" loading="lazy">
                         </div>
                         <div class="p-4">
-                            <h3 class="font-medium text-gray-800 mb-3">${image.title}</h3>
+                            <h3 class="font-medium text-gray-800 mb-3 truncate" title="${image.title}">${image.title}</h3>
                             <div class="button-group">
-                                <button onclick="copyUrl('${window.location.origin}/image/${image.id}')" class="action-button flex-1 text-sm bg-gray-100 hover:bg-gray-200 py-2 px-3 rounded-lg text-gray-600">Copy URL</button>
-                                <button onclick="downloadImage('${window.location.origin}/image/${image.id}', '${image.title}')" class="action-button flex-1 text-sm bg-blue-500 hover:bg-blue-600 py-2 px-3 rounded-lg text-white">Download</button>
+                                <button onclick="copyUrl('${fullUrl}')" class="action-button flex-1 text-sm bg-gray-100 hover:bg-gray-200 py-2 px-3 rounded-lg text-gray-600">Copy URL</button>
+                                <button onclick="downloadImage('${fullUrl}', '${image.title}')" class="action-button flex-1 text-sm bg-blue-500 hover:bg-blue-600 py-2 px-3 rounded-lg text-white">Download</button>
                             </div>
                         </div>
                     `;
                     imageGrid.appendChild(card);
-                    
-                    // Animate card entrance
-                    setTimeout(() => {
-                        card.classList.add('show');
-                    }, index * 100);
                 }
             } catch (error) {
                 console.error('Error loading images:', error);
                 document.getElementById('imageGrid').innerHTML = `
-                    <div class="col-span-full text-center text-red-500 p-8">
+                    <div class="col-span-full text-center text-red-500 p-12">
                         <svg class="w-12 h-12 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
@@ -277,7 +324,7 @@
             }
         }
 
-        // Load files with animation
+        // Load files
         async function loadFiles() {
             try {
                 showLoading('fileGrid');
@@ -286,34 +333,33 @@
                 const fileGrid = document.getElementById('fileGrid');
                 fileGrid.innerHTML = '';
                 
-                data.files.forEach((file, index) => {
+                data.files.forEach(file => {
                     const card = document.createElement('div');
-                    card.className = 'image-card bg-white rounded-xl shadow-sm overflow-hidden';
+                    card.className = 'image-card';
+                    const fullUrl = `${window.location.origin}/file/${file.id}`;
+                    
                     card.innerHTML = `
-                        <div class="h-[200px] flex items-center justify-center bg-gray-50">
-                            <svg class="w-20 h-20 text-gray-400 file-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                            </svg>
+                        <div class="image-preview" onclick="window.open('${fullUrl}', '_blank')">
+                            <div class="w-full h-full flex items-center justify-center">
+                                <svg class="w-20 h-20 text-gray-400 file-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                            </div>
                         </div>
                         <div class="p-4">
-                            <h3 class="font-medium text-gray-800 mb-3">${file.title}</h3>
+                            <h3 class="font-medium text-gray-800 mb-3 truncate" title="${file.title}">${file.title}</h3>
                             <div class="button-group">
-                                <button onclick="copyUrl('${window.location.origin}/file/${file.id}')" class="action-button flex-1 text-sm bg-gray-100 hover:bg-gray-200 py-2 px-3 rounded-lg text-gray-600">Copy URL</button>
-                                <button onclick="downloadFile('${window.location.origin}/file/${file.id}', '${file.title}')" class="action-button flex-1 text-sm bg-blue-500 hover:bg-blue-600 py-2 px-3 rounded-lg text-white">Download</button>
+                                <button onclick="copyUrl('${fullUrl}')" class="action-button flex-1 text-sm bg-gray-100 hover:bg-gray-200 py-2 px-3 rounded-lg text-gray-600">Copy URL</button>
+                                <button onclick="downloadFile('${fullUrl}', '${file.title}')" class="action-button flex-1 text-sm bg-blue-500 hover:bg-blue-600 py-2 px-3 rounded-lg text-white">Download</button>
                             </div>
                         </div>
                     `;
                     fileGrid.appendChild(card);
-                    
-                    // Animate card entrance
-                    setTimeout(() => {
-                        card.classList.add('show');
-                    }, index * 100);
                 });
             } catch (error) {
                 console.error('Error loading files:', error);
                 document.getElementById('fileGrid').innerHTML = `
-                    <div class="col-span-full text-center text-red-500 p-8">
+                    <div class="col-span-full text-center text-red-500 p-12">
                         <svg class="w-12 h-12 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
@@ -323,28 +369,17 @@
             }
         }
 
-        // Copy URL to clipboard with feedback
+        // Copy URL to clipboard
         function copyUrl(url) {
             navigator.clipboard.writeText(url).then(() => {
-                const notification = document.createElement('div');
-                notification.className = 'fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg animate__animated animate__fadeIn';
-                notification.textContent = 'URL copied to clipboard!';
-                document.body.appendChild(notification);
-                
-                setTimeout(() => {
-                    notification.classList.remove('animate__fadeIn');
-                    notification.classList.add('animate__fadeOut');
-                    setTimeout(() => {
-                        document.body.removeChild(notification);
-                    }, 1000);
-                }, 2000);
+                showNotification('URL copied to clipboard!');
             }).catch(err => {
                 console.error('Error copying URL:', err);
                 alert('Error copying URL');
             });
         }
 
-        // Download image with loading state
+        // Download image
         async function downloadImage(url, filename) {
             try {
                 const response = await fetch(url);
@@ -364,7 +399,7 @@
             }
         }
 
-        // Download file with loading state
+        // Download file
         async function downloadFile(url, filename) {
             try {
                 const response = await fetch(url);
