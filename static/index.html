@@ -211,8 +211,202 @@
     </div>
 
     <script>
-        // Compress image before displaying
-        function compressImage(url) {
+        // Implement virtual scrolling
+        class VirtualScroller {
+            constructor(container, itemHeight) {
+                this.container = container;
+                this.itemHeight = itemHeight;
+                this.items = [];
+                this.visibleItems = new Map();
+                this.observer = new IntersectionObserver(this.handleIntersection.bind(this), {
+                    root: null,
+                    rootMargin: "50px",
+                    threshold: 0
+                });
+                
+                this.setupScroller();
+            }
+            
+            setupScroller() {
+                this.container.style.position = 'relative';
+                window.addEventListener('scroll', this.throttle(this.updateVisibleItems.bind(this), 16));
+                window.addEventListener('resize', this.throttle(this.updateVisibleItems.bind(this), 16));
+            }
+            
+            setItems(items) {
+                this.items = items;
+                this.container.style.height = `${items.length * this.itemHeight}px`;
+                this.updateVisibleItems();
+            }
+            
+            throttle(func, limit) {
+                let inThrottle;
+                return function(...args) {
+                    if (!inThrottle) {
+                        func.apply(this, args);
+                        inThrottle = true;
+                        setTimeout(() => inThrottle = false, limit);
+                    }
+                }
+            }
+            
+            handleIntersection(entries) {
+                entries.forEach(entry => {
+                    const itemId = entry.target.dataset.itemId;
+                    if (entry.isIntersecting) {
+                        this.loadItemContent(itemId);
+                    }
+                });
+            }
+            
+            updateVisibleItems() {
+                const containerRect = this.container.getBoundingClientRect();
+                const viewportTop = Math.max(0, -containerRect.top);
+                const viewportBottom = viewportTop + window.innerHeight;
+                
+                const startIndex = Math.floor(viewportTop / this.itemHeight);
+                const endIndex = Math.ceil(viewportBottom / this.itemHeight);
+                
+                const visibleIndexes = new Set();
+                for (let i = Math.max(0, startIndex - 5); i < Math.min(this.items.length, endIndex + 5); i++) {
+                    visibleIndexes.add(i);
+                    if (!this.visibleItems.has(i)) {
+                        this.renderItem(i);
+                    }
+                }
+                
+                // Remove items that are no longer visible
+                for (const [index, element] of this.visibleItems.entries()) {
+                    if (!visibleIndexes.has(index)) {
+                        element.remove();
+                        this.visibleItems.delete(index);
+                    }
+                }
+            }
+            
+            renderItem(index) {
+                const item = this.items[index];
+                const element = document.createElement('div');
+                element.style.position = 'absolute';
+                element.style.top = `${index * this.itemHeight}px`;
+                element.style.width = '100%';
+                element.dataset.itemId = index;
+                
+                // Add placeholder content
+                element.innerHTML = this.getItemTemplate(item);
+                
+                this.container.appendChild(element);
+                this.visibleItems.set(index, element);
+                this.observer.observe(element);
+            }
+            
+            loadItemContent(itemId) {
+                const index = parseInt(itemId);
+                const element = this.visibleItems.get(index);
+                if (!element) return;
+                
+                const item = this.items[index];
+                const imageContainer = element.querySelector('.image-preview');
+                
+                if (imageContainer && !imageContainer.dataset.loaded) {
+                    this.loadImage(item, imageContainer);
+                }
+            }
+            
+            async loadImage(item, container) {
+                try {
+                    container.dataset.loaded = 'true';
+                    const url = `/image/${item.id}`;
+                    const previewUrl = await compressImage(url);
+                    container.innerHTML = `<img src="${previewUrl}" alt="${item.title}" loading="lazy">`;
+                } catch (err) {
+                    console.error('Error loading image:', err);
+                    container.innerHTML = this.getErrorTemplate();
+                }
+            }
+            
+            getItemTemplate(item) {
+                const fullUrl = `${window.location.origin}/image/${item.id}`;
+                return `
+                    <div class="image-card">
+                        <div class="image-preview" onclick="window.open('${fullUrl}', '_blank')">
+                            <div class="w-full h-full flex items-center justify-center bg-gray-100">
+                                <div class="loading-spinner"></div>
+                            </div>
+                        </div>
+                        <div class="p-4">
+                            <h3 class="font-medium text-gray-800 mb-3 truncate" title="${item.title}">${item.title}</h3>
+                            <div class="button-group">
+                                <button onclick="copyUrl('${fullUrl}')" class="action-button flex-1 text-sm bg-gray-100 hover:bg-gray-200 py-2 px-3 rounded-lg text-gray-600">Copy URL</button>
+                                <button onclick="downloadImage('${fullUrl}', '${item.title}')" class="action-button flex-1 text-sm bg-blue-500 hover:bg-blue-600 py-2 px-3 rounded-lg text-white">Download</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            getErrorTemplate() {
+                return `
+                    <div class="w-full h-full flex items-center justify-center bg-gray-50">
+                        <svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                `;
+            }
+        }
+
+        // Initialize virtual scrollers
+        const imageScroller = new VirtualScroller(document.getElementById('imageGrid'), 300);
+        const fileScroller = new VirtualScroller(document.getElementById('fileGrid'), 300);
+        const pageScroller = new VirtualScroller(document.getElementById('pageGrid'), 300);
+
+        // Load images with virtual scrolling
+        async function loadImages() {
+            try {
+                showLoading('imageGrid');
+                const response = await fetch('/images');
+                const data = await response.json();
+                imageScroller.setItems(data.images);
+            } catch (error) {
+                console.error('Error loading images:', error);
+                document.getElementById('imageGrid').innerHTML = getErrorMessage('Error loading images');
+            }
+        }
+
+        // Load files with virtual scrolling
+        async function loadFiles() {
+            try {
+                showLoading('fileGrid');
+                const response = await fetch('/files');
+                const data = await response.json();
+                fileScroller.setItems(data.files);
+            } catch (error) {
+                console.error('Error loading files:', error);
+                document.getElementById('fileGrid').innerHTML = getErrorMessage('Error loading files');
+            }
+        }
+
+        // Load pages with virtual scrolling
+        async function loadPages() {
+            try {
+                showLoading('pageGrid');
+                const response = await fetch('/pages');
+                const data = await response.json();
+                pageScroller.setItems(data.pages);
+            } catch (error) {
+                console.error('Error loading pages:', error);
+                document.getElementById('pageGrid').innerHTML = getErrorMessage('Error loading pages');
+            }
+        }
+
+        // Optimize image compression
+        const imageCache = new Map();
+        async function compressImage(url) {
+            if (imageCache.has(url)) {
+                return imageCache.get(url);
+            }
+
             return new Promise((resolve, reject) => {
                 const img = new Image();
                 img.crossOrigin = "anonymous";
@@ -240,12 +434,97 @@
                     canvas.height = height;
                     
                     ctx.drawImage(img, 0, 0, width, height);
-                    resolve(canvas.toDataURL('image/jpeg', 0.8));
+                    const compressedUrl = canvas.toDataURL('image/jpeg', 0.8);
+                    imageCache.set(url, compressedUrl);
+                    resolve(compressedUrl);
                 };
                 img.onerror = reject;
                 img.src = url;
             });
         }
+
+        // Optimize notification system
+        const notificationQueue = [];
+        let isShowingNotification = false;
+
+        function showNotification(message) {
+            notificationQueue.push(message);
+            if (!isShowingNotification) {
+                showNextNotification();
+            }
+        }
+
+        function showNextNotification() {
+            if (notificationQueue.length === 0) {
+                isShowingNotification = false;
+                return;
+            }
+
+            isShowingNotification = true;
+            const message = notificationQueue.shift();
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.innerHTML = `
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                ${message}
+            `;
+            document.body.appendChild(notification);
+            
+            requestAnimationFrame(() => {
+                notification.classList.add('show');
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                    setTimeout(() => {
+                        document.body.removeChild(notification);
+                        showNextNotification();
+                    }, 200);
+                }, 2000);
+            });
+        }
+
+        // Error message template
+        function getErrorMessage(message) {
+            return `
+                <div class="col-span-full text-center text-red-500 p-12">
+                    <svg class="w-12 h-12 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    ${message}
+                </div>
+            `;
+        }
+
+        // Event delegation for tab switching
+        document.querySelector('.flex.space-x-6').addEventListener('click', (e) => {
+            const button = e.target.closest('button');
+            if (button && button.id.endsWith('Tab')) {
+                const tab = button.id.replace('Tab', '');
+                switchTab(tab.toLowerCase());
+            }
+        });
+
+        // Initial load with debouncing
+        const debounce = (func, wait) => {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        };
+
+        const debouncedLoad = debounce(() => {
+            loadImages();
+            loadFiles();
+            loadPages();
+        }, 100);
+
+        window.addEventListener('load', debouncedLoad);
 
         // Switch tabs
         function switchTab(tab) {
@@ -275,156 +554,6 @@
         function showLoading(elementId) {
             const element = document.getElementById(elementId);
             element.innerHTML = '<div class="col-span-full flex justify-center py-12"><div class="loading-spinner"></div></div>';
-        }
-
-        // Show notification
-        function showNotification(message) {
-            const notification = document.createElement('div');
-            notification.className = 'notification';
-            notification.innerHTML = `
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                </svg>
-                ${message}
-            `;
-            document.body.appendChild(notification);
-            
-            // Trigger reflow
-            notification.offsetHeight;
-            
-            notification.classList.add('show');
-            setTimeout(() => {
-                notification.classList.remove('show');
-                setTimeout(() => {
-                    document.body.removeChild(notification);
-                }, 200);
-            }, 2000);
-        }
-
-        // Load images
-        async function loadImages() {
-            try {
-                showLoading('imageGrid');
-                const response = await fetch('/images');
-                const data = await response.json();
-                const imageGrid = document.getElementById('imageGrid');
-                imageGrid.innerHTML = '';
-                
-                // 先创建所有卡片并显示标题
-                for (const image of data.images) {
-                    const card = document.createElement('div');
-                    card.className = 'image-card';
-                    const fullUrl = `${window.location.origin}/image/${image.id}`;
-                    
-                    card.innerHTML = `
-                        <div class="image-preview" onclick="window.open('${fullUrl}', '_blank')">
-                            <div class="w-full h-full flex items-center justify-center bg-gray-100">
-                                <div class="loading-spinner"></div>
-                            </div>
-                        </div>
-                        <div class="p-4">
-                            <h3 class="font-medium text-gray-800 mb-3 truncate" title="${image.title}">${image.title}</h3>
-                            <div class="button-group">
-                                <button onclick="copyUrl('${fullUrl}')" class="action-button flex-1 text-sm bg-gray-100 hover:bg-gray-200 py-2 px-3 rounded-lg text-gray-600">Copy URL</button>
-                                <button onclick="downloadImage('${fullUrl}', '${image.title}')" class="action-button flex-1 text-sm bg-blue-500 hover:bg-blue-600 py-2 px-3 rounded-lg text-white">Download</button>
-                            </div>
-                        </div>
-                    `;
-                    imageGrid.appendChild(card);
-                }
-                
-                // 异步加载每个图片的预览图
-                data.images.forEach(async (image, index) => {
-                    try {
-                        const previewUrl = await compressImage(`/image/${image.id}`);
-                        const imagePreview = imageGrid.children[index].querySelector('.image-preview');
-                        imagePreview.innerHTML = `<img src="${previewUrl}" alt="${image.title}" loading="lazy">`;
-                    } catch (err) {
-                        console.error('Error loading preview for image:', err);
-                        const imagePreview = imageGrid.children[index].querySelector('.image-preview');
-                        imagePreview.innerHTML = `
-                            <div class="w-full h-full flex items-center justify-center bg-gray-50">
-                                <svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                </svg>
-                            </div>
-                        `;
-                    }
-                });
-            } catch (error) {
-                console.error('Error loading images:', error);
-                document.getElementById('imageGrid').innerHTML = `
-                    <div class="col-span-full text-center text-red-500 p-12">
-                        <svg class="w-12 h-12 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        Error loading images. Please check your configuration.
-                    </div>
-                `;
-            }
-        }
-
-        // Load files
-        async function loadFiles() {
-            try {
-                showLoading('fileGrid');
-                const response = await fetch('/files');
-                const data = await response.json();
-                const fileGrid = document.getElementById('fileGrid');
-                fileGrid.innerHTML = '';
-                
-                // 先创建所有卡片并显示标题
-                for (const file of data.files) {
-                    const card = document.createElement('div');
-                    card.className = 'image-card';
-                    const fullUrl = `${window.location.origin}/file/${file.id}`;
-                    
-                    card.innerHTML = `
-                        <div class="image-preview" onclick="window.open('${fullUrl}', '_blank')">
-                            <div class="w-full h-full flex items-center justify-center bg-gray-100">
-                                <div class="loading-spinner"></div>
-                            </div>
-                        </div>
-                        <div class="p-4">
-                            <h3 class="font-medium text-gray-800 mb-3 truncate" title="${file.title}">${file.title}</h3>
-                            <div class="button-group">
-                                <button onclick="copyUrl('${fullUrl}')" class="action-button flex-1 text-sm bg-gray-100 hover:bg-gray-200 py-2 px-3 rounded-lg text-gray-600">Copy URL</button>
-                                <button onclick="downloadFile('${fullUrl}', '${file.title}')" class="action-button flex-1 text-sm bg-blue-500 hover:bg-blue-600 py-2 px-3 rounded-lg text-white">Download</button>
-                            </div>
-                        </div>
-                    `;
-                    fileGrid.appendChild(card);
-                }
-                
-                // 异步加载每个文件的预览图
-                data.files.forEach(async (file, index) => {
-                    try {
-                        const previewUrl = await compressImage(`/file/${file.id}`);
-                        const filePreview = fileGrid.children[index].querySelector('.image-preview');
-                        filePreview.innerHTML = `<img src="${previewUrl}" alt="${file.title}" loading="lazy">`;
-                    } catch (err) {
-                        console.error('Error loading preview for file:', err);
-                        const filePreview = fileGrid.children[index].querySelector('.image-preview');
-                        filePreview.innerHTML = `
-                            <div class="w-full h-full flex items-center justify-center bg-gray-50">
-                                <svg class="w-20 h-20 text-gray-400 file-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                </svg>
-                            </div>
-                        `;
-                    }
-                });
-            } catch (error) {
-                console.error('Error loading files:', error);
-                document.getElementById('fileGrid').innerHTML = `
-                    <div class="col-span-full text-center text-red-500 p-12">
-                        <svg class="w-12 h-12 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        Error loading files. Please check your configuration.
-                    </div>
-                `;
-            }
         }
 
         // Copy URL to clipboard
@@ -457,26 +586,6 @@
             }
         }
 
-        // Download file
-        async function downloadFile(url, filename) {
-            try {
-                const response = await fetch(url);
-                const blob = await response.blob();
-                const blobUrl = window.URL.createObjectURL(blob);
-                
-                const link = document.createElement('a');
-                link.href = blobUrl;
-                link.download = filename;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                window.URL.revokeObjectURL(blobUrl);
-            } catch (err) {
-                console.error('Error downloading file:', err);
-                alert('Error downloading file');
-            }
-        }
-
         // Get file extension from mime type
         function getFileExtension(mimeType) {
             const extensions = {
@@ -488,63 +597,6 @@
             };
             return extensions[mimeType] || '.jpg';
         }
-
-        // Event listeners
-        document.getElementById('refreshImages').addEventListener('click', loadImages);
-        document.getElementById('refreshFiles').addEventListener('click', loadFiles);
-
-        // Initial load
-        loadImages();
-        loadFiles();
-
-        // Load pages
-        async function loadPages() {
-            try {
-                showLoading('pageGrid');
-                const response = await fetch('/pages');
-                const data = await response.json();
-                const pageGrid = document.getElementById('pageGrid');
-                pageGrid.innerHTML = '';
-                
-                for (const page of data.pages) {
-                    const card = document.createElement('div');
-                    card.className = 'image-card';
-                    
-                    const date = new Date(page.last_edited_time).toLocaleDateString();
-                    
-                    card.innerHTML = `
-                        <div class="image-preview cursor-pointer" onclick="window.open('/static/page.html?id=${page.id}', '_blank')">
-                            <div class="w-full h-full flex items-center justify-center bg-gray-50">
-                                <svg class="w-20 h-20 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path>
-                                </svg>
-                            </div>
-                        </div>
-                        <div class="p-4">
-                            <h3 class="font-medium text-gray-800 mb-2 truncate" title="${page.title}">${page.title}</h3>
-                            <p class="text-sm text-gray-500">Last edited: ${date}</p>
-                        </div>
-                    `;
-                    pageGrid.appendChild(card);
-                }
-            } catch (error) {
-                console.error('Error loading pages:', error);
-                document.getElementById('pageGrid').innerHTML = `
-                    <div class="col-span-full text-center text-red-500 p-12">
-                        <svg class="w-12 h-12 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        Error loading pages. Please check your configuration.
-                    </div>
-                `;
-            }
-        }
-
-        // Add event listener for pages
-        document.getElementById('refreshPages').addEventListener('click', loadPages);
-
-        // Add initial load for pages
-        loadPages();
     </script>
 </body>
 </html> 
