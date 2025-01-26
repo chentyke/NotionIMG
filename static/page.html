@@ -582,6 +582,9 @@
                     const toggleId = `toggle-${Math.random().toString(36).substr(2, 9)}`;
                     let toggleContent = '';
                     
+                    // Get toggle text from the rich_text array
+                    const toggleText = block.toggle?.rich_text?.map(text => text.plain_text).join('') || '';
+                    
                     // Recursively render nested blocks
                     if (block.children && block.children.length > 0) {
                         const nestedContent = await Promise.all(block.children.map(async child => {
@@ -601,7 +604,7 @@
                                 <svg class="toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                                 </svg>
-                                <div class="toggle-text">${block.text || ''}</div>
+                                <div class="toggle-text">${toggleText}</div>
                             </div>
                             <div class="toggle-content">
                                 <div class="toggle-content-inner prose">
@@ -630,6 +633,9 @@
                 updateLoadingProgress(10);
                 const response = await fetch(`/page/${targetPageId}`);
                 const data = await response.json();
+                
+                // Add debug logging
+                console.log('Page data:', data);
                 
                 updateLoadingProgress(30);
                 
@@ -663,11 +669,18 @@
                 totalBlocks = data.blocks.length;
                 loadedBlocks = 0;
                 
+                // Add debug logging for blocks
+                console.log('Total blocks:', totalBlocks);
+                console.log('First few blocks:', data.blocks.slice(0, 3));
+                
                 // Render content
                 let content = '';
                 let currentList = null;
                 
                 for (const block of data.blocks) {
+                    // Add debug logging for each block
+                    console.log('Processing block:', block.type, block);
+                    
                     if (block.type === 'bulleted_list_item' || block.type === 'numbered_list_item') {
                         if (!currentList || currentList.type !== block.type) {
                             if (currentList) {

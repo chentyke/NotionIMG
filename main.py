@@ -141,70 +141,107 @@ def process_rich_text(rich_text_array):
     
     return "".join(formatted_text)
 
-def process_block_content(block: dict) -> dict:
-    """Process block content."""
+def process_block_content(block):
     try:
         block_type = block["type"]
-        block_content = block[block_type]
-        
-        # Get color if present
-        color = block.get("color", "default")
+        block_id = block["id"]
+        has_children = block["has_children"]
         
         # Process rich text content
-        if "rich_text" in block_content:
-            text = process_rich_text(block_content["rich_text"])
-        else:
-            text = ""
-
-        # Initialize result
+        def process_rich_text(rich_text):
+            if not rich_text:
+                return ""
+            return "".join([text["plain_text"] for text in rich_text])
+        
+        # Get children blocks if any
+        children = []
+        if has_children:
+            response = notion.blocks.children.list(block_id=block_id)
+            for child in response["results"]:
+                processed_child = process_block_content(child)
+                if processed_child:
+                    children.append(processed_child)
+        
         result = {
             "type": block_type,
-            "text": text,
-            "color": color
+            "has_children": has_children,
+            "children": children if has_children else None
         }
-
-        # Process children if present
-        if block.get("has_children", False):
-            try:
-                child_blocks = notion.blocks.children.list(block_id=block["id"])["results"]
-                children = []
-                for child_block in child_blocks:
-                    child_content = process_block_content(child_block)
-                    if child_content:
-                        children.append(child_content)
-                if children:
-                    result["children"] = children
-            except Exception as e:
-                logger.warning(f"Error processing child blocks: {e}")
-
-        # Handle specific block types
-        if block_type == "image":
-            result["image_url"] = block_content.get("file", {}).get("url") or block_content.get("external", {}).get("url")
-            if "caption" in block_content and block_content["caption"]:
-                result["caption"] = process_rich_text(block_content["caption"])
-        elif block_type == "code":
-            result["language"] = block_content.get("language", "plain text")
-        elif block_type == "child_page":
-            result["page_id"] = block["id"]
-            result["title"] = block_content.get("title", "Untitled")
+        
+        # Process block content based on type
+        if block_type == "paragraph":
+            result["text"] = process_rich_text(block["paragraph"]["rich_text"])
+        elif block_type == "heading_1":
+            result["text"] = process_rich_text(block["heading_1"]["rich_text"])
+        elif block_type == "heading_2":
+            result["text"] = process_rich_text(block["heading_2"]["rich_text"])
+        elif block_type == "heading_3":
+            result["text"] = process_rich_text(block["heading_3"]["rich_text"])
+        elif block_type == "bulleted_list_item":
+            result["text"] = process_rich_text(block["bulleted_list_item"]["rich_text"])
+        elif block_type == "numbered_list_item":
+            result["text"] = process_rich_text(block["numbered_list_item"]["rich_text"])
+        elif block_type == "to_do":
+            result["text"] = process_rich_text(block["to_do"]["rich_text"])
+            result["checked"] = block["to_do"]["checked"]
         elif block_type == "toggle":
-            # For toggle blocks, we need to process the rich_text content
-            result["text"] = process_rich_text(block_content["rich_text"])
-            # Color is already handled in the base result
-            # Children are already processed above
+            result["toggle"] = {
+                "rich_text": block["toggle"]["rich_text"],
+                "color": block["toggle"].get("color", "default")
+            }
+        elif block_type == "child_page":
+            result["title"] = block["child_page"]["title"]
+            result["page_id"] = block_id
+        elif block_type == "image":
+            image_block = block["image"]
+            result["image_url"] = image_block["file"]["url"] if image_block["type"] == "file" else image_block["external"]["url"]
+            caption = image_block.get("caption", [])
+            result["caption"] = process_rich_text(caption) if caption else None
+        elif block_type == "code":
+            result["text"] = process_rich_text(block["code"]["rich_text"])
+            result["language"] = block["code"]["language"]
+        elif block_type == "quote":
+            result["text"] = process_rich_text(block["quote"]["rich_text"])
+        elif block_type == "callout":
+            result["text"] = process_rich_text(block["callout"]["rich_text"])
+            result["icon"] = block["callout"].get("icon")
+        elif block_type == "divider":
+            pass  # No additional processing needed
+        elif block_type == "bookmark":
+            result["url"] = block["bookmark"]["url"]
+            caption = block["bookmark"].get("caption", [])
+            result["caption"] = process_rich_text(caption) if caption else None
+        elif block_type == "equation":
+            result["expression"] = block["equation"]["expression"]
+        elif block_type == "video":
+            video_block = block["video"]
+            result["video_url"] = video_block["file"]["url"] if video_block["type"] == "file" else video_block["external"]["url"]
+        elif block_type == "file":
+            file_block = block["file"]
+            result["file_url"] = file_block["file"]["url"] if file_block["type"] == "file" else file_block["external"]["url"]
+            caption = file_block.get("caption", [])
+            result["caption"] = process_rich_text(caption) if caption else None
+        elif block_type == "pdf":
+            pdf_block = block["pdf"]
+            result["pdf_url"] = pdf_block["file"]["url"] if pdf_block["type"] == "file" else pdf_block["external"]["url"]
+        elif block_type == "embed":
+            result["url"] = block["embed"]["url"]
         elif block_type == "table":
-            result["has_column_header"] = block_content.get("has_column_header", False)
-            result["has_row_header"] = block_content.get("has_row_header", False)
-        elif block_type == "table_row":
-            cells = []
-            for cell in block_content.get("cells", []):
-                cell_text = process_rich_text(cell)
-                cells.append(cell_text)
-            result["cells"] = cells
-
+            result["has_column_header"] = block["table"].get("has_column_header", False)
+            result["has_row_header"] = block["table"].get("has_row_header", False)
+            result["children"] = []
+            if has_children:
+                rows_response = notion.blocks.children.list(block_id=block_id)
+                for row in rows_response["results"]:
+                    if row["type"] == "table_row":
+                        cells = []
+                        for cell in row["table_row"]["cells"]:
+                            cells.append(process_rich_text(cell))
+                        result["children"].append({"cells": cells})
+        
         return result
     except Exception as e:
-        logger.warning(f"Error processing block content: {e}")
+        logger.error(f"Error processing block {block.get('id', 'unknown')}: {e}")
         return None
 
 @app.get("/images")
