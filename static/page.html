@@ -96,13 +96,19 @@
         .prose h1 {
             font-size: 2.25rem;
             font-weight: 700;
-            margin: 2rem 0 0.5rem;
+            margin: 2rem 0 0.25rem;
         }
         .edit-date {
             color: #6B7280;
             font-size: 0.875rem;
-            margin-bottom: 1.5rem;
+            margin-bottom: 2.5rem;
             font-style: italic;
+            padding-left: 0.125rem;
+        }
+        .page-header {
+            border-bottom: 1px solid #E5E7EB;
+            margin-bottom: 2rem;
+            padding-bottom: 0.5rem;
         }
         .prose h2 {
             font-size: 1.875rem;
@@ -722,15 +728,17 @@
                 
                 // Update page title and date
                 document.title = data.page.title;
-                document.getElementById('pageTitle').textContent = data.page.title;
                 
-                // Add edit date if available
-                const titleContainer = document.getElementById('pageTitle').parentElement;
-                const existingDate = document.querySelector('.edit-date');
-                if (existingDate) {
-                    existingDate.remove();
-                }
+                // 创建新的页面头部容器
+                const pageHeader = document.createElement('div');
+                pageHeader.className = 'page-header';
                 
+                // 更新标题
+                const titleElement = document.getElementById('pageTitle');
+                titleElement.textContent = data.page.title;
+                pageHeader.appendChild(titleElement);
+                
+                // 添加编辑日期
                 if (data.page.last_edited_time) {
                     const dateElement = document.createElement('div');
                     dateElement.className = 'edit-date';
@@ -745,8 +753,13 @@
                         minute: '2-digit',
                         hour12: true
                     })} (${timeZone})`;
-                    titleContainer.insertBefore(dateElement, document.getElementById('pageContent'));
+                    pageHeader.appendChild(dateElement);
                 }
+                
+                // 替换原有标题区域
+                const titleContainer = document.getElementById('pageTitle').parentElement;
+                titleContainer.insertBefore(pageHeader, document.getElementById('pageContent'));
+                titleContainer.removeChild(document.getElementById('pageTitle'));
                 
                 // Update back button based on parent page
                 const backButton = document.querySelector('.back-button');
