@@ -86,6 +86,10 @@ def get_page_info(page: dict) -> dict:
             title = page["properties"]["Name"]["title"][0]["text"]["content"]
             hidden = page["properties"].get("Hidden", {}).get("select", {}).get("name") == "True"
             
+            # Get Date property if it exists
+            date_property = page["properties"].get("Date", {}).get("date", {})
+            edit_date = date_property.get("start") if date_property else None
+            
             if hidden:
                 return None
         else:
@@ -96,13 +100,15 @@ def get_page_info(page: dict) -> dict:
             else:
                 # Try to get title from page object
                 title = page.get("title", "Untitled")
+            edit_date = None
             
         return {
             "id": page["id"],
             "title": title,
             "created_time": page["created_time"],
             "last_edited_time": page["last_edited_time"],
-            "parent_id": page.get("parent", {}).get("page_id")
+            "parent_id": page.get("parent", {}).get("page_id"),
+            "edit_date": edit_date
         }
     except (KeyError, IndexError) as e:
         logger.warning(f"Error extracting page info: {e}")

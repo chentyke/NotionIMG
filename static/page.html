@@ -96,7 +96,13 @@
         .prose h1 {
             font-size: 2.25rem;
             font-weight: 700;
-            margin: 2rem 0 1rem;
+            margin: 2rem 0 0.5rem;
+        }
+        .edit-date {
+            color: #6B7280;
+            font-size: 0.875rem;
+            margin-bottom: 1.5rem;
+            font-style: italic;
         }
         .prose h2 {
             font-size: 1.875rem;
@@ -714,9 +720,28 @@
                 
                 updateLoadingProgress(30);
                 
-                // Update page title
+                // Update page title and date
                 document.title = data.page.title;
                 document.getElementById('pageTitle').textContent = data.page.title;
+                
+                // Add edit date if available
+                const titleContainer = document.getElementById('pageTitle').parentElement;
+                const existingDate = document.querySelector('.edit-date');
+                if (existingDate) {
+                    existingDate.remove();
+                }
+                
+                if (data.page.edit_date) {
+                    const dateElement = document.createElement('div');
+                    dateElement.className = 'edit-date';
+                    const date = new Date(data.page.edit_date);
+                    dateElement.textContent = `Last edited on ${date.toLocaleDateString('en-US', { 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                    })}`;
+                    titleContainer.insertBefore(dateElement, document.getElementById('pageContent'));
+                }
                 
                 // Update back button based on parent page
                 const backButton = document.querySelector('.back-button');
