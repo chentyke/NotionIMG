@@ -735,13 +735,16 @@
                     const dateElement = document.createElement('div');
                     dateElement.className = 'edit-date';
                     const date = new Date(data.page.last_edited_time);
+                    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
                     dateElement.textContent = `Last edited on ${date.toLocaleDateString('en-US', { 
                         year: 'numeric', 
                         month: 'long', 
-                        day: 'numeric',
+                        day: 'numeric'
+                    })} at ${date.toLocaleTimeString('en-US', {
                         hour: '2-digit',
-                        minute: '2-digit'
-                    })}`;
+                        minute: '2-digit',
+                        hour12: true
+                    })} (${timeZone})`;
                     titleContainer.insertBefore(dateElement, document.getElementById('pageContent'));
                 }
                 
