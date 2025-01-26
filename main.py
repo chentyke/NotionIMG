@@ -86,48 +86,39 @@ def process_block_content(block: dict) -> dict:
     block_type = block["type"]
     content = block[block_type]
     
-    # 基本信息
+    if "rich_text" in content:
+        text_content = "".join([text["plain_text"] for text in content["rich_text"]])
+    else:
+        text_content = ""
+    
     result = {
         "id": block["id"],
         "type": block_type,
-        "has_children": block["has_children"],
-        "created_time": block.get("created_time"),
-        "last_edited_time": block.get("last_edited_time")
+        "text": text_content,
+        "has_children": block["has_children"]
     }
     
-    # 处理包含 rich_text 的块
-    if "rich_text" in content:
-        result["rich_text"] = content["rich_text"]
-        result["text"] = "".join([text["plain_text"] for text in content["rich_text"]])
-        
-        # 处理链接
-        for text in content["rich_text"]:
-            if text.get("href"):
-                result["href"] = text["href"]
-                break
-    
-    # 处理包含 color 的块
+    # Handle color if present
     if "color" in content:
         result["color"] = content["color"]
     
-    # 处理特定类型的块
+    # Handle specific block types
     if block_type == "image":
         if content.get("type") == "external":
             result["image_url"] = content.get("external", {}).get("url", "")
         else:
             result["image_url"] = content.get("file", {}).get("url", "")
-        result["caption"] = content.get("caption", [])
-            
+        result["caption"] = "".join([text["plain_text"] for text in content.get("caption", [])])
+    
     elif block_type == "code":
         result["language"] = content.get("language", "")
-        result["caption"] = content.get("caption", [])
         
     elif block_type == "callout":
         result["icon"] = content.get("icon", {})
         
     elif block_type == "bookmark":
         result["url"] = content.get("url", "")
-        result["caption"] = content.get("caption", [])
+        result["caption"] = "".join([text["plain_text"] for text in content.get("caption", [])])
         
     elif block_type == "equation":
         result["expression"] = content.get("expression", "")
@@ -137,61 +128,67 @@ def process_block_content(block: dict) -> dict:
             result["video_url"] = content.get("external", {}).get("url", "")
         else:
             result["video_url"] = content.get("file", {}).get("url", "")
-        result["caption"] = content.get("caption", [])
             
     elif block_type == "file":
         if content.get("type") == "external":
             result["file_url"] = content.get("external", {}).get("url", "")
         else:
             result["file_url"] = content.get("file", {}).get("url", "")
-        result["caption"] = content.get("caption", [])
+        result["caption"] = "".join([text["plain_text"] for text in content.get("caption", [])])
         
     elif block_type == "pdf":
         if content.get("type") == "external":
             result["pdf_url"] = content.get("external", {}).get("url", "")
         else:
             result["pdf_url"] = content.get("file", {}).get("url", "")
-        result["caption"] = content.get("caption", [])
             
     elif block_type == "embed":
         result["url"] = content.get("url", "")
-        result["caption"] = content.get("caption", [])
         
     elif block_type == "table":
         result["table_width"] = content.get("table_width", 0)
         result["has_column_header"] = content.get("has_column_header", False)
         result["has_row_header"] = content.get("has_row_header", False)
-        result["children"] = []  # 添加一个空的 children 数组来存储表格行
         
     elif block_type == "table_row":
-        result["cells"] = content.get("cells", [])  # 直接保存完整的 rich_text 数组
+        cells = []
+        for cell in content.get("cells", []):
+            cell_text = "".join([text["plain_text"] for text in cell])
+            cells.append(cell_text)
+        result["cells"] = cells
         
     elif block_type == "to_do":
         result["checked"] = content.get("checked", False)
         
     elif block_type == "child_page":
+        result["title"] = content.get("title", "")
         try:
-            # 获取页面的完整信息
             page = notion.pages.retrieve(page_id=block["id"])
-            result.update({
-                "id": block["id"],
-                "title": page["properties"].get("Name", {}).get("title", [{"plain_text": "Untitled"}])[0]["plain_text"],
-                "icon": page.get("icon"),
-                "cover": page.get("cover"),
-                "url": page.get("url"),
-                "created_time": page.get("created_time"),
-                "last_edited_time": page.get("last_edited_time")
-            })
+            if "properties" in page and "Name" in page["properties"]:
+                result["title"] = page["properties"]["Name"]["title"][0]["text"]["content"]
         except Exception as e:
             logger.warning(f"Error retrieving child page info: {e}")
-            result["title"] = content.get("title", "Untitled")
         
     elif block_type == "child_database":
         result["title"] = content.get("title", "")
-        result["database_id"] = block["id"]
         
     elif block_type == "link_preview":
         result["url"] = content.get("url", "")
+        
+    elif block_type == "synced_block":
+        if content.get("synced_from"):
+            try:
+                synced_block = notion.blocks.retrieve(block_id=content["synced_from"]["block_id"])
+                result["synced_content"] = process_block_content(synced_block)
+            except Exception as e:
+                logger.warning(f"Error retrieving synced block content: {e}")
+                
+    elif block_type == "template":
+        result["template_content"] = content.get("template", [])
+        
+    elif block_type == "breadcrumb":
+        # Breadcrumb blocks don't have additional content
+        pass
         
     return result
 
@@ -277,40 +274,33 @@ async def get_page_content(page_id: str):
         if not page_info:
             raise HTTPException(status_code=404, detail="Page not found")
         
-        async def get_block_children(block_id: str) -> List[dict]:
-            """Recursively get all children of a block"""
-            blocks = []
-            has_more = True
-            cursor = None
-            
-            while has_more:
-                if cursor:
-                    response = notion.blocks.children.list(block_id=block_id, start_cursor=cursor)
-                else:
-                    response = notion.blocks.children.list(block_id=block_id)
-                
-                for block in response["results"]:
-                    block_content = process_block_content(block)
-                    
-                    # 如果块有子块，递归获取它们
-                    if block["has_children"]:
-                        try:
-                            child_blocks = await get_block_children(block["id"])
-                            block_content["children"] = child_blocks
-                        except Exception as e:
-                            logger.warning(f"Error fetching child blocks for {block['id']}: {e}")
-                            block_content["children"] = []
-                    
-                    blocks.append(block_content)
-                
-                has_more = response["has_more"]
-                if has_more:
-                    cursor = response["next_cursor"]
-            
-            return blocks
+        # Get page blocks
+        blocks = []
+        has_more = True
+        cursor = None
         
-        # Get all blocks recursively
-        blocks = await get_block_children(page_id)
+        while has_more:
+            if cursor:
+                response = notion.blocks.children.list(block_id=page_id, start_cursor=cursor)
+            else:
+                response = notion.blocks.children.list(block_id=page_id)
+            
+            for block in response["results"]:
+                block_content = process_block_content(block)
+                blocks.append(block_content)
+                
+                # If block has children, recursively get them
+                if block["has_children"]:
+                    child_blocks = []
+                    child_response = notion.blocks.children.list(block_id=block["id"])
+                    for child_block in child_response["results"]:
+                        child_content = process_block_content(child_block)
+                        child_blocks.append(child_content)
+                    block_content["children"] = child_blocks
+            
+            has_more = response["has_more"]
+            if has_more:
+                cursor = response["next_cursor"]
         
         return {
             "page": page_info,
