@@ -319,24 +319,9 @@
 
         /* 优化容器样式 */
         .container {
-            max-width: 1000px;
+            max-width: 1200px;
+            margin: 0 auto;
             padding: 0 1.5rem;
-        }
-
-        /* 优化标题样式 */
-        .page-header {
-            padding: 2rem 0;
-            margin-bottom: 2rem;
-            border-bottom: 1px solid #e5e7eb;
-        }
-
-        .page-title {
-            font-size: 2.25rem;
-            font-weight: 700;
-            color: #111827;
-            line-height: 1.2;
-            letter-spacing: -0.025em;
-            margin-bottom: 1rem;
         }
 
         /* 优化内容区域样式 */
@@ -344,31 +329,106 @@
             background: white;
             border-radius: 1rem;
             box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-            padding: 2rem;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+        }
+
+        /* 优化标题区域样式 */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 2rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .page-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #111827;
+            line-height: 1.2;
+            letter-spacing: -0.025em;
+            margin: 0;
+            flex: 1;
         }
 
         /* 优化返回按钮样式 */
         .back-button {
             display: inline-flex;
             align-items: center;
-            padding: 0.5rem 1rem;
+            padding: 0.75rem 1.25rem;
             border-radius: 0.5rem;
             transition: all 0.2s;
             background-color: #f3f4f6;
             color: #374151;
             font-weight: 500;
+            margin-left: 2rem;
+            white-space: nowrap;
         }
 
         .back-button:hover {
             background-color: #e5e7eb;
             color: #111827;
             text-decoration: none;
+            transform: translateY(-1px);
         }
 
         .back-button svg {
             width: 1.25rem;
             height: 1.25rem;
-            margin-right: 0.5rem;
+            margin-right: 0.75rem;
+        }
+
+        /* 优化内容区域的响应式布局 */
+        .prose {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        @media (min-width: 768px) {
+            .prose {
+                max-width: 90%;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .prose {
+                max-width: 80%;
+            }
+        }
+
+        /* 优化移动端布局 */
+        @media (max-width: 640px) {
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .back-button {
+                margin-left: 0;
+            }
+
+            .page-title {
+                font-size: 2rem;
+            }
+
+            .content-wrapper {
+                padding: 1.5rem;
+            }
+        }
+
+        /* 优化页面背景和间距 */
+        body {
+            background-color: #f9fafb;
+            padding: 2rem 0;
+        }
+
+        @media (min-width: 768px) {
+            body {
+                padding: 3rem 0;
+            }
         }
     </style>
 </head>
