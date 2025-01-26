@@ -188,9 +188,33 @@
         .prose tr:hover {
             background-color: #F9FAFB;
         }
+        /* Add loading progress bar styles */
+        .loading-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: #f3f4f6;
+            z-index: 1000;
+        }
+        .loading-progress-bar {
+            height: 100%;
+            background: #3b82f6;
+            width: 0;
+            transition: width 0.3s ease;
+        }
+        .loading-progress.complete {
+            opacity: 0;
+            transition: opacity 0.3s ease 0.3s;
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
+    <!-- Add loading progress bar -->
+    <div id="loadingProgress" class="loading-progress">
+        <div id="loadingProgressBar" class="loading-progress-bar"></div>
+    </div>
     <div class="container mx-auto px-4 py-8 max-w-4xl">
         <div class="bg-white rounded-xl shadow-sm overflow-hidden">
             <div class="p-6">
@@ -221,6 +245,48 @@
     </div>
 
     <script>
+        // Add loading progress tracking
+        let totalBlocks = 0;
+        let loadedBlocks = 0;
+        
+        function updateLoadingProgress(progress) {
+            const progressBar = document.getElementById('loadingProgressBar');
+            progressBar.style.width = `${progress}%`;
+            
+            if (progress >= 100) {
+                setTimeout(() => {
+                    document.getElementById('loadingProgress').classList.add('complete');
+                }, 300);
+            }
+        }
+
+        // Optimize image loading with IntersectionObserver
+        const imageObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const img = entry.target;
+                    if (img.dataset.src) {
+                        loadImage(img);
+                        observer.unobserve(img);
+                    }
+                }
+            });
+        }, {
+            rootMargin: '50px 0px'
+        });
+
+        async function loadImage(img) {
+            try {
+                const compressedUrl = await compressImage(img.dataset.src);
+                img.src = compressedUrl;
+                img.classList.remove('opacity-0');
+            } catch (error) {
+                console.error('Error loading image:', error);
+                img.src = img.dataset.src;
+                img.classList.remove('opacity-0');
+            }
+        }
+
         // Compress image
         function compressImage(url) {
             return new Promise((resolve, reject) => {
@@ -309,11 +375,12 @@
             await loadPage(pageId);
         }
 
-        // Render block content
+        // Optimize block rendering
         async function renderBlock(block) {
-            let content = '';
+            loadedBlocks++;
+            updateLoadingProgress((loadedBlocks / totalBlocks) * 100);
             
-            // Add color style if present
+            let content = '';
             const colorStyle = block.color && block.color !== 'default' 
                 ? `style="color: ${block.color === 'gray' ? '#9CA3AF' : block.color};"` 
                 : '';
@@ -334,25 +401,14 @@
                 case 'code':
                     return `<pre><code class="language-${block.language}">${block.text}</code></pre>`;
                 case 'image':
-                    try {
-                        const compressedUrl = await compressImage(block.image_url);
-                        return `<figure>
-                            <img src="${compressedUrl}" 
-                                alt="${block.caption || 'Page image'}" 
-                                onclick="openImageModal('${block.image_url}')"
-                                title="Click to view full size">
-                            ${block.caption ? `<figcaption class="text-sm text-gray-500 mt-2">${block.caption}</figcaption>` : ''}
-                        </figure>`;
-                    } catch (error) {
-                        console.error('Error compressing image:', error);
-                        return `<figure>
-                            <img src="${block.image_url}" 
-                                alt="${block.caption || 'Page image'}" 
-                                onclick="openImageModal('${block.image_url}')"
-                                title="Click to view full size">
-                            ${block.caption ? `<figcaption class="text-sm text-gray-500 mt-2">${block.caption}</figcaption>` : ''}
-                        </figure>`;
-                    }
+                    return `<figure>
+                        <img class="opacity-0 transition-opacity duration-300" 
+                            data-src="${block.image_url}" 
+                            alt="${block.caption || 'Page image'}" 
+                            onclick="openImageModal('${block.image_url}')"
+                            title="Click to view full size">
+                        ${block.caption ? `<figcaption class="text-sm text-gray-500 mt-2">${block.caption}</figcaption>` : ''}
+                    </figure>`;
                 case 'divider':
                     return `<hr class="my-6">`;
                 case 'quote':
@@ -469,7 +525,7 @@
             }
         }
 
-        // Load page content
+        // Optimize page loading
         async function loadPage(pageId = null) {
             const targetPageId = pageId || urlParams.get('id');
             
@@ -482,12 +538,19 @@
             }
 
             try {
+                updateLoadingProgress(10);
                 const response = await fetch(`/page/${targetPageId}`);
                 const data = await response.json();
+                
+                updateLoadingProgress(30);
                 
                 // Update page title
                 document.title = data.page.title;
                 document.getElementById('pageTitle').textContent = data.page.title;
+                
+                // Initialize block counting
+                totalBlocks = data.blocks.length;
+                loadedBlocks = 0;
                 
                 // Render content
                 let content = '';
@@ -518,6 +581,12 @@
                 }
                 
                 document.getElementById('pageContent').innerHTML = content;
+                
+                // Initialize lazy loading for images
+                document.querySelectorAll('img[data-src]').forEach(img => {
+                    imageObserver.observe(img);
+                });
+                
             } catch (error) {
                 console.error('Error loading page content:', error);
                 document.getElementById('pageContent').innerHTML = `
