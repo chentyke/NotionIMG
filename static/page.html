@@ -552,30 +552,14 @@
                 // Update back button based on parent page
                 const backButton = document.querySelector('.back-button');
                 if (data.page.parent_id) {
-                    // Fetch parent page info first
-                    try {
-                        const parentResponse = await fetch(`/page/${data.page.parent_id}`);
-                        const parentData = await parentResponse.json();
-                        parentPageId = data.page.parent_id;
-                        const parentTitle = parentData.page.title;
-                        backButton.onclick = () => loadChildPage(parentPageId, parentTitle);
-                        backButton.href = 'javascript:void(0)';
-                        backButton.innerHTML = `
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                            </svg>
-                            Back to ${parentTitle}
-                        `;
-                    } catch (error) {
-                        console.error('Error fetching parent page:', error);
-                        backButton.href = "/static/pages.html";
-                        backButton.innerHTML = `
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                            </svg>
-                            Back to Pages
-                        `;
-                    }
+                    parentPageId = data.page.parent_id;
+                    backButton.href = `/static/page.html?id=${parentPageId}`;
+                    backButton.innerHTML = `
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                        Back to Parent Page
+                    `;
                 } else {
                     parentPageId = null;
                     backButton.href = "/static/pages.html";
