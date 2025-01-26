@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loading...</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .prose {
+            max-width: 65ch;
+            margin: 0 auto;
+        }
+        .prose img {
+            border-radius: 0.5rem;
+            margin: 1.5rem 0;
+        }
+        .prose pre {
+            background-color: #f3f4f6;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 1.5rem 0;
+            overflow-x: auto;
+        }
+        .prose blockquote {
+            border-left: 4px solid #e5e7eb;
+            padding-left: 1rem;
+            margin: 1.5rem 0;
+            font-style: italic;
+            color: #4b5563;
+        }
+        .prose h1 {
+            font-size: 2.25rem;
+            font-weight: 700;
+            margin: 2rem 0 1rem;
+        }
+        .prose h2 {
+            font-size: 1.875rem;
+            font-weight: 700;
+            margin: 1.75rem 0 0.875rem;
+        }
+        .prose h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 1.5rem 0 0.75rem;
+        }
+        .prose p {
+            margin: 1rem 0;
+            line-height: 1.75;
+        }
+        .prose ul, .prose ol {
+            margin: 1rem 0;
+            padding-left: 1.5rem;
+        }
+        .prose li {
+            margin: 0.5rem 0;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div class="p-6">
+                <h1 id="pageTitle" class="text-3xl font-bold mb-6 text-gray-900"></h1>
+                <div id="pageContent" class="prose">
+                    <div class="flex justify-center py-8">
+                        <div class="loading-spinner"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get page ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const pageId = urlParams.get('id');
+
+        // Render block content
+        function renderBlock(block) {
+            switch (block.type) {
+                case 'paragraph':
+                    return `<p>${block.text || ''}</p>`;
+                case 'heading_1':
+                    return `<h1>${block.text}</h1>`;
+                case 'heading_2':
+                    return `<h2>${block.text}</h2>`;
+                case 'heading_3':
+                    return `<h3>${block.text}</h3>`;
+                case 'bulleted_list_item':
+                    return `<li>• ${block.text}</li>`;
+                case 'numbered_list_item':
+                    return `<li>1. ${block.text}</li>`;
+                case 'code':
+                    return `<pre><code class="language-${block.language}">${block.text}</code></pre>`;
+                case 'image':
+                    return `<img src="${block.image_url}" alt="Page image">`;
+                case 'divider':
+                    return `<hr class="my-6">`;
+                case 'quote':
+                    return `<blockquote>${block.text}</blockquote>`;
+                case 'callout':
+                    return `<div class="bg-gray-50 p-4 rounded-lg my-4 flex items-start">
+                        <div class="mr-4">${block.icon?.emoji || '💡'}</div>
+                        <div>${block.text}</div>
+                    </div>`;
+                default:
+                    return '';
+            }
+        }
+
+        // Load page content
+        async function loadPage() {
+            if (!pageId) {
+                document.getElementById('pageContent').innerHTML = `
+                    <div class="text-center text-red-500">
+                        <p>No page ID provided.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+                const response = await fetch(`/page/${pageId}`);
+                const data = await response.json();
+                
+                // Update page title
+                document.title = data.page.title;
+                document.getElementById('pageTitle').textContent = data.page.title;
+                
+                // Render content
+                let content = '';
+                for (const block of data.blocks) {
+                    content += renderBlock(block);
+                }
+                
+                document.getElementById('pageContent').innerHTML = content;
+            } catch (error) {
+                console.error('Error loading page content:', error);
+                document.getElementById('pageContent').innerHTML = `
+                    <div class="text-center text-red-500">
+                        <p>Error loading page content.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Load page on start
+        loadPage();
+    </script>
+</body>
+</html> 
