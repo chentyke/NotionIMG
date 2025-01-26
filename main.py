@@ -207,16 +207,40 @@ async def get_page_content(page_id: str):
             
             for block in response["results"]:
                 block_content = process_block_content(block)
-                blocks.append(block_content)
                 
                 # If block has children, recursively get them
                 if block["has_children"]:
-                    child_blocks = []
-                    child_response = notion.blocks.children.list(block_id=block["id"])
-                    for child_block in child_response["results"]:
-                        child_content = process_block_content(child_block)
-                        child_blocks.append(child_content)
-                    block_content["children"] = child_blocks
+                    try:
+                        child_blocks = []
+                        child_cursor = None
+                        child_has_more = True
+                        
+                        while child_has_more:
+                            if child_cursor:
+                                child_response = notion.blocks.children.list(
+                                    block_id=block["id"],
+                                    start_cursor=child_cursor
+                                )
+                            else:
+                                child_response = notion.blocks.children.list(block_id=block["id"])
+                            
+                            for child_block in child_response["results"]:
+                                child_content = process_block_content(child_block)
+                                # 如果子块也有子内容，递归获取
+                                if child_block["has_children"]:
+                                    child_content["children"] = await get_block_children(child_block["id"])
+                                child_blocks.append(child_content)
+                            
+                            child_has_more = child_response["has_more"]
+                            if child_has_more:
+                                child_cursor = child_response["next_cursor"]
+                        
+                        block_content["children"] = child_blocks
+                    except Exception as e:
+                        logger.error(f"Error getting children for block {block['id']}: {e}")
+                        block_content["children"] = []
+                
+                blocks.append(block_content)
             
             has_more = response["has_more"]
             if has_more:
@@ -230,6 +254,37 @@ async def get_page_content(page_id: str):
     except Exception as e:
         logger.error(f"Error retrieving page {page_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+async def get_block_children(block_id: str) -> List[dict]:
+    """Recursively get all children of a block."""
+    try:
+        children = []
+        cursor = None
+        has_more = True
+        
+        while has_more:
+            if cursor:
+                response = notion.blocks.children.list(
+                    block_id=block_id,
+                    start_cursor=cursor
+                )
+            else:
+                response = notion.blocks.children.list(block_id=block_id)
+            
+            for block in response["results"]:
+                block_content = process_block_content(block)
+                if block["has_children"]:
+                    block_content["children"] = await get_block_children(block["id"])
+                children.append(block_content)
+            
+            has_more = response["has_more"]
+            if has_more:
+                cursor = response["next_cursor"]
+        
+        return children
+    except Exception as e:
+        logger.error(f"Error getting children for block {block_id}: {e}")
+        return []
 
 @app.get("/image/{image_id}")
 async def get_image(image_id: str):
