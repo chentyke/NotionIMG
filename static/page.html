@@ -759,26 +759,25 @@
 
             switch (block.type) {
                 case 'paragraph':
-                    return `<p ${colorStyle}>${block.text || ''}</p>`;
+                    return `<p ${colorStyle}>${block.paragraph?.rich_text?.[0]?.text?.content || ''}</p>`;
                 case 'heading_1':
-                    return `<h1 ${colorStyle}>${block.text}</h1>`;
+                    return `<h1 ${colorStyle}>${block.heading_1?.rich_text?.[0]?.text?.content || ''}</h1>`;
                 case 'heading_2':
-                    return `<h2 ${colorStyle}>${block.text}</h2>`;
+                    return `<h2 ${colorStyle}>${block.heading_2?.rich_text?.[0]?.text?.content || ''}</h2>`;
                 case 'heading_3':
-                    return `<h3 ${colorStyle}>${block.text}</h3>`;
+                    return `<h3 ${colorStyle}>${block.heading_3?.rich_text?.[0]?.text?.content || ''}</h3>`;
                 case 'bulleted_list_item':
                 case 'numbered_list_item':
-                    let listContent = block.text || '';
+                    let listContent = block[block.type]?.rich_text?.[0]?.text?.content || '';
                     let nestedContent = '';
                     
                     // 处理嵌套列表
-                    if (block.children && block.children.length > 0) {
+                    if (block.has_children && block.children?.length > 0) {
                         let nestedList = '';
                         let currentNestedType = null;
                         
                         for (const child of block.children) {
                             if (child.type === 'bulleted_list_item' || child.type === 'numbered_list_item') {
-                                // 如果类型改变或者是第一个项目，开始新的列表
                                 if (currentNestedType !== child.type) {
                                     if (currentNestedType) {
                                         nestedList += `</${currentNestedType === 'bulleted_list_item' ? 'ul' : 'ol'}>`;
@@ -788,7 +787,6 @@
                                 }
                                 nestedList += await renderBlock(child);
                             } else {
-                                // 如果有正在进行的列表，结束它
                                 if (currentNestedType) {
                                     nestedList += `</${currentNestedType === 'bulleted_list_item' ? 'ul' : 'ol'}>`;
                                     currentNestedType = null;
@@ -797,7 +795,6 @@
                             }
                         }
                         
-                        // 结束最后一个嵌套列表
                         if (currentNestedType) {
                             nestedList += `</${currentNestedType === 'bulleted_list_item' ? 'ul' : 'ol'}>`;
                         }
@@ -806,6 +803,43 @@
                     }
                     
                     return `<li ${colorStyle}>${listContent}${nestedContent}</li>`;
+                case 'to_do':
+                    const checked = block.to_do?.checked || false;
+                    const todoText = block.to_do?.rich_text?.[0]?.text?.content || '';
+                    let todoContent = `
+                        <div class="flex items-start my-2">
+                            <input type="checkbox" ${checked ? 'checked' : ''} disabled 
+                                   class="mt-1 mr-2 h-4 w-4 rounded border-gray-300 text-blue-600">
+                            <span class="${checked ? 'line-through text-gray-500' : ''}">${todoText}</span>
+                        </div>`;
+                    
+                    // 处理待办事项的子项
+                    if (block.has_children && block.children?.length > 0) {
+                        todoContent += '<div class="ml-6">';
+                        for (const child of block.children) {
+                            todoContent += await renderBlock(child);
+                        }
+                        todoContent += '</div>';
+                    }
+                    
+                    return todoContent;
+                case 'child_page':
+                    return `
+                        <div class="border rounded-lg p-4 my-4 hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
+                             onclick="loadChildPage('${block.id}', '${block.child_page?.title || 'Untitled'}')"
+                             role="button"
+                             tabindex="0">
+                            <div class="flex items-center">
+                                <svg class="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                                    </path>
+                                </svg>
+                                <span class="text-lg font-medium text-gray-900 hover:text-blue-600">
+                                    ${block.child_page?.title || 'Untitled'}
+                                </span>
+                            </div>
+                        </div>`;
                 case 'code':
                     return `<pre><code class="language-${block.language}">${block.text}</code><button class="copy-button" onclick="copyCode(this)">Copy</button></pre>`;
                 case 'image':
@@ -833,21 +867,6 @@
                                 ${block.url}
                             </a>
                             ${block.caption ? `<div class="text-sm text-gray-500 mt-2">${block.caption}</div>` : ''}
-                        </div>`;
-                case 'child_page':
-                    return `
-                        <div class="border rounded-lg p-4 my-4 hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
-                             onclick="loadChildPage('${block.id}', '${block.title}')"
-                             role="button"
-                             tabindex="0">
-                            <div class="flex items-center">
-                                <svg class="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
-                                    </path>
-                                </svg>
-                                <span class="text-lg font-medium text-gray-900 hover:text-blue-600">${block.title}</span>
-                            </div>
                         </div>`;
                 default:
                     return '';
