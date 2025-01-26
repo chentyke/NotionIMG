@@ -96,20 +96,26 @@
         .prose h1 {
             font-size: 2.25rem;
             font-weight: 700;
-            margin: 0;
-            color: #111827;
+            margin: 2.5rem 0 0.75rem;
             line-height: 1.2;
         }
         .edit-date {
             color: #6B7280;
             font-size: 0.875rem;
-            margin: 0.75rem 0 2rem;
+            margin: 0 0 2rem;
             font-style: italic;
+            border-bottom: 1px solid #E5E7EB;
+            padding-bottom: 1rem;
         }
         .page-header {
-            margin-bottom: 2.5rem;
-            padding-bottom: 1.5rem;
-            border-bottom: 1px solid #E5E7EB;
+            margin-bottom: 2rem;
+        }
+        .page-title {
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: #111827;
+            line-height: 1.2;
+            margin-bottom: 0.5rem;
         }
         .prose h2 {
             font-size: 1.875rem;
@@ -356,8 +362,7 @@
         <div class="bg-white rounded-xl shadow-sm overflow-hidden">
             <div class="p-6">
                 <div class="page-header">
-                    <h1 id="pageTitle" class="text-3xl font-bold text-gray-900"></h1>
-                    <!-- 编辑时间将被插入到这里 -->
+                    <h1 id="pageTitle" class="page-title"></h1>
                 </div>
                 <div id="pageContent" class="prose">
                     <div class="flex justify-center py-8">
