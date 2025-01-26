@@ -62,14 +62,17 @@ def get_file_info(page: dict) -> dict:
         return None
 
 def get_page_info(page: dict) -> dict:
-    """Extract page information."""
+    """Extract page information from a Notion page."""
     try:
         title = page["properties"]["Name"]["title"][0]["text"]["content"]
+        last_edited_time = page["last_edited_time"]
+        hidden = page["properties"].get("Hidden", {}).get("checkbox", False)
+        
         return {
             "id": page["id"],
             "title": title,
-            "created_time": page["created_time"],
-            "last_edited_time": page["last_edited_time"]
+            "last_edited_time": last_edited_time,
+            "hidden": hidden
         }
     except (KeyError, IndexError) as e:
         logger.warning(f"Error extracting page info: {e}")
@@ -99,26 +102,6 @@ def process_block_content(block: dict) -> dict:
         result["language"] = content.get("language", "")
     elif block_type == "callout":
         result["icon"] = content.get("icon", {})
-    elif block_type == "child_page":
-        # 获取子页面信息
-        try:
-            child_page = notion.pages.retrieve(page_id=block["id"])
-            result["title"] = child_page["properties"]["Name"]["title"][0]["text"]["content"]
-            result["page_id"] = block["id"]  # 使用块 ID 作为页面 ID
-        except Exception as e:
-            logger.error(f"Error retrieving child page info: {e}")
-            result["title"] = "Untitled"
-            result["page_id"] = block["id"]
-    elif block_type == "child_database":
-        # 处理子数据库
-        try:
-            child_db = notion.databases.retrieve(database_id=block["id"])
-            result["title"] = child_db["title"][0]["plain_text"]
-            result["database_id"] = block["id"]
-        except Exception as e:
-            logger.error(f"Error retrieving child database info: {e}")
-            result["title"] = "Untitled Database"
-            result["database_id"] = block["id"]
     
     return result
 
@@ -128,30 +111,10 @@ async def get_images():
         response = notion.databases.query(
             database_id=DATABASE_ID,
             filter={
-                "and": [
-                    {
-                        "property": "type",
-                        "select": {
-                            "equals": "image"
-                        }
-                    },
-                    {
-                        "or": [
-                            {
-                                "property": "Hidden",
-                                "checkbox": {
-                                    "equals": False
-                                }
-                            },
-                            {
-                                "property": "Hidden",
-                                "checkbox": {
-                                    "does_not_equal": True
-                                }
-                            }
-                        ]
-                    }
-                ]
+                "property": "type",
+                "select": {
+                    "equals": "image"
+                }
             }
         )
         
@@ -172,30 +135,10 @@ async def get_files():
         response = notion.databases.query(
             database_id=DATABASE_ID,
             filter={
-                "and": [
-                    {
-                        "property": "type",
-                        "select": {
-                            "equals": "file"
-                        }
-                    },
-                    {
-                        "or": [
-                            {
-                                "property": "Hidden",
-                                "checkbox": {
-                                    "equals": False
-                                }
-                            },
-                            {
-                                "property": "Hidden",
-                                "checkbox": {
-                                    "does_not_equal": True
-                                }
-                            }
-                        ]
-                    }
-                ]
+                "property": "type",
+                "select": {
+                    "equals": "file"
+                }
             }
         )
         
@@ -224,20 +167,10 @@ async def get_pages():
                         }
                     },
                     {
-                        "or": [
-                            {
-                                "property": "Hidden",
-                                "checkbox": {
-                                    "equals": False
-                                }
-                            },
-                            {
-                                "property": "Hidden",
-                                "checkbox": {
-                                    "does_not_equal": True
-                                }
-                            }
-                        ]
+                        "property": "Hidden",
+                        "checkbox": {
+                            "equals": False
+                        }
                     }
                 ]
             }
@@ -277,40 +210,16 @@ async def get_page_content(page_id: str):
             
             for block in response["results"]:
                 block_content = process_block_content(block)
-                
-                # 只为非子页面类型的块获取子内容
-                if block["has_children"] and block["type"] not in ["child_page", "child_database"]:
-                    try:
-                        child_blocks = []
-                        child_cursor = None
-                        child_has_more = True
-                        
-                        while child_has_more:
-                            if child_cursor:
-                                child_response = notion.blocks.children.list(
-                                    block_id=block["id"],
-                                    start_cursor=child_cursor
-                                )
-                            else:
-                                child_response = notion.blocks.children.list(block_id=block["id"])
-                            
-                            for child_block in child_response["results"]:
-                                child_content = process_block_content(child_block)
-                                # 如果子块也有子内容且不是子页面，递归获取
-                                if child_block["has_children"] and child_block["type"] not in ["child_page", "child_database"]:
-                                    child_content["children"] = await get_block_children(child_block["id"])
-                                child_blocks.append(child_content)
-                            
-                            child_has_more = child_response["has_more"]
-                            if child_has_more:
-                                child_cursor = child_response["next_cursor"]
-                        
-                        block_content["children"] = child_blocks
-                    except Exception as e:
-                        logger.error(f"Error getting children for block {block['id']}: {e}")
-                        block_content["children"] = []
-                
                 blocks.append(block_content)
+                
+                # If block has children, recursively get them
+                if block["has_children"]:
+                    child_blocks = []
+                    child_response = notion.blocks.children.list(block_id=block["id"])
+                    for child_block in child_response["results"]:
+                        child_content = process_block_content(child_block)
+                        child_blocks.append(child_content)
+                    block_content["children"] = child_blocks
             
             has_more = response["has_more"]
             if has_more:
@@ -324,38 +233,6 @@ async def get_page_content(page_id: str):
     except Exception as e:
         logger.error(f"Error retrieving page {page_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-
-async def get_block_children(block_id: str) -> List[dict]:
-    """Recursively get all children of a block."""
-    try:
-        children = []
-        cursor = None
-        has_more = True
-        
-        while has_more:
-            if cursor:
-                response = notion.blocks.children.list(
-                    block_id=block_id,
-                    start_cursor=cursor
-                )
-            else:
-                response = notion.blocks.children.list(block_id=block_id)
-            
-            for block in response["results"]:
-                block_content = process_block_content(block)
-                # 只为非子页面类型的块获取子内容
-                if block["has_children"] and block["type"] not in ["child_page", "child_database"]:
-                    block_content["children"] = await get_block_children(block["id"])
-                children.append(block_content)
-            
-            has_more = response["has_more"]
-            if has_more:
-                cursor = response["next_cursor"]
-        
-        return children
-    except Exception as e:
-        logger.error(f"Error getting children for block {block_id}: {e}")
-        return []
 
 @app.get("/image/{image_id}")
 async def get_image(image_id: str):
