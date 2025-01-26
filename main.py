@@ -188,8 +188,10 @@ def process_block_content(block: dict) -> dict:
             result["page_id"] = block["id"]
             result["title"] = block_content.get("title", "Untitled")
         elif block_type == "toggle":
-            # For toggle blocks, we need both the text and children
-            result["text"] = text
+            # For toggle blocks, we need to process the rich_text content
+            result["text"] = process_rich_text(block_content["rich_text"])
+            # Color is already handled in the base result
+            # Children are already processed above
         elif block_type == "table":
             result["has_column_header"] = block_content.get("has_column_header", False)
             result["has_row_header"] = block_content.get("has_row_header", False)
