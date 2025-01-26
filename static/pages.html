@@ -20,20 +20,11 @@
             100% { transform: rotate(360deg); }
         }
         .page-card {
-            background: white;
-            border-radius: 0.75rem;
-            overflow: hidden;
             transition: transform 0.2s, box-shadow 0.2s;
-            cursor: pointer;
         }
         .page-card:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-        }
-        .page-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 1.5rem;
         }
     </style>
 </head>
@@ -41,86 +32,102 @@
     <div class="container mx-auto px-4 py-8 max-w-7xl">
         <div class="flex justify-between items-center mb-8">
             <h1 class="text-4xl font-bold text-gray-800">Pages</h1>
-            <div class="flex gap-4">
-                <a href="/static/index.html" class="text-gray-600 hover:text-gray-800 flex items-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                    </svg>
-                    Back to Home
-                </a>
-                <button onclick="loadPages()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                    </svg>
-                    Refresh
-                </button>
-            </div>
+            <a href="/static/index.html" class="text-blue-500 hover:text-blue-600 flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                </svg>
+                Back to Gallery
+            </a>
         </div>
 
-        <div id="pageGrid" class="page-grid">
-            <!-- Pages will be loaded here -->
-            <div class="col-span-full flex justify-center py-12">
-                <div class="loading-spinner"></div>
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-lg font-medium text-gray-800">All Pages</h2>
+                    <button id="refreshPages" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                        Refresh
+                    </button>
+                </div>
+                <div id="pageList" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    <!-- Pages will be loaded here -->
+                </div>
             </div>
         </div>
     </div>
 
     <script>
+        // Show loading state
+        function showLoading() {
+            document.getElementById('pageList').innerHTML = `
+                <div class="col-span-full flex justify-center py-12">
+                    <div class="loading-spinner"></div>
+                </div>
+            `;
+        }
+
         // Load pages
         async function loadPages() {
             try {
-                const pageGrid = document.getElementById('pageGrid');
-                pageGrid.innerHTML = '<div class="col-span-full flex justify-center py-12"><div class="loading-spinner"></div></div>';
-                
+                showLoading();
                 const response = await fetch('/pages');
                 const data = await response.json();
+                const pageList = document.getElementById('pageList');
+                pageList.innerHTML = '';
                 
-                if (!data.pages || data.pages.length === 0) {
-                    pageGrid.innerHTML = `
+                if (data.pages.length === 0) {
+                    pageList.innerHTML = `
                         <div class="col-span-full text-center text-gray-500 py-12">
                             <svg class="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                             </svg>
-                            <p class="text-lg">No pages found</p>
+                            <p>No pages found</p>
                         </div>
                     `;
                     return;
                 }
                 
-                pageGrid.innerHTML = '';
                 for (const page of data.pages) {
                     const date = new Date(page.last_edited_time).toLocaleDateString();
                     const card = document.createElement('div');
-                    card.className = 'page-card shadow-sm';
-                    card.onclick = () => window.location.href = `/static/page.html?id=${page.id}`;
-                    
+                    card.className = 'page-card bg-white rounded-lg border border-gray-200 overflow-hidden hover:border-blue-500';
                     card.innerHTML = `
-                        <div class="p-6">
-                            <div class="flex items-center gap-4 mb-4">
-                                <svg class="w-8 h-8 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path>
-                                </svg>
-                                <div>
-                                    <h3 class="font-medium text-gray-800 mb-1 line-clamp-2" title="${page.title}">${page.title}</h3>
-                                    <p class="text-sm text-gray-500">Last edited: ${date}</p>
+                        <a href="/static/page.html?id=${page.id}" class="block">
+                            <div class="p-6">
+                                <div class="flex items-center mb-4">
+                                    <svg class="w-8 h-8 text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                    <h3 class="text-lg font-medium text-gray-900 truncate" title="${page.title}">${page.title}</h3>
+                                </div>
+                                <div class="flex items-center text-sm text-gray-500">
+                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                    </svg>
+                                    Last edited: ${date}
                                 </div>
                             </div>
-                        </div>
+                        </a>
                     `;
-                    pageGrid.appendChild(card);
+                    pageList.appendChild(card);
                 }
             } catch (error) {
                 console.error('Error loading pages:', error);
-                document.getElementById('pageGrid').innerHTML = `
+                document.getElementById('pageList').innerHTML = `
                     <div class="col-span-full text-center text-red-500 py-12">
-                        <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-12 h-12 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
-                        <p class="text-lg">Error loading pages</p>
+                        <p>Error loading pages</p>
                     </div>
                 `;
             }
         }
+
+        // Add event listener for refresh button
+        document.getElementById('refreshPages').addEventListener('click', loadPages);
 
         // Load pages on start
         loadPages();
