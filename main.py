@@ -96,8 +96,57 @@ def process_block_content(block: dict) -> dict:
     block_type = block["type"]
     content = block[block_type]
     
+    def process_rich_text(rich_text_array):
+        """Process rich text array to include formatting."""
+        if not rich_text_array:
+            return ""
+        
+        formatted_text = []
+        for text in rich_text_array:
+            # Get the text content
+            content = text.get("plain_text", "")
+            
+            # Start with an empty list of HTML tags
+            tags = []
+            
+            # Process annotations
+            annotations = text.get("annotations", {})
+            if annotations.get("bold"):
+                tags.append(("strong", {}))
+            if annotations.get("italic"):
+                tags.append(("em", {}))
+            if annotations.get("strikethrough"):
+                tags.append(("del", {}))
+            if annotations.get("underline"):
+                tags.append(("u", {}))
+            if annotations.get("code"):
+                tags.append(("code", {"class": "inline-code"}))
+            
+            # Process color
+            color = annotations.get("color", "default")
+            if color != "default":
+                if color.endswith("_background"):
+                    tags.append(("span", {"class": f"bg-{color.replace('_background', '')}"}))
+                else:
+                    tags.append(("span", {"class": f"text-{color}"}))
+            
+            # Process links
+            href = text.get("href")
+            if href:
+                tags.append(("a", {"href": href, "target": "_blank", "rel": "noopener noreferrer"}))
+            
+            # Apply all the formatting
+            formatted = content
+            for tag, attrs in reversed(tags):
+                attr_str = " ".join([f'{k}="{v}"' for k, v in attrs.items()])
+                formatted = f"<{tag} {attr_str}>{formatted}</{tag}>" if attr_str else f"<{tag}>{formatted}</{tag}>"
+            
+            formatted_text.append(formatted)
+        
+        return "".join(formatted_text)
+    
     if "rich_text" in content:
-        text_content = "".join([text["plain_text"] for text in content["rich_text"]])
+        text_content = process_rich_text(content["rich_text"])
     else:
         text_content = ""
     
@@ -118,7 +167,7 @@ def process_block_content(block: dict) -> dict:
             result["image_url"] = content.get("external", {}).get("url", "")
         else:
             result["image_url"] = content.get("file", {}).get("url", "")
-        result["caption"] = "".join([text["plain_text"] for text in content.get("caption", [])])
+        result["caption"] = process_rich_text(content.get("caption", []))
     
     elif block_type == "code":
         result["language"] = content.get("language", "")
@@ -128,7 +177,7 @@ def process_block_content(block: dict) -> dict:
         
     elif block_type == "bookmark":
         result["url"] = content.get("url", "")
-        result["caption"] = "".join([text["plain_text"] for text in content.get("caption", [])])
+        result["caption"] = process_rich_text(content.get("caption", []))
         
     elif block_type == "equation":
         result["expression"] = content.get("expression", "")
@@ -144,7 +193,7 @@ def process_block_content(block: dict) -> dict:
             result["file_url"] = content.get("external", {}).get("url", "")
         else:
             result["file_url"] = content.get("file", {}).get("url", "")
-        result["caption"] = "".join([text["plain_text"] for text in content.get("caption", [])])
+        result["caption"] = process_rich_text(content.get("caption", []))
         
     elif block_type == "pdf":
         if content.get("type") == "external":
@@ -163,7 +212,7 @@ def process_block_content(block: dict) -> dict:
     elif block_type == "table_row":
         cells = []
         for cell in content.get("cells", []):
-            cell_text = "".join([text["plain_text"] for text in cell])
+            cell_text = process_rich_text(cell)
             cells.append(cell_text)
         result["cells"] = cells
         
@@ -171,9 +220,8 @@ def process_block_content(block: dict) -> dict:
         result["checked"] = content.get("checked", False)
         
     elif block_type == "child_page":
-        # According to Notion API docs, child_page title is directly in the content object
-        result["title"] = content.get("title", "")  # Get title directly from child_page object
-        result["page_id"] = block["id"]  # The block ID is the page ID for child_page blocks
+        result["title"] = content.get("title", "")
+        result["page_id"] = block["id"]
         
     elif block_type == "child_database":
         result["title"] = content.get("title", "")
@@ -193,7 +241,6 @@ def process_block_content(block: dict) -> dict:
         result["template_content"] = content.get("template", [])
         
     elif block_type == "breadcrumb":
-        # Breadcrumb blocks don't have additional content
         pass
         
     return result

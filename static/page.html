@@ -114,6 +114,62 @@
         .close-button:hover {
             background-color: rgba(0, 0, 0, 0.7);
         }
+        .prose code.inline-code {
+            background-color: #f3f4f6;
+            padding: 0.2em 0.4em;
+            border-radius: 0.25rem;
+            font-size: 0.875em;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+        /* Text colors */
+        .text-gray { color: #6B7280; }
+        .text-brown { color: #92400E; }
+        .text-orange { color: #EA580C; }
+        .text-yellow { color: #CA8A04; }
+        .text-green { color: #16A34A; }
+        .text-blue { color: #2563EB; }
+        .text-purple { color: #7C3AED; }
+        .text-pink { color: #DB2777; }
+        .text-red { color: #DC2626; }
+        /* Background colors */
+        .bg-gray { background-color: #F3F4F6; }
+        .bg-brown { background-color: #FEF3C7; }
+        .bg-orange { background-color: #FFF7ED; }
+        .bg-yellow { background-color: #FEF9C3; }
+        .bg-green { background-color: #DCFCE7; }
+        .bg-blue { background-color: #DBEAFE; }
+        .bg-purple { background-color: #F3E8FF; }
+        .bg-pink { background-color: #FCE7F3; }
+        .bg-red { background-color: #FEE2E2; }
+        /* Link styles */
+        .prose a {
+            color: #2563EB;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .prose a:hover {
+            color: #1D4ED8;
+            text-decoration: underline;
+        }
+        /* Underline style */
+        .prose u {
+            text-decoration: underline;
+            text-decoration-thickness: 0.1em;
+            text-underline-offset: 0.1em;
+        }
+        /* Strikethrough style */
+        .prose del {
+            text-decoration: line-through;
+            text-decoration-thickness: 0.1em;
+        }
+        /* Bold style */
+        .prose strong {
+            font-weight: 600;
+        }
+        /* Italic style */
+        .prose em {
+            font-style: italic;
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
