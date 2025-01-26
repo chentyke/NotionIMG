@@ -16,6 +16,10 @@
             height: 200px;
             object-fit: cover;
         }
+        .button-group {
+            display: flex;
+            gap: 0.5rem;
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
@@ -63,7 +67,10 @@
                         <img src="/image/${image.id}" alt="${image.title}" loading="lazy">
                         <div class="p-4">
                             <h3 class="font-medium text-gray-800">${image.title}</h3>
-                            <button onclick="copyUrl('${window.location.origin}/image/${image.id}')" class="mt-2 text-sm text-blue-500 hover:text-blue-600">Copy URL</button>
+                            <div class="button-group mt-2">
+                                <button onclick="copyUrl('${window.location.origin}/image/${image.id}')" class="text-sm text-blue-500 hover:text-blue-600">Copy URL</button>
+                                <button onclick="downloadImage('${window.location.origin}/image/${image.id}', '${image.title}')" class="text-sm text-blue-500 hover:text-blue-600">Download</button>
+                            </div>
                         </div>
                     `;
                     imageGrid.appendChild(card);
@@ -86,6 +93,38 @@
                 console.error('Error copying URL:', err);
                 alert('Error copying URL');
             });
+        }
+
+        // Download image
+        async function downloadImage(url, filename) {
+            try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                const blobUrl = window.URL.createObjectURL(blob);
+                
+                const link = document.createElement('a');
+                link.href = blobUrl;
+                link.download = filename + getFileExtension(response.headers.get('content-type'));
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(blobUrl);
+            } catch (err) {
+                console.error('Error downloading image:', err);
+                alert('Error downloading image');
+            }
+        }
+
+        // Get file extension from mime type
+        function getFileExtension(mimeType) {
+            const extensions = {
+                'image/jpeg': '.jpg',
+                'image/png': '.png',
+                'image/gif': '.gif',
+                'image/webp': '.webp',
+                'image/svg+xml': '.svg'
+            };
+            return extensions[mimeType] || '.jpg';
         }
 
         // Refresh images button
