@@ -20,63 +20,8 @@
             100% { transform: rotate(360deg); }
         }
         .prose {
-            max-width: 75ch;
+            max-width: 65ch;
             margin: 0 auto;
-            font-size: 1.05rem;
-            line-height: 1.75;
-        }
-        
-        /* 优化标题样式 */
-        #pageTitle {
-            font-size: 2.5rem;
-            font-weight: 800;
-            color: #1a1a1a;
-            letter-spacing: -0.025em;
-            line-height: 1.2;
-            margin-bottom: 2rem;
-            padding-bottom: 1.5rem;
-            border-bottom: 1px solid #e5e7eb;
-        }
-
-        /* 优化内容容器样式 */
-        .content-container {
-            max-width: 5xl;
-            margin: 0 auto;
-            padding: 2rem 1.5rem;
-            background: white;
-            border-radius: 1rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        }
-
-        /* 优化页面背景和间距 */
-        .page-wrapper {
-            min-height: 100vh;
-            background: #f8fafc;
-            padding: 2rem 1rem;
-        }
-
-        /* 优化返回按钮样式 */
-        .back-button {
-            display: inline-flex;
-            align-items: center;
-            padding: 0.5rem 1rem;
-            font-weight: 500;
-            color: #3b82f6;
-            background: #eff6ff;
-            border-radius: 0.5rem;
-            transition: all 0.2s;
-        }
-
-        .back-button:hover {
-            background: #dbeafe;
-            color: #2563eb;
-            transform: translateY(-1px);
-        }
-
-        .back-button svg {
-            width: 1.25rem;
-            height: 1.25rem;
-            margin-right: 0.5rem;
         }
         .prose img {
             border-radius: 0.5rem;
@@ -373,30 +318,32 @@
         }
     </style>
 </head>
-<body class="page-wrapper">
+<body class="bg-gray-50 min-h-screen">
     <!-- Add loading progress bar -->
     <div id="loadingProgress" class="loading-progress">
         <div id="loadingProgressBar" class="loading-progress-bar"></div>
     </div>
-    <div class="content-container">
-        <header class="mb-8">
-            <h1 id="pageTitle" class="text-3xl font-bold text-gray-900"></h1>
-        </header>
-        <main>
-            <div id="pageContent" class="prose">
-                <div class="flex justify-center py-8">
-                    <div class="loading-spinner"></div>
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div class="p-6">
+                <h1 id="pageTitle" class="text-3xl font-bold mb-6 text-gray-900 text-center"></h1>
+                <div id="pageContent" class="prose">
+                    <div class="flex justify-center py-8">
+                        <div class="loading-spinner"></div>
+                    </div>
+                </div>
+                <div class="mt-8 pt-6 border-t border-gray-200">
+                    <div class="flex justify-between items-center">
+                        <a href="/static/pages.html" class="back-button text-blue-500 hover:text-blue-600 flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                            </svg>
+                            Back to Pages
+                        </a>
+                    </div>
                 </div>
             </div>
-            <div class="mt-12">
-                <a href="/static/pages.html" class="back-button">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                    </svg>
-                    Back to Pages
-                </a>
-            </div>
-        </main>
+        </div>
     </div>
 
     <!-- Image Modal -->
