@@ -271,38 +271,40 @@ async def get_page_content(page_id: str):
         if not page_info:
             raise HTTPException(status_code=404, detail="Page not found")
         
-        # Get page blocks
-        blocks = []
-        has_more = True
-        cursor = None
+        async def get_block_children(block_id: str) -> List[dict]:
+            """Recursively get all children of a block"""
+            blocks = []
+            has_more = True
+            cursor = None
+            
+            while has_more:
+                if cursor:
+                    response = notion.blocks.children.list(block_id=block_id, start_cursor=cursor)
+                else:
+                    response = notion.blocks.children.list(block_id=block_id)
+                
+                for block in response["results"]:
+                    block_content = process_block_content(block)
+                    
+                    # 如果块有子块，递归获取它们
+                    if block["has_children"]:
+                        try:
+                            child_blocks = await get_block_children(block["id"])
+                            block_content["children"] = child_blocks
+                        except Exception as e:
+                            logger.warning(f"Error fetching child blocks for {block['id']}: {e}")
+                            block_content["children"] = []
+                    
+                    blocks.append(block_content)
+                
+                has_more = response["has_more"]
+                if has_more:
+                    cursor = response["next_cursor"]
+            
+            return blocks
         
-        while has_more:
-            if cursor:
-                response = notion.blocks.children.list(block_id=page_id, start_cursor=cursor)
-            else:
-                response = notion.blocks.children.list(block_id=page_id)
-            
-            for block in response["results"]:
-                block_content = process_block_content(block)
-                
-                # 如果块有子块，获取它们
-                if block["has_children"]:
-                    try:
-                        child_response = notion.blocks.children.list(block_id=block["id"])
-                        child_blocks = []
-                        for child_block in child_response["results"]:
-                            child_content = process_block_content(child_block)
-                            child_blocks.append(child_content)
-                        block_content["children"] = child_blocks
-                    except Exception as e:
-                        logger.warning(f"Error fetching child blocks for {block['id']}: {e}")
-                        block_content["children"] = []
-                
-                blocks.append(block_content)
-            
-            has_more = response["has_more"]
-            if has_more:
-                cursor = response["next_cursor"]
+        # Get all blocks recursively
+        blocks = await get_block_children(page_id)
         
         return {
             "page": page_info,

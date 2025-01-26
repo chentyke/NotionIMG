@@ -237,9 +237,23 @@
             // 添加颜色样式
             const colorClass = block.color ? `text-${block.color.replace('_', '-')}` : '';
             
+            // 处理子块
+            async function renderChildren(children) {
+                if (!children || children.length === 0) return '';
+                let childContent = '';
+                for (const child of children) {
+                    childContent += await renderBlock(child);
+                }
+                return childContent;
+            }
+            
             switch (block.type) {
                 case 'paragraph':
-                    return `<p class="${colorClass}">${block.rich_text ? renderRichText(block.rich_text) : block.text || ''}</p>`;
+                    content = `<p class="${colorClass}">${block.rich_text ? renderRichText(block.rich_text) : block.text || ''}</p>`;
+                    if (block.children) {
+                        content += await renderChildren(block.children);
+                    }
+                    return content;
                 case 'heading_1':
                     return `<h1 class="${colorClass}">${block.rich_text ? renderRichText(block.rich_text) : block.text}</h1>`;
                 case 'heading_2':
@@ -247,9 +261,17 @@
                 case 'heading_3':
                     return `<h3 class="${colorClass}">${block.rich_text ? renderRichText(block.rich_text) : block.text}</h3>`;
                 case 'bulleted_list_item':
-                    return `<li class="${colorClass}">• ${block.rich_text ? renderRichText(block.rich_text) : block.text}</li>`;
+                    content = `<li class="${colorClass}">• ${block.rich_text ? renderRichText(block.rich_text) : block.text}</li>`;
+                    if (block.children) {
+                        content += await renderChildren(block.children);
+                    }
+                    return content;
                 case 'numbered_list_item':
-                    return `<li class="${colorClass}">1. ${block.rich_text ? renderRichText(block.rich_text) : block.text}</li>`;
+                    content = `<li class="${colorClass}">1. ${block.rich_text ? renderRichText(block.rich_text) : block.text}</li>`;
+                    if (block.children) {
+                        content += await renderChildren(block.children);
+                    }
+                    return content;
                 case 'code':
                     return `<pre><code class="language-${block.language}">${block.text}</code></pre>`;
                 case 'image':
@@ -269,12 +291,20 @@
                 case 'divider':
                     return `<hr class="my-6">`;
                 case 'quote':
-                    return `<blockquote class="${colorClass}">${block.text}</blockquote>`;
+                    content = `<blockquote class="${colorClass}">${block.text}</blockquote>`;
+                    if (block.children) {
+                        content += await renderChildren(block.children);
+                    }
+                    return content;
                 case 'callout':
-                    return `<div class="bg-gray-50 p-4 rounded-lg my-4 flex items-start">
+                    content = `<div class="bg-gray-50 p-4 rounded-lg my-4 flex items-start">
                         <div class="mr-4">${block.icon?.emoji || '💡'}</div>
                         <div class="${colorClass}">${block.text}</div>
                     </div>`;
+                    if (block.children) {
+                        content += await renderChildren(block.children);
+                    }
+                    return content;
                 case 'bookmark':
                     return `<div class="border rounded-lg p-4 my-4 hover:bg-gray-50">
                         <a href="${block.url}" target="_blank" class="text-blue-600 hover:underline block">
@@ -350,18 +380,22 @@
                     return '';
                     
                 case 'to_do':
-                    return `<div class="flex items-center my-2">
+                    content = `<div class="flex items-center my-2">
                         <input type="checkbox" ${block.checked ? 'checked' : ''} disabled class="mr-2">
                         <span class="${colorClass} ${block.checked ? 'line-through text-gray-400' : ''}">${block.text}</span>
                     </div>`;
+                    if (block.children) {
+                        content += await renderChildren(block.children);
+                    }
+                    return content;
                 case 'child_page':
                     const icon = block.icon?.emoji || block.icon?.external?.url || '📄';
                     const iconHtml = block.icon?.type === 'external' 
                         ? `<img src="${icon}" class="w-5 h-5 mr-2">` 
                         : `<span class="mr-2">${icon}</span>`;
                     
-                    return `<div class="border rounded-lg p-4 my-4 hover:bg-gray-50">
-                        <a href="/static/page.html?id=${block.page_id}" class="text-blue-600 hover:underline flex items-center">
+                    content = `<div class="border rounded-lg p-4 my-4 hover:bg-gray-50">
+                        <a href="/static/page.html?id=${block.id}" class="text-blue-600 hover:underline flex items-center">
                             ${iconHtml}
                             <span class="truncate">${block.title || 'Untitled'}</span>
                         </a>
@@ -371,6 +405,11 @@
                                  alt="${block.title}">
                         </div>` : ''}
                     </div>`;
+                    
+                    if (block.children) {
+                        content += await renderChildren(block.children);
+                    }
+                    return content;
                 case 'child_database':
                     return `<div class="border rounded-lg p-4 my-4 bg-gray-50">
                         <div class="flex items-center text-gray-600">
@@ -387,7 +426,11 @@
                         </a>
                     </div>`;
                 default:
-                    return '';
+                    content = await super.renderBlock(block);
+                    if (block.children) {
+                        content += await renderChildren(block.children);
+                    }
+                    return content;
             }
         }
 
