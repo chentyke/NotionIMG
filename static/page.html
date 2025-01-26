@@ -22,6 +22,9 @@
         .prose {
             max-width: 65ch;
             margin: 0 auto;
+            font-size: 1rem;
+            line-height: 1.75;
+            color: #374151;
         }
         .prose img {
             border-radius: 0.5rem;
@@ -96,14 +99,16 @@
         .prose h1 {
             font-size: 2.25rem;
             font-weight: 700;
-            margin: 2rem 0 0.75rem;
+            margin: 1.75rem 0 0.75rem;
+            color: #111827;
         }
         .edit-date {
             color: #6B7280;
             font-size: 0.875rem;
-            margin-bottom: 2rem;
+            margin-bottom: 2.5rem;
             font-style: italic;
             padding-left: 0.125rem;
+            opacity: 0.9;
         }
         .prose h2 {
             font-size: 1.875rem;
@@ -346,10 +351,10 @@
     <div id="loadingProgress" class="loading-progress">
         <div id="loadingProgressBar" class="loading-progress-bar"></div>
     </div>
-    <div class="container mx-auto px-4 py-8 max-w-4xl">
+    <div class="container mx-auto px-4 py-6 max-w-4xl">
         <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-            <div class="p-6">
-                <div class="mb-8">
+            <div class="p-8">
+                <div class="mb-6">
                     <h1 id="pageTitle" class="text-3xl font-bold text-gray-900"></h1>
                 </div>
                 <div id="pageContent" class="prose">
