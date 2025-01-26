@@ -218,8 +218,8 @@ async def get_page_content(page_id: str):
             for block in response["results"]:
                 block_content = process_block_content(block)
                 
-                # If block has children, recursively get them
-                if block["has_children"]:
+                # 只为非子页面类型的块获取子内容
+                if block["has_children"] and block["type"] not in ["child_page", "child_database"]:
                     try:
                         child_blocks = []
                         child_cursor = None
@@ -236,8 +236,8 @@ async def get_page_content(page_id: str):
                             
                             for child_block in child_response["results"]:
                                 child_content = process_block_content(child_block)
-                                # 如果子块也有子内容，递归获取
-                                if child_block["has_children"]:
+                                # 如果子块也有子内容且不是子页面，递归获取
+                                if child_block["has_children"] and child_block["type"] not in ["child_page", "child_database"]:
                                     child_content["children"] = await get_block_children(child_block["id"])
                                 child_blocks.append(child_content)
                             
@@ -283,7 +283,8 @@ async def get_block_children(block_id: str) -> List[dict]:
             
             for block in response["results"]:
                 block_content = process_block_content(block)
-                if block["has_children"]:
+                # 只为非子页面类型的块获取子内容
+                if block["has_children"] and block["type"] not in ["child_page", "child_database"]:
                     block_content["children"] = await get_block_children(block["id"])
                 children.append(block_content)
             

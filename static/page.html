@@ -282,7 +282,7 @@
             }
             
             // 如果有子块，递归渲染它们
-            if (block.children && block.children.length > 0) {
+            if (block.children && block.children.length > 0 && block.type !== 'child_page' && block.type !== 'child_database') {
                 let childrenContent = '';
                 for (const child of block.children) {
                     childrenContent += await renderBlock(child);
