@@ -190,17 +190,22 @@ def process_block_content(block: dict) -> dict:
         elif block_type == "toggle":
             # For toggle blocks, we need to process the rich_text content
             result["text"] = process_rich_text(block_content["rich_text"])
+            logger.info(f"Processing toggle block: {block['id']}")
+            logger.info(f"Toggle text: {result['text']}")
             # Process children if present
             if block.get("has_children", False):
                 try:
                     child_blocks = notion.blocks.children.list(block_id=block["id"])["results"]
+                    logger.info(f"Toggle children count: {len(child_blocks)}")
                     children = []
                     for child_block in child_blocks:
+                        logger.info(f"Processing toggle child: {child_block['type']}")
                         child_content = process_block_content(child_block)
                         if child_content:
                             children.append(child_content)
                     if children:
                         result["children"] = children
+                        logger.info(f"Processed toggle children: {len(children)}")
                 except Exception as e:
                     logger.warning(f"Error processing toggle children: {e}")
         elif block_type == "table":

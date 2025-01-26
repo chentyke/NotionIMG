@@ -225,6 +225,7 @@
             min-height: 1.5em;
             color: inherit;
             width: 100%;
+            user-select: none;
         }
         .toggle-header:hover {
             background-color: rgba(55, 53, 47, 0.08);
@@ -235,7 +236,7 @@
             margin-right: 0.5rem;
             transition: transform 0.15s ease-in;
             flex-shrink: 0;
-            opacity: 0.5;
+            opacity: 0.35;
         }
         .toggle-text {
             flex: 1;
@@ -251,16 +252,19 @@
             overflow: hidden;
             height: 0;
             opacity: 0;
-            transition: height 0.15s ease-out, opacity 0.15s ease-out;
+            transition: height 0.2s ease-out, opacity 0.1s ease-out;
+            will-change: height, opacity;
+        }
+        .toggle-content-inner {
+            padding-top: 0.25rem;
         }
         .toggle-block.open .toggle-icon {
             transform: rotate(90deg);
-            opacity: 0.8;
+            opacity: 0.6;
         }
         .toggle-block.open .toggle-content {
-            height: auto;
             opacity: 1;
-            transition: height 0.25s ease-in, opacity 0.25s ease-in;
+            transition: height 0.2s ease-in, opacity 0.2s ease-in;
         }
         .toggle-block .toggle-block {
             margin-left: 0;
@@ -584,6 +588,7 @@
                     
                     // Recursively render nested blocks
                     if (block.children && block.children.length > 0) {
+                        console.log('Processing toggle children:', block.children);
                         const nestedContent = await Promise.all(block.children.map(async child => {
                             // Handle nested lists
                             if (child.type === 'bulleted_list_item' || child.type === 'numbered_list_item') {
@@ -599,7 +604,7 @@
                         <div class="toggle-block" id="${toggleId}">
                             <div class="toggle-header" onclick="toggleBlock('${toggleId}')" ${colorStyle}>
                                 <svg class="toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5l7 7-7 7"></path>
                                 </svg>
                                 <div class="toggle-text">${block.text || ''}</div>
                             </div>
@@ -718,25 +723,40 @@
             const contentInner = content.querySelector('.toggle-content-inner');
             const isOpen = block.classList.contains('open');
             
+            // Get the current height before any changes
+            const startHeight = content.offsetHeight;
+            
             if (isOpen) {
-                // Closing animation
-                content.style.height = content.scrollHeight + 'px';
+                // Set explicit height before closing
+                content.style.height = startHeight + 'px';
                 // Force reflow
                 content.offsetHeight;
-                content.style.height = '0';
-                content.style.opacity = '0';
-                block.classList.remove('open');
+                // Start closing animation
+                requestAnimationFrame(() => {
+                    content.style.height = '0';
+                    content.style.opacity = '0';
+                    block.classList.remove('open');
+                });
             } else {
-                // Opening animation
+                // Start opening animation
                 block.classList.add('open');
-                content.style.height = contentInner.offsetHeight + 'px';
-                content.style.opacity = '1';
+                const targetHeight = contentInner.offsetHeight;
+                content.style.height = '0';
+                // Force reflow
+                content.offsetHeight;
+                // Trigger animation
+                requestAnimationFrame(() => {
+                    content.style.height = targetHeight + 'px';
+                    content.style.opacity = '1';
+                });
+                
                 // Reset height after animation
-                setTimeout(() => {
-                    if (block.classList.contains('open')) {
+                content.addEventListener('transitionend', function handler(e) {
+                    if (e.propertyName === 'height' && block.classList.contains('open')) {
                         content.style.height = 'auto';
+                        content.removeEventListener('transitionend', handler);
                     }
-                }, 250);
+                });
             }
         }
     </script>
