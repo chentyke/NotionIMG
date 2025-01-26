@@ -66,11 +66,27 @@
             line-height: 1.75;
         }
         .prose ul, .prose ol {
-            margin: 1rem 0;
-            padding-left: 1.5rem;
+            margin: 0.5rem 0;
+            padding-left: 0;
+        }
+        .prose ul ul, .prose ol ol,
+        .prose ul ol, .prose ol ul {
+            margin: 0.25rem 0 0.25rem 1.5rem;
         }
         .prose li {
-            margin: 0.5rem 0;
+            margin: 0.25rem 0;
+            padding-left: 0.5rem;
+        }
+        .prose li::marker {
+            color: #6B7280;
+        }
+        .prose li > p {
+            margin: 0;
+            display: inline;
+        }
+        .prose li > * {
+            margin-top: 0.25rem;
+            margin-bottom: 0.25rem;
         }
         .image-modal {
             display: none;
@@ -457,9 +473,22 @@
                 case 'heading_3':
                     return `<h3 ${colorStyle}>${block.text}</h3>`;
                 case 'bulleted_list_item':
-                    return `<li ${colorStyle}>${block.text}</li>`;
                 case 'numbered_list_item':
-                    return `<li ${colorStyle}>${block.text}</li>`;
+                    let listContent = block.text || '';
+                    
+                    // Handle nested content
+                    if (block.children && block.children.length > 0) {
+                        const nestedContent = await Promise.all(block.children.map(async child => {
+                            if (child.type === 'bulleted_list_item' || child.type === 'numbered_list_item') {
+                                const listType = child.type === 'bulleted_list_item' ? 'ul' : 'ol';
+                                return `<${listType}>${await renderBlock(child)}</${listType}>`;
+                            }
+                            return await renderBlock(child);
+                        }));
+                        listContent += nestedContent.join('');
+                    }
+                    
+                    return `<li ${colorStyle}>${listContent}</li>`;
                 case 'code':
                     return `<pre><code class="language-${block.language}">${block.text}</code></pre>`;
                 case 'image':
@@ -682,14 +711,16 @@
                                 type: block.type,
                                 tag: block.type === 'bulleted_list_item' ? 'ul' : 'ol'
                             };
-                            content += `<${currentList.tag}>`;
+                            content += `<${currentList.tag} class="${block.type === 'bulleted_list_item' ? 'list-disc' : 'list-decimal'} ml-6">`;
                         }
-                    } else if (currentList) {
-                        content += `</${currentList.tag}>`;
-                        currentList = null;
+                        content += await renderBlock(block);
+                    } else {
+                        if (currentList) {
+                            content += `</${currentList.tag}>`;
+                            currentList = null;
+                        }
+                        content += await renderBlock(block);
                     }
-                    
-                    content += await renderBlock(block);
                 }
                 
                 if (currentList) {
