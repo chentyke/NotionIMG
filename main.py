@@ -286,8 +286,16 @@ async def get_page_content(page_id: str):
                     parent_blocks = notion.blocks.children.list(block_id=parent_id)
                     for block in parent_blocks["results"]:
                         if block["type"] == "child_page" and block["id"] == page_id:
-                            # Update page with the correct title
-                            page["title"] = block["child_page"]["title"]
+                            # Create a properties structure similar to regular pages
+                            page["properties"] = {
+                                "Name": {
+                                    "title": [{
+                                        "text": {
+                                            "content": block["child_page"]["title"]
+                                        }
+                                    }]
+                                }
+                            }
                             break
             except Exception as e:
                 logger.warning(f"Error retrieving parent page blocks: {e}")
@@ -310,7 +318,8 @@ async def get_page_content(page_id: str):
             
             for block in response["results"]:
                 block_content = process_block_content(block)
-                blocks.append(block_content)
+                if block_content:  # Only add non-None blocks
+                    blocks.append(block_content)
                 
                 # If block has children, recursively get them
                 if block["has_children"]:
@@ -318,8 +327,10 @@ async def get_page_content(page_id: str):
                     child_response = notion.blocks.children.list(block_id=block["id"])
                     for child_block in child_response["results"]:
                         child_content = process_block_content(child_block)
-                        child_blocks.append(child_content)
-                    block_content["children"] = child_blocks
+                        if child_content:  # Only add non-None blocks
+                            child_blocks.append(child_content)
+                    if child_blocks:  # Only add children if there are any
+                        block_content["children"] = child_blocks
             
             has_more = response["has_more"]
             if has_more:

@@ -254,32 +254,30 @@
                 case 'heading_3':
                     return `<h3 ${colorStyle}>${block.text}</h3>`;
                 case 'bulleted_list_item':
-                    return `<li ${colorStyle}>• ${block.text}</li>`;
+                    return `<li ${colorStyle}>${block.text}</li>`;
                 case 'numbered_list_item':
-                    return `<li ${colorStyle}>1. ${block.text}</li>`;
+                    return `<li ${colorStyle}>${block.text}</li>`;
                 case 'code':
                     return `<pre><code class="language-${block.language}">${block.text}</code></pre>`;
                 case 'image':
                     try {
                         const compressedUrl = await compressImage(block.image_url);
-                        return `
-                            <figure>
-                                <img src="${compressedUrl}" 
-                                    alt="${block.caption || 'Page image'}" 
-                                    onclick="openImageModal('${block.image_url}')"
-                                    title="Click to view full size">
-                                ${block.caption ? `<figcaption class="text-sm text-gray-500 mt-2">${block.caption}</figcaption>` : ''}
-                            </figure>`;
+                        return `<figure>
+                            <img src="${compressedUrl}" 
+                                alt="${block.caption || 'Page image'}" 
+                                onclick="openImageModal('${block.image_url}')"
+                                title="Click to view full size">
+                            ${block.caption ? `<figcaption class="text-sm text-gray-500 mt-2">${block.caption}</figcaption>` : ''}
+                        </figure>`;
                     } catch (error) {
                         console.error('Error compressing image:', error);
-                        return `
-                            <figure>
-                                <img src="${block.image_url}" 
-                                    alt="${block.caption || 'Page image'}" 
-                                    onclick="openImageModal('${block.image_url}')"
-                                    title="Click to view full size">
-                                ${block.caption ? `<figcaption class="text-sm text-gray-500 mt-2">${block.caption}</figcaption>` : ''}
-                            </figure>`;
+                        return `<figure>
+                            <img src="${block.image_url}" 
+                                alt="${block.caption || 'Page image'}" 
+                                onclick="openImageModal('${block.image_url}')"
+                                title="Click to view full size">
+                            ${block.caption ? `<figcaption class="text-sm text-gray-500 mt-2">${block.caption}</figcaption>` : ''}
+                        </figure>`;
                     }
                 case 'divider':
                     return `<hr class="my-6">`;
@@ -370,19 +368,18 @@
                             <span class="${block.checked ? 'line-through text-gray-500' : ''}">${block.text}</span>
                         </div>`;
                 case 'child_page':
-                    return `
-                        <div class="border rounded-lg p-4 my-4 hover:bg-gray-50" 
-                             onclick="loadChildPage('${block.page_id}', '${block.title}')"
-                             style="cursor: pointer;">
-                            <div class="flex items-center text-blue-600">
-                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
-                                    </path>
-                                </svg>
-                                ${block.title}
-                            </div>
-                        </div>`;
+                    return `<div class="border rounded-lg p-4 my-4 hover:bg-gray-50" 
+                        onclick="loadChildPage('${block.page_id}', '${block.title}')"
+                        style="cursor: pointer;">
+                        <div class="flex items-center text-blue-600">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                                </path>
+                            </svg>
+                            ${block.title}
+                        </div>
+                    </div>`;
                 case 'link_preview':
                     return `
                         <div class="border rounded-lg p-4 my-4 hover:bg-gray-50">
@@ -409,8 +406,7 @@
                 document.getElementById('pageContent').innerHTML = `
                     <div class="text-center text-red-500">
                         <p>No page ID provided.</p>
-                    </div>
-                `;
+                    </div>`;
                 return;
             }
 
@@ -424,8 +420,30 @@
                 
                 // Render content
                 let content = '';
+                let currentList = null;
+                
                 for (const block of data.blocks) {
+                    if (block.type === 'bulleted_list_item' || block.type === 'numbered_list_item') {
+                        if (!currentList || currentList.type !== block.type) {
+                            if (currentList) {
+                                content += `</${currentList.tag}>`;
+                            }
+                            currentList = {
+                                type: block.type,
+                                tag: block.type === 'bulleted_list_item' ? 'ul' : 'ol'
+                            };
+                            content += `<${currentList.tag}>`;
+                        }
+                    } else if (currentList) {
+                        content += `</${currentList.tag}>`;
+                        currentList = null;
+                    }
+                    
                     content += await renderBlock(block);
+                }
+                
+                if (currentList) {
+                    content += `</${currentList.tag}>`;
                 }
                 
                 document.getElementById('pageContent').innerHTML = content;
@@ -435,8 +453,7 @@
                     <div class="text-center text-red-500">
                         <p>Error loading page content.</p>
                         <p class="text-sm mt-2">${error.message}</p>
-                    </div>
-                `;
+                    </div>`;
             }
         }
 
