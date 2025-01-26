@@ -73,8 +73,13 @@ def get_page_info(page: dict) -> dict:
             if hidden:
                 return None
         else:
-            # For child pages without properties, get title directly
-            title = page.get("title", "Untitled")
+            # For child pages, try to get title from child_page object first
+            child_page = page.get("child_page", {})
+            if child_page:
+                title = child_page.get("title", "Untitled")
+            else:
+                # Try to get title from page object
+                title = page.get("title", "Untitled")
             
         return {
             "id": page["id"],
@@ -271,6 +276,22 @@ async def get_page_content(page_id: str):
     try:
         # Get page metadata
         page = notion.pages.retrieve(page_id=page_id)
+        
+        # For child pages, try to get the title from parent page's child_page block
+        if not page.get("properties"):
+            try:
+                # Get parent page blocks to find this child page
+                parent_id = page.get("parent", {}).get("page_id")
+                if parent_id:
+                    parent_blocks = notion.blocks.children.list(block_id=parent_id)
+                    for block in parent_blocks["results"]:
+                        if block["type"] == "child_page" and block["id"] == page_id:
+                            # Update page with the correct title
+                            page["title"] = block["child_page"]["title"]
+                            break
+            except Exception as e:
+                logger.warning(f"Error retrieving parent page blocks: {e}")
+        
         page_info = get_page_info(page)
         
         if not page_info:
