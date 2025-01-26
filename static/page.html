@@ -20,8 +20,63 @@
             100% { transform: rotate(360deg); }
         }
         .prose {
-            max-width: 65ch;
+            max-width: 75ch;
             margin: 0 auto;
+            font-size: 1.05rem;
+            line-height: 1.75;
+        }
+        
+        /* 优化标题样式 */
+        #pageTitle {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #1a1a1a;
+            letter-spacing: -0.025em;
+            line-height: 1.2;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        /* 优化内容容器样式 */
+        .content-container {
+            max-width: 5xl;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        /* 优化页面背景和间距 */
+        .page-wrapper {
+            min-height: 100vh;
+            background: #f8fafc;
+            padding: 2rem 1rem;
+        }
+
+        /* 优化返回按钮样式 */
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            font-weight: 500;
+            color: #3b82f6;
+            background: #eff6ff;
+            border-radius: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .back-button:hover {
+            background: #dbeafe;
+            color: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        .back-button svg {
+            width: 1.25rem;
+            height: 1.25rem;
+            margin-right: 0.5rem;
         }
         .prose img {
             border-radius: 0.5rem;
@@ -316,132 +371,24 @@
             color: white;
             border-color: #059669;
         }
-
-        /* 优化容器样式 */
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 1.5rem;
-        }
-
-        /* 优化内容区域样式 */
-        .content-wrapper {
-            background: white;
-            border-radius: 1rem;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-            padding: 2.5rem;
-            margin-bottom: 2rem;
-        }
-
-        /* 优化标题区域样式 */
-        .page-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-bottom: 2rem;
-            margin-bottom: 2rem;
-            border-bottom: 1px solid #e5e7eb;
-        }
-
-        .page-title {
-            font-size: 2.5rem;
-            font-weight: 800;
-            color: #111827;
-            line-height: 1.2;
-            letter-spacing: -0.025em;
-            margin: 0;
-            flex: 1;
-        }
-
-        /* 优化返回按钮样式 */
-        .back-button {
-            display: inline-flex;
-            align-items: center;
-            padding: 0.75rem 1.25rem;
-            border-radius: 0.5rem;
-            transition: all 0.2s;
-            background-color: #f3f4f6;
-            color: #374151;
-            font-weight: 500;
-            margin-left: 2rem;
-            white-space: nowrap;
-        }
-
-        .back-button:hover {
-            background-color: #e5e7eb;
-            color: #111827;
-            text-decoration: none;
-            transform: translateY(-1px);
-        }
-
-        .back-button svg {
-            width: 1.25rem;
-            height: 1.25rem;
-            margin-right: 0.75rem;
-        }
-
-        /* 优化内容区域的响应式布局 */
-        .prose {
-            max-width: 100%;
-            margin: 0 auto;
-        }
-
-        @media (min-width: 768px) {
-            .prose {
-                max-width: 90%;
-            }
-        }
-
-        @media (min-width: 1024px) {
-            .prose {
-                max-width: 80%;
-            }
-        }
-
-        /* 优化移动端布局 */
-        @media (max-width: 640px) {
-            .page-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 1rem;
-            }
-
-            .back-button {
-                margin-left: 0;
-            }
-
-            .page-title {
-                font-size: 2rem;
-            }
-
-            .content-wrapper {
-                padding: 1.5rem;
-            }
-        }
-
-        /* 优化页面背景和间距 */
-        body {
-            background-color: #f9fafb;
-            padding: 2rem 0;
-        }
-
-        @media (min-width: 768px) {
-            body {
-                padding: 3rem 0;
-            }
-        }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen py-8">
+<body class="page-wrapper">
     <!-- Add loading progress bar -->
     <div id="loadingProgress" class="loading-progress">
         <div id="loadingProgressBar" class="loading-progress-bar"></div>
     </div>
-    
-    <div class="container mx-auto">
-        <div class="content-wrapper">
-            <div class="page-header">
-                <h1 id="pageTitle" class="page-title"></h1>
+    <div class="content-container">
+        <header class="mb-8">
+            <h1 id="pageTitle" class="text-3xl font-bold text-gray-900"></h1>
+        </header>
+        <main>
+            <div id="pageContent" class="prose">
+                <div class="flex justify-center py-8">
+                    <div class="loading-spinner"></div>
+                </div>
+            </div>
+            <div class="mt-12">
                 <a href="/static/pages.html" class="back-button">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
@@ -449,13 +396,7 @@
                     Back to Pages
                 </a>
             </div>
-            
-            <div id="pageContent" class="prose">
-                <div class="flex justify-center py-8">
-                    <div class="loading-spinner"></div>
-                </div>
-            </div>
-        </div>
+        </main>
     </div>
 
     <!-- Image Modal -->
@@ -579,269 +520,64 @@
 
         // Load child page
         async function loadChildPage(pageId, title) {
-            if (!pageId) {
-                console.error('No page ID provided for child page');
-                return;
-            }
-
-            try {
-                // Update browser history
-                window.history.pushState({}, "", `/static/page.html?id=${pageId}`);
-                
-                // Show loading state
-                document.getElementById('pageContent').innerHTML = `
-                    <div class="flex justify-center py-8">
-                        <div class="loading-spinner"></div>
-                    </div>`;
-                
-                // Update page title immediately if provided
-                if (title) {
-                    document.title = title;
-                    document.getElementById('pageTitle').textContent = title;
-                }
-                
-                // Load the new page content
-                await loadPage(pageId);
-                
-            } catch (error) {
-                console.error('Error loading child page:', error);
-                document.getElementById('pageContent').innerHTML = `
-                    <div class="text-center text-red-500">
-                        <p>Error loading child page.</p>
-                        <p class="text-sm mt-2">${error.message}</p>
-                        <button onclick="loadChildPage('${pageId}', '${title}')" 
-                                class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
-                            Try Again
-                        </button>
-                    </div>`;
-            }
-        }
-
-        // Optimize page loading
-        async function loadPage(pageId = null) {
-            const targetPageId = pageId || urlParams.get('id');
+            // Update browser history
+            window.history.pushState({}, "", `/static/page.html?id=${pageId}`);
             
-            if (!targetPageId) {
-                document.getElementById('pageContent').innerHTML = `
-                    <div class="text-center text-red-500">
-                        <p>No page ID provided.</p>
-                    </div>`;
-                return;
-            }
-
-            try {
-                updateLoadingProgress(10);
-                const response = await fetch(`/page/${targetPageId}`);
-                const data = await response.json();
-                
-                if (!response.ok) {
-                    throw new Error(data.message || 'Failed to load page');
-                }
-
-                updateLoadingProgress(30);
-                
-                // Safely get page title and parent ID
-                const pageTitle = data.page?.title || data.title || 'Untitled';
-                const parentId = data.page?.parent_id || data.parent_id;
-                
-                // Update page title
-                document.title = pageTitle;
-                document.getElementById('pageTitle').textContent = pageTitle;
-                
-                // Update back button based on parent page
-                const backButton = document.querySelector('.back-button');
-                if (parentId) {
-                    backButton.href = `javascript:void(0)`;
-                    backButton.onclick = () => loadChildPage(parentId, '');
-                } else {
-                    backButton.href = "/static/pages.html";
-                    backButton.onclick = null;
-                }
-
-                // Safely get blocks
-                const blocks = data.blocks || [];
-                totalBlocks = blocks.length;
-                loadedBlocks = 0;
-                
-                // Render content
-                let content = '';
-                let currentList = null;
-                
-                for (const block of blocks) {
-                    if (!block) continue; // Skip null/undefined blocks
-                    
-                    if (block.type === 'bulleted_list_item' || block.type === 'numbered_list_item') {
-                        if (!currentList || currentList.type !== block.type) {
-                            if (currentList) {
-                                content += `</${currentList.tag}>`;
-                            }
-                            currentList = {
-                                type: block.type,
-                                tag: block.type === 'bulleted_list_item' ? 'ul' : 'ol'
-                            };
-                            content += `<${currentList.tag} class="${block.type === 'bulleted_list_item' ? 'list-disc' : 'list-decimal'} ml-6">`;
-                        }
-                        content += await renderBlock(block);
-                    } else {
-                        if (currentList) {
-                            content += `</${currentList.tag}>`;
-                            currentList = null;
-                        }
-                        content += await renderBlock(block);
-                    }
-                }
-                
-                if (currentList) {
-                    content += `</${currentList.tag}>`;
-                }
-                
-                if (!content.trim()) {
-                    content = '<p class="text-gray-500 text-center">This page is empty.</p>';
-                }
-                
-                document.getElementById('pageContent').innerHTML = content;
-                
-                // Initialize lazy loading for images
-                document.querySelectorAll('img[data-src]').forEach(img => {
-                    imageObserver.observe(img);
-                });
-                
-                updateLoadingProgress(100);
-                
-            } catch (error) {
-                console.error('Error loading page content:', error);
-                document.getElementById('pageContent').innerHTML = `
-                    <div class="text-center text-red-500">
-                        <p>Error loading page content.</p>
-                        <p class="text-sm mt-2">${error.message}</p>
-                        <button onclick="loadPage('${targetPageId}')" 
-                                class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
-                            Try Again
-                        </button>
-                    </div>`;
-            }
+            // Show loading state
+            document.getElementById('pageContent').innerHTML = `
+                <div class="flex justify-center py-8">
+                    <div class="loading-spinner"></div>
+                </div>`;
+            
+            // Update page title immediately
+            document.title = title;
+            document.getElementById('pageTitle').textContent = title;
+            
+            // Load the new page content
+            await loadPage(pageId);
         }
 
-        // Load page on start
-        loadPage();
-
-        // Add copy code function
-        function copyCode(button) {
-            const pre = button.parentElement;
-            const code = pre.querySelector('code');
-            const text = code.textContent;
-
-            navigator.clipboard.writeText(text).then(() => {
-                button.textContent = 'Copied!';
-                button.classList.add('copied');
-                
-                setTimeout(() => {
-                    button.textContent = 'Copy';
-                    button.classList.remove('copied');
-                }, 2000);
-            }).catch(err => {
-                console.error('Failed to copy text:', err);
-                button.textContent = 'Failed';
-                
-                setTimeout(() => {
-                    button.textContent = 'Copy';
-                }, 2000);
-            });
-        }
-
+        // Optimize block rendering
         async function renderBlock(block) {
             loadedBlocks++;
             updateLoadingProgress((loadedBlocks / totalBlocks) * 100);
             
+            let content = '';
             const colorStyle = block.color && block.color !== 'default' 
                 ? `style="color: ${block.color === 'gray' ? '#9CA3AF' : block.color};"` 
                 : '';
 
             switch (block.type) {
                 case 'paragraph':
-                    return `<p ${colorStyle}>${block.paragraph?.rich_text?.[0]?.text?.content || ''}</p>`;
+                    return `<p ${colorStyle}>${block.text || ''}</p>`;
                 case 'heading_1':
-                    return `<h1 ${colorStyle}>${block.heading_1?.rich_text?.[0]?.text?.content || ''}</h1>`;
+                    return `<h1 ${colorStyle}>${block.text}</h1>`;
                 case 'heading_2':
-                    return `<h2 ${colorStyle}>${block.heading_2?.rich_text?.[0]?.text?.content || ''}</h2>`;
+                    return `<h2 ${colorStyle}>${block.text}</h2>`;
                 case 'heading_3':
-                    return `<h3 ${colorStyle}>${block.heading_3?.rich_text?.[0]?.text?.content || ''}</h3>`;
+                    return `<h3 ${colorStyle}>${block.text}</h3>`;
                 case 'bulleted_list_item':
                 case 'numbered_list_item':
-                    let listContent = block[block.type]?.rich_text?.[0]?.text?.content || '';
-                    let nestedContent = '';
+                    let listContent = block.text || '';
                     
-                    // 处理嵌套列表
-                    if (block.has_children && block.children?.length > 0) {
-                        let nestedList = '';
-                        let currentNestedType = null;
-                        
-                        for (const child of block.children) {
+                    // Handle nested content
+                    if (block.children && block.children.length > 0) {
+                        const nestedContent = await Promise.all(block.children.map(async child => {
                             if (child.type === 'bulleted_list_item' || child.type === 'numbered_list_item') {
-                                if (currentNestedType !== child.type) {
-                                    if (currentNestedType) {
-                                        nestedList += `</${currentNestedType === 'bulleted_list_item' ? 'ul' : 'ol'}>`;
-                                    }
-                                    currentNestedType = child.type;
-                                    nestedList += `<${child.type === 'bulleted_list_item' ? 'ul' : 'ol'} class="${child.type === 'bulleted_list_item' ? 'list-disc' : 'list-decimal'} ml-6">`;
-                                }
-                                nestedList += await renderBlock(child);
-                            } else {
-                                if (currentNestedType) {
-                                    nestedList += `</${currentNestedType === 'bulleted_list_item' ? 'ul' : 'ol'}>`;
-                                    currentNestedType = null;
-                                }
-                                nestedList += await renderBlock(child);
+                                const listType = child.type === 'bulleted_list_item' ? 'ul' : 'ol';
+                                return `<${listType}>${await renderBlock(child)}</${listType}>`;
                             }
-                        }
-                        
-                        if (currentNestedType) {
-                            nestedList += `</${currentNestedType === 'bulleted_list_item' ? 'ul' : 'ol'}>`;
-                        }
-                        
-                        nestedContent = nestedList;
+                            return await renderBlock(child);
+                        }));
+                        listContent += nestedContent.join('');
                     }
                     
-                    return `<li ${colorStyle}>${listContent}${nestedContent}</li>`;
-                case 'to_do':
-                    const checked = block.to_do?.checked || false;
-                    const todoText = block.to_do?.rich_text?.[0]?.text?.content || '';
-                    let todoContent = `
-                        <div class="flex items-start my-2">
-                            <input type="checkbox" ${checked ? 'checked' : ''} disabled 
-                                   class="mt-1 mr-2 h-4 w-4 rounded border-gray-300 text-blue-600">
-                            <span class="${checked ? 'line-through text-gray-500' : ''}">${todoText}</span>
-                        </div>`;
-                    
-                    // 处理待办事项的子项
-                    if (block.has_children && block.children?.length > 0) {
-                        todoContent += '<div class="ml-6">';
-                        for (const child of block.children) {
-                            todoContent += await renderBlock(child);
-                        }
-                        todoContent += '</div>';
-                    }
-                    
-                    return todoContent;
-                case 'child_page':
-                    return `
-                        <div class="border rounded-lg p-4 my-4 hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
-                             onclick="loadChildPage('${block.id}', '${block.child_page?.title || 'Untitled'}')"
-                             role="button"
-                             tabindex="0">
-                            <div class="flex items-center">
-                                <svg class="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
-                                    </path>
-                                </svg>
-                                <span class="text-lg font-medium text-gray-900 hover:text-blue-600">
-                                    ${block.child_page?.title || 'Untitled'}
-                                </span>
-                            </div>
-                        </div>`;
+                    return `<li ${colorStyle}>${listContent}</li>`;
                 case 'code':
-                    return `<pre><code class="language-${block.language}">${block.text}</code><button class="copy-button" onclick="copyCode(this)">Copy</button></pre>`;
+                    return `<pre>
+                        <button class="copy-button" onclick="copyCode(this)">Copy</button>
+                        <code class="language-${block.language}">${block.text}</code>
+                    </pre>`;
                 case 'image':
                     return `<figure>
                         <img class="opacity-0 transition-opacity duration-300" 
@@ -868,9 +604,71 @@
                             </a>
                             ${block.caption ? `<div class="text-sm text-gray-500 mt-2">${block.caption}</div>` : ''}
                         </div>`;
-                default:
-                    return '';
+                case 'equation':
+                    return `<div class="my-4 p-2 bg-gray-50 rounded overflow-x-auto">
+                        <code>${block.expression}</code>
+                    </div>`;
+                case 'video':
+                    const videoUrl = block.video_url;
+                    if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
+                        const videoId = videoUrl.includes('youtu.be') 
+                            ? videoUrl.split('/').pop()
+                            : new URLSearchParams(new URL(videoUrl).search).get('v');
+                        return `
+                            <div class="aspect-w-16 aspect-h-9 my-4">
+                                <iframe src="https://www.youtube.com/embed/${videoId}" 
+                                    frameborder="0" 
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                    allowfullscreen>
+                                </iframe>
+                            </div>`;
+                    } else {
+                        return `<video src="${videoUrl}" controls class="w-full my-4 rounded-lg"></video>`;
+                    }
+                case 'file':
+                    return `
+                        <div class="border rounded-lg p-4 my-4">
+                            <a href="${block.file_url}" target="_blank" rel="noopener noreferrer" 
+                               class="flex items-center text-blue-600 hover:underline">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                          d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                                    </path>
+                                </svg>
+                                Download File
+                            </a>
+                            ${block.caption ? `<div class="text-sm text-gray-500 mt-2">${block.caption}</div>` : ''}
+                        </div>`;
+                case 'pdf':
+                    return `
+                        <div class="border rounded-lg p-4 my-4">
+                            <iframe src="${block.pdf_url}" class="w-full h-96 rounded-lg"></iframe>
+                        </div>`;
             }
+        }
+
+        // Add copy code function before the closing </script> tag
+        function copyCode(button) {
+            const pre = button.parentElement;
+            const code = pre.querySelector('code');
+            const text = code.textContent;
+
+            navigator.clipboard.writeText(text).then(() => {
+                button.textContent = 'Copied!';
+                button.classList.add('copied');
+                
+                setTimeout(() => {
+                    button.textContent = 'Copy';
+                    button.classList.remove('copied');
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy text:', err);
+                button.textContent = 'Failed';
+                
+                setTimeout(() => {
+                    button.textContent = 'Copy';
+                }, 2000);
+            });
         }
     </script>
 </body>
