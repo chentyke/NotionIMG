@@ -106,31 +106,4 @@ async def get_image(image_id: str):
         return RedirectResponse(url=image_url)
     except Exception as e:
         logger.error(f"Error in get_image: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/direct-image/{image_id}")
-async def get_direct_image_url(image_id: str):
-    try:
-        # Get the page
-        page = notion.pages.retrieve(page_id=image_id)
-        
-        # Get the latest image URL from Content property
-        content_files = page.get("properties", {}).get("Content", {}).get("files", [])
-        if not content_files:
-            raise HTTPException(status_code=404, detail="No image found in this page")
-        
-        # Get the first image URL (since we store one image per page)
-        file = content_files[0]
-        image_url = file.get("file", {}).get("url") or file.get("external", {}).get("url")
-        expiry_time = file.get("file", {}).get("expiry_time")
-        
-        if not image_url:
-            raise HTTPException(status_code=404, detail="Image URL not found")
-        
-        return {
-            "url": image_url,
-            "expiry_time": expiry_time
-        }
-    except Exception as e:
-        logger.error(f"Error in get_direct_image_url: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e)) 

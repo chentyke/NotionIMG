@@ -63,10 +63,7 @@
                         <img src="/image/${image.id}" alt="${image.title}" loading="lazy">
                         <div class="p-4">
                             <h3 class="font-medium text-gray-800">${image.title}</h3>
-                            <div class="flex space-x-2">
-                                <button onclick="copyUrl('${window.location.origin}/image/${image.id}')" class="mt-2 text-sm text-blue-500 hover:text-blue-600">Copy URL</button>
-                                <button onclick="copyDirectUrl('${image.id}')" class="mt-2 text-sm text-blue-500 hover:text-blue-600">Copy Direct URL</button>
-                            </div>
+                            <button onclick="copyUrl('${window.location.origin}/image/${image.id}')" class="mt-2 text-sm text-blue-500 hover:text-blue-600">Copy URL</button>
                         </div>
                     `;
                     imageGrid.appendChild(card);
@@ -81,29 +78,14 @@
             }
         }
 
-        // Copy permanent URL to clipboard
+        // Copy URL to clipboard
         function copyUrl(url) {
             navigator.clipboard.writeText(url).then(() => {
-                alert('Permanent URL copied to clipboard! This URL will always redirect to the latest version of the image.');
+                alert('URL copied to clipboard! This URL will always redirect to the latest version of the image.');
             }).catch(err => {
                 console.error('Error copying URL:', err);
                 alert('Error copying URL');
             });
-        }
-
-        // Copy direct URL to clipboard
-        async function copyDirectUrl(imageId) {
-            try {
-                const response = await fetch(`/direct-image/${imageId}`);
-                const data = await response.json();
-                navigator.clipboard.writeText(data.url).then(() => {
-                    const expiryTime = new Date(data.expiry_time);
-                    alert(`Direct URL copied to clipboard!\nNote: This URL will expire on ${expiryTime.toLocaleString()}`);
-                });
-            } catch (err) {
-                console.error('Error copying direct URL:', err);
-                alert('Error copying direct URL');
-            }
         }
 
         // Refresh images button
