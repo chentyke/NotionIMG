@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Response
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -6,8 +6,6 @@ from notion_client import Client
 import os
 import logging
 from typing import List, Dict, Optional
-from functools import lru_cache
-from datetime import datetime, timedelta
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -35,89 +33,9 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 notion = Client(auth=os.environ.get("NOTION_TOKEN"))
 DATABASE_ID = os.environ.get("NOTION_DATABASE_ID")
 
-# Cache configuration
-CACHE_DURATION = 300  # 5 minutes in seconds
-
-# Cache for database queries
-database_cache = {}
-
-def is_cache_valid(cache_time):
-    """Check if cache is still valid."""
-    return datetime.now() - cache_time < timedelta(seconds=CACHE_DURATION)
-
-@lru_cache(maxsize=100)
-def process_rich_text(text_array: tuple) -> str:
-    """Process rich text array to include formatting. Using tuple for cache compatibility."""
-    if not text_array:
-        return ""
-    
-    formatted_text = []
-    for text in text_array:
-        content = text.get("plain_text", "")
-        tags = []
-        
-        annotations = text.get("annotations", {})
-        if annotations.get("bold"): tags.append(("strong", {}))
-        if annotations.get("italic"): tags.append(("em", {}))
-        if annotations.get("strikethrough"): tags.append(("del", {}))
-        if annotations.get("underline"): tags.append(("u", {}))
-        if annotations.get("code"): tags.append(("code", {"class": "inline-code"}))
-        
-        color = annotations.get("color", "default")
-        if color != "default":
-            if color.endswith("_background"):
-                tags.append(("span", {"class": f"bg-{color.replace('_background', '')}"}))
-            else:
-                tags.append(("span", {"class": f"text-{color}"}))
-        
-        href = text.get("href")
-        if href:
-            tags.append(("a", {"href": href, "target": "_blank", "rel": "noopener noreferrer"}))
-        
-        formatted = content
-        for tag, attrs in reversed(tags):
-            attr_str = " ".join([f'{k}="{v}"' for k, v in attrs.items()])
-            formatted = f"<{tag} {attr_str}>{formatted}</{tag}>" if attr_str else f"<{tag}>{formatted}</{tag}>"
-        
-        formatted_text.append(formatted)
-    
-    return "".join(formatted_text)
-
-def get_cached_query(query_type: str) -> Optional[dict]:
-    """Get cached query result if valid."""
-    cache_data = database_cache.get(query_type)
-    if cache_data and is_cache_valid(cache_data["timestamp"]):
-        return cache_data["data"]
-    return None
-
-def update_cache(query_type: str, data: dict):
-    """Update cache with new data."""
-    database_cache[query_type] = {
-        "timestamp": datetime.now(),
-        "data": data
-    }
-
-async def query_database(query_type: str) -> dict:
-    """Query database with caching."""
-    cached_data = get_cached_query(query_type)
-    if cached_data:
-        return cached_data
-
-    try:
-        response = notion.databases.query(
-            database_id=DATABASE_ID,
-            filter={
-                "property": "type",
-                "select": {
-                    "equals": query_type
-                }
-            }
-        )
-        update_cache(query_type, response)
-        return response
-    except Exception as e:
-        logger.error(f"Error querying database for {query_type}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+@app.get("/")
+async def root():
+    return RedirectResponse(url="/static/index.html")
 
 def get_file_info(page: dict) -> dict:
     """Extract file information from a Notion page."""
@@ -327,19 +245,25 @@ def process_block_content(block: dict) -> dict:
         
     return result
 
-@app.get("/")
-async def root():
-    return RedirectResponse(url="/static/index.html")
-
 @app.get("/images")
 async def get_images():
     try:
-        response = await query_database("image")
+        response = notion.databases.query(
+            database_id=DATABASE_ID,
+            filter={
+                "property": "type",
+                "select": {
+                    "equals": "image"
+                }
+            }
+        )
+        
         images = []
         for page in response["results"]:
             file_info = get_file_info(page)
             if file_info:
                 images.append(file_info)
+                
         return {"images": images}
     except Exception as e:
         logger.error(f"Error fetching images: {e}")
@@ -348,12 +272,22 @@ async def get_images():
 @app.get("/files")
 async def get_files():
     try:
-        response = await query_database("file")
+        response = notion.databases.query(
+            database_id=DATABASE_ID,
+            filter={
+                "property": "type",
+                "select": {
+                    "equals": "file"
+                }
+            }
+        )
+        
         files = []
         for page in response["results"]:
             file_info = get_file_info(page)
             if file_info:
                 files.append(file_info)
+                
         return {"files": files}
     except Exception as e:
         logger.error(f"Error fetching files: {e}")
@@ -362,40 +296,88 @@ async def get_files():
 @app.get("/pages")
 async def get_pages():
     try:
-        response = await query_database("page")
+        response = notion.databases.query(
+            database_id=DATABASE_ID,
+            filter={
+                "property": "type",
+                "select": {
+                    "equals": "page"
+                }
+            }
+        )
+        
         pages = []
         for page in response["results"]:
             page_info = get_page_info(page)
             if page_info:
                 pages.append(page_info)
+                
         return {"pages": pages}
     except Exception as e:
         logger.error(f"Error fetching pages: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/page/{page_id}")
-async def get_page_content(page_id: str, response: Response):
-    cache_key = f"page_{page_id}"
-    cached_data = get_cached_query(cache_key)
-    if cached_data:
-        return cached_data
-
+async def get_page_content(page_id: str):
     try:
-        # Get page info
-        page_info = await get_page_info_with_fallback(page_id)
+        # First try to get the block to check if it's a child page
+        try:
+            block = notion.blocks.retrieve(block_id=page_id)
+            if block["type"] == "child_page":
+                # If it's a child page, use the title from the block
+                page_info = {
+                    "id": block["id"],
+                    "title": block["child_page"]["title"],
+                    "created_time": block["created_time"],
+                    "last_edited_time": block["last_edited_time"]
+                }
+            else:
+                # If it's not a child page, get page metadata normally
+                page = notion.pages.retrieve(page_id=page_id)
+                page_info = get_page_info(page)
+        except Exception as e:
+            # If block retrieval fails, try page retrieval as fallback
+            page = notion.pages.retrieve(page_id=page_id)
+            page_info = get_page_info(page)
+        
         if not page_info:
             raise HTTPException(status_code=404, detail="Page not found")
-
-        # Get page blocks
-        blocks = await get_page_blocks(page_id)
         
-        result = {
+        # Get page blocks with pagination to improve performance
+        blocks = []
+        has_more = True
+        cursor = None
+        
+        while has_more:
+            # Get blocks in batches of 100
+            if cursor:
+                response = notion.blocks.children.list(block_id=page_id, start_cursor=cursor, page_size=100)
+            else:
+                response = notion.blocks.children.list(block_id=page_id, page_size=100)
+            
+            # Process blocks in parallel using list comprehension
+            block_contents = [process_block_content(block) for block in response["results"] if block]
+            blocks.extend([b for b in block_contents if b])
+            
+            # Get child blocks in parallel if needed
+            for block in response["results"]:
+                if block["has_children"]:
+                    child_response = notion.blocks.children.list(block_id=block["id"], page_size=100)
+                    child_contents = [process_block_content(child) for child in child_response["results"] if child]
+                    child_blocks = [c for c in child_contents if c]
+                    if child_blocks:
+                        block_content = next((b for b in block_contents if b["id"] == block["id"]), None)
+                        if block_content:
+                            block_content["children"] = child_blocks
+            
+            has_more = response["has_more"]
+            if has_more:
+                cursor = response["next_cursor"]
+        
+        return {
             "page": page_info,
             "blocks": blocks
         }
-        
-        update_cache(cache_key, result)
-        return result
         
     except Exception as e:
         logger.error(f"Error retrieving page {page_id}: {e}")
@@ -411,6 +393,7 @@ async def get_image(image_id: str):
             raise HTTPException(status_code=404, detail="No image found")
             
         image_url = content_property["files"][0]["file"]["url"]
+        logger.info(f"Redirecting to fresh image URL for {image_id}")
         return RedirectResponse(url=image_url)
         
     except Exception as e:
@@ -427,6 +410,7 @@ async def get_file(file_id: str):
             raise HTTPException(status_code=404, detail="No file found")
             
         file_url = content_property["files"][0]["file"]["url"]
+        logger.info(f"Redirecting to fresh file URL for {file_id}")
         return RedirectResponse(url=file_url)
         
     except Exception as e:
