@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import RedirectResponse, JSONResponse
+from fastapi.responses import RedirectResponse, JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from notion_client import Client
@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__)
 
 # Initialize FastAPI app
 app = FastAPI(
-    title="Notion Image Bed",
-    description="A simple image hosting service that reads images from Notion database"
+    title="Notion Drive",
+    description="A simple file hosting service that reads files from Notion database"
 )
 
 # Enable CORS
@@ -35,7 +35,7 @@ DATABASE_ID = os.environ.get("NOTION_DATABASE_ID")
 
 @app.get("/")
 async def root():
-    return RedirectResponse(url="/static/index.html")
+    return FileResponse("index.html")
 
 @app.get("/images")
 async def get_images():
