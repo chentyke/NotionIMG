@@ -416,7 +416,7 @@
                             <iframe src="${block.url}" class="w-full h-96 rounded-lg"></iframe>
                         </div>`;
                 case 'table':
-                    let tableHtml = `<div class="overflow-x-auto my-4"><table class="min-w-full divide-y divide-gray-200">`;
+                    let tableHtml = `<table>`;
                     if (block.children) {
                         block.children.forEach((row, rowIndex) => {
                             const isHeader = (block.has_column_header && rowIndex === 0) || 
@@ -425,15 +425,12 @@
                             row.cells.forEach((cell, cellIndex) => {
                                 const isRowHeader = block.has_row_header && cellIndex === 0;
                                 const tag = isHeader || isRowHeader ? 'th' : 'td';
-                                const className = isHeader || isRowHeader 
-                                    ? 'px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'
-                                    : 'px-6 py-4 whitespace-normal text-sm text-gray-900';
-                                tableHtml += `<${tag} class="${className}">${cell}</${tag}>`;
+                                tableHtml += `<${tag}>${cell}</${tag}>`;
                             });
                             tableHtml += '</tr>';
                         });
                     }
-                    tableHtml += '</table></div>';
+                    tableHtml += '</table>';
                     return tableHtml;
                 case 'to_do':
                     return `
