@@ -87,8 +87,12 @@ def get_page_info(page: dict) -> dict:
             hidden = page["properties"].get("Hidden", {}).get("select", {}).get("name") == "True"
             
             # Get Date property if it exists
-            date_property = page["properties"].get("Date", {}).get("date", {})
-            edit_date = date_property.get("start") if date_property else None
+            date_property = page["properties"].get("Date")
+            edit_date = None
+            if date_property and date_property["type"] == "date":
+                date_value = date_property.get("date")
+                if date_value:
+                    edit_date = date_value.get("start")
             
             if hidden:
                 return None
