@@ -8,7 +8,11 @@ import logging
 from typing import List, Dict, Optional
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
 logger = logging.getLogger(__name__)
 
 # Initialize FastAPI app
@@ -32,6 +36,18 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # Initialize Notion client
 notion = Client(auth=os.environ.get("NOTION_TOKEN"))
 DATABASE_ID = os.environ.get("NOTION_DATABASE_ID")
+
+# Add request logging middleware
+@app.middleware("http")
+async def log_requests(request, call_next):
+    logger.info(f"Request: {request.method} {request.url.path}")
+    try:
+        response = await call_next(request)
+        logger.info(f"Response: {response.status_code}")
+        return response
+    except Exception as e:
+        logger.error(f"Error processing request: {e}")
+        raise
 
 @app.get("/")
 async def root():
@@ -175,7 +191,7 @@ def process_block_content(block: dict) -> dict:
                 if children:
                     result["children"] = children
             except Exception as e:
-                logger.warning(f"Error processing child blocks: {e}")
+                logger.error(f"Error processing child blocks for {block['id']}: {e}")
 
         # Handle specific block types
         if block_type == "image":
@@ -190,24 +206,27 @@ def process_block_content(block: dict) -> dict:
         elif block_type == "toggle":
             # For toggle blocks, we need to process the rich_text content
             result["text"] = process_rich_text(block_content["rich_text"])
-            logger.info(f"Processing toggle block: {block['id']}")
-            logger.info(f"Toggle text: {result['text']}")
+            logger.info(f"Toggle block {block['id']}: text='{result['text']}'")
+            
             # Process children if present
             if block.get("has_children", False):
                 try:
                     child_blocks = notion.blocks.children.list(block_id=block["id"])["results"]
-                    logger.info(f"Toggle children count: {len(child_blocks)}")
+                    logger.info(f"Toggle block {block['id']}: found {len(child_blocks)} children")
                     children = []
                     for child_block in child_blocks:
-                        logger.info(f"Processing toggle child: {child_block['type']}")
+                        logger.info(f"Toggle block {block['id']}: processing child of type '{child_block['type']}'")
                         child_content = process_block_content(child_block)
                         if child_content:
                             children.append(child_content)
                     if children:
                         result["children"] = children
-                        logger.info(f"Processed toggle children: {len(children)}")
+                        logger.info(f"Toggle block {block['id']}: processed {len(children)} children successfully")
+                    else:
+                        logger.warning(f"Toggle block {block['id']}: no valid children found")
                 except Exception as e:
-                    logger.warning(f"Error processing toggle children: {e}")
+                    logger.error(f"Error processing toggle children for {block['id']}: {e}")
+                    logger.error(f"Toggle block content: {block_content}")
         elif block_type == "table":
             result["has_column_header"] = block_content.get("has_column_header", False)
             result["has_row_header"] = block_content.get("has_row_header", False)
