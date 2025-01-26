@@ -748,6 +748,111 @@
                 }, 2000);
             });
         }
+
+        async function renderBlock(block) {
+            loadedBlocks++;
+            updateLoadingProgress((loadedBlocks / totalBlocks) * 100);
+            
+            const colorStyle = block.color && block.color !== 'default' 
+                ? `style="color: ${block.color === 'gray' ? '#9CA3AF' : block.color};"` 
+                : '';
+
+            switch (block.type) {
+                case 'paragraph':
+                    return `<p ${colorStyle}>${block.text || ''}</p>`;
+                case 'heading_1':
+                    return `<h1 ${colorStyle}>${block.text}</h1>`;
+                case 'heading_2':
+                    return `<h2 ${colorStyle}>${block.text}</h2>`;
+                case 'heading_3':
+                    return `<h3 ${colorStyle}>${block.text}</h3>`;
+                case 'bulleted_list_item':
+                case 'numbered_list_item':
+                    let listContent = block.text || '';
+                    let nestedContent = '';
+                    
+                    // 处理嵌套列表
+                    if (block.children && block.children.length > 0) {
+                        let nestedList = '';
+                        let currentNestedType = null;
+                        
+                        for (const child of block.children) {
+                            if (child.type === 'bulleted_list_item' || child.type === 'numbered_list_item') {
+                                // 如果类型改变或者是第一个项目，开始新的列表
+                                if (currentNestedType !== child.type) {
+                                    if (currentNestedType) {
+                                        nestedList += `</${currentNestedType === 'bulleted_list_item' ? 'ul' : 'ol'}>`;
+                                    }
+                                    currentNestedType = child.type;
+                                    nestedList += `<${child.type === 'bulleted_list_item' ? 'ul' : 'ol'} class="${child.type === 'bulleted_list_item' ? 'list-disc' : 'list-decimal'} ml-6">`;
+                                }
+                                nestedList += await renderBlock(child);
+                            } else {
+                                // 如果有正在进行的列表，结束它
+                                if (currentNestedType) {
+                                    nestedList += `</${currentNestedType === 'bulleted_list_item' ? 'ul' : 'ol'}>`;
+                                    currentNestedType = null;
+                                }
+                                nestedList += await renderBlock(child);
+                            }
+                        }
+                        
+                        // 结束最后一个嵌套列表
+                        if (currentNestedType) {
+                            nestedList += `</${currentNestedType === 'bulleted_list_item' ? 'ul' : 'ol'}>`;
+                        }
+                        
+                        nestedContent = nestedList;
+                    }
+                    
+                    return `<li ${colorStyle}>${listContent}${nestedContent}</li>`;
+                case 'code':
+                    return `<pre><code class="language-${block.language}">${block.text}</code><button class="copy-button" onclick="copyCode(this)">Copy</button></pre>`;
+                case 'image':
+                    return `<figure>
+                        <img class="opacity-0 transition-opacity duration-300" 
+                            data-src="${block.image_url}" 
+                            alt="${block.caption || 'Page image'}" 
+                            onclick="openImageModal('${block.image_url}')"
+                            title="Click to view full size">
+                        ${block.caption ? `<figcaption class="text-sm text-gray-500 mt-2">${block.caption}</figcaption>` : ''}
+                    </figure>`;
+                case 'divider':
+                    return `<hr class="my-6">`;
+                case 'quote':
+                    return `<blockquote ${colorStyle}>${block.text}</blockquote>`;
+                case 'callout':
+                    return `<div class="bg-gray-50 p-4 rounded-lg my-4 flex items-start" ${colorStyle}>
+                        <div class="mr-4">${block.icon?.emoji || '💡'}</div>
+                        <div>${block.text}</div>
+                    </div>`;
+                case 'bookmark':
+                    return `
+                        <div class="border rounded-lg p-4 my-4 hover:bg-gray-50">
+                            <a href="${block.url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">
+                                ${block.url}
+                            </a>
+                            ${block.caption ? `<div class="text-sm text-gray-500 mt-2">${block.caption}</div>` : ''}
+                        </div>`;
+                case 'child_page':
+                    return `
+                        <div class="border rounded-lg p-4 my-4 hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
+                             onclick="loadChildPage('${block.id}', '${block.title}')"
+                             role="button"
+                             tabindex="0">
+                            <div class="flex items-center">
+                                <svg class="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                                    </path>
+                                </svg>
+                                <span class="text-lg font-medium text-gray-900 hover:text-blue-600">${block.title}</span>
+                            </div>
+                        </div>`;
+                default:
+                    return '';
+            }
+        }
     </script>
 </body>
 </html>
