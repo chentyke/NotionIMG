@@ -65,11 +65,16 @@ def get_file_info(page: dict) -> dict:
 def get_page_info(page: dict) -> dict:
     """Extract page information."""
     try:
-        title = page["properties"]["Name"]["title"][0]["text"]["content"]
-        hidden = page["properties"].get("Hidden", {}).get("select", {}).get("name") == "True"
-        
-        if hidden:
-            return None
+        # Try to get title from properties first
+        if "properties" in page and "Name" in page["properties"]:
+            title = page["properties"]["Name"]["title"][0]["text"]["content"]
+            hidden = page["properties"].get("Hidden", {}).get("select", {}).get("name") == "True"
+            
+            if hidden:
+                return None
+        else:
+            # For child pages without properties, get title directly
+            title = page.get("title", "Untitled")
             
         return {
             "id": page["id"],
