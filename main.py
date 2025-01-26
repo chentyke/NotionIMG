@@ -62,17 +62,14 @@ def get_file_info(page: dict) -> dict:
         return None
 
 def get_page_info(page: dict) -> dict:
-    """Extract page information from a Notion page."""
+    """Extract page information."""
     try:
         title = page["properties"]["Name"]["title"][0]["text"]["content"]
-        last_edited_time = page["last_edited_time"]
-        hidden = page["properties"].get("Hidden", {}).get("checkbox", False)
-        
         return {
             "id": page["id"],
             "title": title,
-            "last_edited_time": last_edited_time,
-            "hidden": hidden
+            "created_time": page["created_time"],
+            "last_edited_time": page["last_edited_time"]
         }
     except (KeyError, IndexError) as e:
         logger.warning(f"Error extracting page info: {e}")
@@ -159,20 +156,10 @@ async def get_pages():
         response = notion.databases.query(
             database_id=DATABASE_ID,
             filter={
-                "and": [
-                    {
-                        "property": "type",
-                        "select": {
-                            "equals": "page"
-                        }
-                    },
-                    {
-                        "property": "Hidden",
-                        "checkbox": {
-                            "equals": False
-                        }
-                    }
-                ]
+                "property": "type",
+                "select": {
+                    "equals": "page"
+                }
             }
         )
         
