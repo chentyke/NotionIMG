@@ -619,7 +619,6 @@
                 case 'numbered_list_item':
                     let listContent = block.text || '';
                     
-                    // Handle nested content
                     if (block.children && block.children.length > 0) {
                         const nestedContent = await Promise.all(block.children.map(async child => {
                             if (child.type === 'bulleted_list_item' || child.type === 'numbered_list_item') {
@@ -633,10 +632,7 @@
                     
                     return `<li ${colorStyle}>${listContent}</li>`;
                 case 'code':
-                    return `<pre>
-                        <button class="copy-button" onclick="copyCode(this)">Copy</button>
-                        <code class="language-${block.language}">${block.text}</code>
-                    </pre>`;
+                    return `<pre><code class="language-${block.language}">${block.text}</code><button class="copy-button" onclick="copyCode(this)">Copy</button></pre>`;
                 case 'image':
                     return `<figure>
                         <img class="opacity-0 transition-opacity duration-300" 
@@ -706,7 +702,84 @@
             }
         }
 
-        // Add copy code function before the closing </script> tag
+        // Optimize page loading
+        async function loadPage(pageId = null) {
+            const targetPageId = pageId || urlParams.get('id');
+            
+            if (!targetPageId) {
+                document.getElementById('pageContent').innerHTML = `
+                    <div class="text-center text-red-500">
+                        <p>No page ID provided.</p>
+                    </div>`;
+                return;
+            }
+
+            try {
+                updateLoadingProgress(10);
+                const response = await fetch(`/page/${targetPageId}`);
+                const data = await response.json();
+                
+                updateLoadingProgress(30);
+                
+                // Update page title
+                document.title = data.page.title;
+                document.getElementById('pageTitle').textContent = data.page.title;
+                
+                // Initialize block counting
+                totalBlocks = data.blocks.length;
+                loadedBlocks = 0;
+                
+                // Render content
+                let content = '';
+                let currentList = null;
+                
+                for (const block of data.blocks) {
+                    if (block.type === 'bulleted_list_item' || block.type === 'numbered_list_item') {
+                        if (!currentList || currentList.type !== block.type) {
+                            if (currentList) {
+                                content += `</${currentList.tag}>`;
+                            }
+                            currentList = {
+                                type: block.type,
+                                tag: block.type === 'bulleted_list_item' ? 'ul' : 'ol'
+                            };
+                            content += `<${currentList.tag} class="${block.type === 'bulleted_list_item' ? 'list-disc' : 'list-decimal'} ml-6">`;
+                        }
+                        content += await renderBlock(block);
+                    } else {
+                        if (currentList) {
+                            content += `</${currentList.tag}>`;
+                            currentList = null;
+                        }
+                        content += await renderBlock(block);
+                    }
+                }
+                
+                if (currentList) {
+                    content += `</${currentList.tag}>`;
+                }
+                
+                document.getElementById('pageContent').innerHTML = content;
+                
+                // Initialize lazy loading for images
+                document.querySelectorAll('img[data-src]').forEach(img => {
+                    imageObserver.observe(img);
+                });
+                
+            } catch (error) {
+                console.error('Error loading page content:', error);
+                document.getElementById('pageContent').innerHTML = `
+                    <div class="text-center text-red-500">
+                        <p>Error loading page content.</p>
+                        <p class="text-sm mt-2">${error.message}</p>
+                    </div>`;
+            }
+        }
+
+        // Load page on start
+        loadPage();
+
+        // Add copy code function
         function copyCode(button) {
             const pre = button.parentElement;
             const code = pre.querySelector('code');
