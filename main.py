@@ -61,6 +61,47 @@ def get_file_info(page: dict) -> dict:
         logger.warning(f"Error extracting file info: {e}")
         return None
 
+def get_page_info(page: dict) -> dict:
+    """Extract page information."""
+    try:
+        title = page["properties"]["Name"]["title"][0]["text"]["content"]
+        return {
+            "id": page["id"],
+            "title": title,
+            "created_time": page["created_time"],
+            "last_edited_time": page["last_edited_time"]
+        }
+    except (KeyError, IndexError) as e:
+        logger.warning(f"Error extracting page info: {e}")
+        return None
+
+def process_block_content(block: dict) -> dict:
+    """Process block content to extract relevant information."""
+    block_type = block["type"]
+    content = block[block_type]
+    
+    if "rich_text" in content:
+        text_content = "".join([text["plain_text"] for text in content["rich_text"]])
+    else:
+        text_content = ""
+    
+    result = {
+        "id": block["id"],
+        "type": block_type,
+        "text": text_content,
+        "has_children": block["has_children"]
+    }
+    
+    # Handle specific block types
+    if block_type == "image":
+        result["image_url"] = content.get("file", {}).get("url", "")
+    elif block_type == "code":
+        result["language"] = content.get("language", "")
+    elif block_type == "callout":
+        result["icon"] = content.get("icon", {})
+    
+    return result
+
 @app.get("/images")
 async def get_images():
     try:
@@ -107,6 +148,77 @@ async def get_files():
         return {"files": files}
     except Exception as e:
         logger.error(f"Error fetching files: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/pages")
+async def get_pages():
+    try:
+        response = notion.databases.query(
+            database_id=DATABASE_ID,
+            filter={
+                "property": "type",
+                "select": {
+                    "equals": "page"
+                }
+            }
+        )
+        
+        pages = []
+        for page in response["results"]:
+            page_info = get_page_info(page)
+            if page_info:
+                pages.append(page_info)
+                
+        return {"pages": pages}
+    except Exception as e:
+        logger.error(f"Error fetching pages: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/page/{page_id}")
+async def get_page_content(page_id: str):
+    try:
+        # Get page metadata
+        page = notion.pages.retrieve(page_id=page_id)
+        page_info = get_page_info(page)
+        
+        if not page_info:
+            raise HTTPException(status_code=404, detail="Page not found")
+        
+        # Get page blocks
+        blocks = []
+        has_more = True
+        cursor = None
+        
+        while has_more:
+            if cursor:
+                response = notion.blocks.children.list(block_id=page_id, start_cursor=cursor)
+            else:
+                response = notion.blocks.children.list(block_id=page_id)
+            
+            for block in response["results"]:
+                block_content = process_block_content(block)
+                blocks.append(block_content)
+                
+                # If block has children, recursively get them
+                if block["has_children"]:
+                    child_blocks = []
+                    child_response = notion.blocks.children.list(block_id=block["id"])
+                    for child_block in child_response["results"]:
+                        child_content = process_block_content(child_block)
+                        child_blocks.append(child_content)
+                    block_content["children"] = child_blocks
+            
+            has_more = response["has_more"]
+            if has_more:
+                cursor = response["next_cursor"]
+        
+        return {
+            "page": page_info,
+            "blocks": blocks
+        }
+        
+    except Exception as e:
+        logger.error(f"Error retrieving page {page_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/image/{image_id}")
