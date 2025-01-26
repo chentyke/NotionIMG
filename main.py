@@ -184,16 +184,13 @@ def process_block_content(block):
         elif block_type == "bulleted_list_item":
             result["text"] = process_rich_text(block["bulleted_list_item"]["rich_text"])
             result["color"] = block["bulleted_list_item"].get("color", "default")
-            if has_children:
-                result["children"] = children
         elif block_type == "numbered_list_item":
             result["text"] = process_rich_text(block["numbered_list_item"]["rich_text"])
             result["color"] = block["numbered_list_item"].get("color", "default")
-            if has_children:
-                result["children"] = children
         elif block_type == "to_do":
             result["text"] = process_rich_text(block["to_do"]["rich_text"])
             result["checked"] = block["to_do"]["checked"]
+            result["color"] = block["to_do"].get("color", "default")
         elif block_type == "toggle":
             result["toggle"] = {
                 "rich_text": block["toggle"]["rich_text"],
@@ -212,9 +209,11 @@ def process_block_content(block):
             result["language"] = block["code"]["language"]
         elif block_type == "quote":
             result["text"] = process_rich_text(block["quote"]["rich_text"])
+            result["color"] = block["quote"].get("color", "default")
         elif block_type == "callout":
             result["text"] = process_rich_text(block["callout"]["rich_text"])
             result["icon"] = block["callout"].get("icon")
+            result["color"] = block["callout"].get("color", "default")
         elif block_type == "divider":
             pass  # No additional processing needed
         elif block_type == "bookmark":

@@ -66,11 +66,27 @@
             line-height: 1.75;
         }
         .prose ul, .prose ol {
-            margin: 1rem 0;
+            margin: 0.5rem 0;
             padding-left: 1.5rem;
         }
+        .prose ul {
+            list-style-type: disc;
+        }
+        .prose ol {
+            list-style-type: decimal;
+        }
         .prose li {
-            margin: 0.5rem 0;
+            margin: 0.25rem 0;
+            padding-left: 0.5rem;
+        }
+        .prose li > ul, .prose li > ol {
+            margin: 0.25rem 0;
+        }
+        .prose li::marker {
+            color: rgb(55, 53, 47, 0.8);
+        }
+        .prose li:hover::marker {
+            color: rgb(55, 53, 47);
         }
         .image-modal {
             display: none;
@@ -443,41 +459,6 @@
                 ? `style="color: ${block.color === 'gray' ? '#9CA3AF' : block.color};"` 
                 : '';
 
-            // Helper function to render nested blocks
-            async function renderNestedBlocks(blocks) {
-                if (!blocks || blocks.length === 0) return '';
-                let nestedContent = '';
-                let currentList = null;
-                
-                for (const nestedBlock of blocks) {
-                    if (nestedBlock.type === 'bulleted_list_item' || nestedBlock.type === 'numbered_list_item') {
-                        if (!currentList || currentList.type !== nestedBlock.type) {
-                            if (currentList) {
-                                nestedContent += `</${currentList.tag}>`;
-                            }
-                            currentList = {
-                                type: nestedBlock.type,
-                                tag: nestedBlock.type === 'bulleted_list_item' ? 'ul' : 'ol'
-                            };
-                            nestedContent += `<${currentList.tag}>`;
-                        }
-                        nestedContent += await renderBlock(nestedBlock);
-                    } else {
-                        if (currentList) {
-                            nestedContent += `</${currentList.tag}>`;
-                            currentList = null;
-                        }
-                        nestedContent += await renderBlock(nestedBlock);
-                    }
-                }
-                
-                if (currentList) {
-                    nestedContent += `</${currentList.tag}>`;
-                }
-                
-                return nestedContent;
-            }
-
             switch (block.type) {
                 case 'paragraph':
                     return `<p ${colorStyle}>${block.text || ''}</p>`;
@@ -488,19 +469,22 @@
                 case 'heading_3':
                     return `<h3 ${colorStyle}>${block.text}</h3>`;
                 case 'bulleted_list_item':
-                    let bulletContent = `<li ${colorStyle}>${block.text}`;
-                    if (block.children) {
-                        bulletContent += await renderNestedBlocks(block.children);
-                    }
-                    bulletContent += '</li>';
-                    return bulletContent;
                 case 'numbered_list_item':
-                    let numberContent = `<li ${colorStyle}>${block.text}`;
-                    if (block.children) {
-                        numberContent += await renderNestedBlocks(block.children);
+                    let listContent = block.text || '';
+                    
+                    // Handle nested content
+                    if (block.children && block.children.length > 0) {
+                        const nestedContent = await Promise.all(block.children.map(async child => {
+                            if (child.type === 'bulleted_list_item' || child.type === 'numbered_list_item') {
+                                const listType = child.type === 'bulleted_list_item' ? 'ul' : 'ol';
+                                return `<${listType}>${await renderBlock(child)}</${listType}>`;
+                            }
+                            return await renderBlock(child);
+                        }));
+                        listContent += nestedContent.join('');
                     }
-                    numberContent += '</li>';
-                    return numberContent;
+                    
+                    return `<li ${colorStyle}>${listContent}</li>`;
                 case 'code':
                     return `<pre><code class="language-${block.language}">${block.text}</code></pre>`;
                 case 'image':
@@ -721,6 +705,7 @@
                 // Render content
                 let content = '';
                 let currentList = null;
+                let listStack = [];
                 
                 for (const block of data.blocks) {
                     // Add debug logging for each block
@@ -729,6 +714,10 @@
                     if (block.type === 'bulleted_list_item' || block.type === 'numbered_list_item') {
                         if (!currentList || currentList.type !== block.type) {
                             if (currentList) {
+                                // Close all nested lists
+                                while (listStack.length > 0) {
+                                    content += `</${listStack.pop()}>`;
+                                }
                                 content += `</${currentList.tag}>`;
                             }
                             currentList = {
@@ -738,6 +727,10 @@
                             content += `<${currentList.tag}>`;
                         }
                     } else if (currentList) {
+                        // Close all nested lists
+                        while (listStack.length > 0) {
+                            content += `</${listStack.pop()}>`;
+                        }
                         content += `</${currentList.tag}>`;
                         currentList = null;
                     }
@@ -746,6 +739,10 @@
                 }
                 
                 if (currentList) {
+                    // Close all nested lists
+                    while (listStack.length > 0) {
+                        content += `</${listStack.pop()}>`;
+                    }
                     content += `</${currentList.tag}>`;
                 }
                 
