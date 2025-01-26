@@ -296,14 +296,36 @@ async def get_files():
 @app.get("/pages")
 async def get_pages():
     try:
+        # Add query filter to reduce data transfer
         response = notion.databases.query(
             database_id=DATABASE_ID,
             filter={
-                "property": "type",
-                "select": {
-                    "equals": "page"
-                }
-            }
+                "and": [
+                    {
+                        "property": "type",
+                        "select": {
+                            "equals": "page"
+                        }
+                    },
+                    {
+                        "or": [
+                            {
+                                "property": "Hidden",
+                                "select": {
+                                    "does_not_equal": "True"
+                                }
+                            },
+                            {
+                                "property": "Hidden",
+                                "select": {
+                                    "is_empty": True
+                                }
+                            }
+                        ]
+                    }
+                ]
+            },
+            page_size=100  # Limit results for faster response
         )
         
         pages = []
@@ -324,7 +346,6 @@ async def get_page_content(page_id: str):
         try:
             block = notion.blocks.retrieve(block_id=page_id)
             if block["type"] == "child_page":
-                # If it's a child page, use the title from the block
                 page_info = {
                     "id": block["id"],
                     "title": block["child_page"]["title"],
@@ -332,47 +353,49 @@ async def get_page_content(page_id: str):
                     "last_edited_time": block["last_edited_time"]
                 }
             else:
-                # If it's not a child page, get page metadata normally
                 page = notion.pages.retrieve(page_id=page_id)
                 page_info = get_page_info(page)
         except Exception as e:
-            # If block retrieval fails, try page retrieval as fallback
             page = notion.pages.retrieve(page_id=page_id)
             page_info = get_page_info(page)
         
         if not page_info:
             raise HTTPException(status_code=404, detail="Page not found")
         
-        # Get page blocks with pagination to improve performance
+        # Get page blocks with optimized pagination
         blocks = []
-        has_more = True
         cursor = None
         
-        while has_more:
-            # Get blocks in batches of 100
+        while True:
+            params = {"block_id": page_id, "page_size": 100}  # Increase page size for fewer requests
             if cursor:
-                response = notion.blocks.children.list(block_id=page_id, start_cursor=cursor, page_size=100)
-            else:
-                response = notion.blocks.children.list(block_id=page_id, page_size=100)
+                params["start_cursor"] = cursor
+                
+            response = notion.blocks.children.list(**params)
             
-            # Process blocks in parallel using list comprehension
-            block_contents = [process_block_content(block) for block in response["results"] if block]
-            blocks.extend([b for b in block_contents if b])
-            
-            # Get child blocks in parallel if needed
             for block in response["results"]:
-                if block["has_children"]:
-                    child_response = notion.blocks.children.list(block_id=block["id"], page_size=100)
-                    child_contents = [process_block_content(child) for child in child_response["results"] if child]
-                    child_blocks = [c for c in child_contents if c]
+                block_content = process_block_content(block)
+                if block_content:
+                    blocks.append(block_content)
+                
+                # Get child blocks only if necessary
+                if block["has_children"] and block["type"] in ["table", "column_list", "toggle"]:
+                    child_blocks = []
+                    child_response = notion.blocks.children.list(
+                        block_id=block["id"],
+                        page_size=100
+                    )
+                    for child_block in child_response["results"]:
+                        child_content = process_block_content(child_block)
+                        if child_content:
+                            child_blocks.append(child_content)
                     if child_blocks:
-                        block_content = next((b for b in block_contents if b["id"] == block["id"]), None)
-                        if block_content:
-                            block_content["children"] = child_blocks
+                        block_content["children"] = child_blocks
             
-            has_more = response["has_more"]
-            if has_more:
-                cursor = response["next_cursor"]
+            if not response["has_more"]:
+                break
+                
+            cursor = response["next_cursor"]
         
         return {
             "page": page_info,

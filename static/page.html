@@ -22,132 +22,55 @@
         .prose {
             max-width: 65ch;
             margin: 0 auto;
-            font-size: 1.125rem;
-            line-height: 1.75;
-            color: #1f2937;
         }
         .prose img {
-            border-radius: 0.75rem;
-            margin: 2rem 0;
-            cursor: zoom-in;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border-radius: 0.5rem;
+            margin: 1.5rem 0;
+            cursor: pointer;
+            transition: transform 0.2s;
         }
         .prose img:hover {
             transform: scale(1.02);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
         .prose pre {
-            background-color: #f8fafc;
-            padding: 1.25rem;
-            border-radius: 0.75rem;
-            margin: 2rem 0;
+            background-color: #f3f4f6;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 1.5rem 0;
             overflow-x: auto;
-            border: 1px solid #e2e8f0;
-            font-size: 0.875rem;
         }
         .prose blockquote {
-            border-left: 4px solid #3b82f6;
-            padding: 1rem 1.5rem;
-            margin: 2rem 0;
-            background-color: #f8fafc;
-            border-radius: 0.5rem;
-            color: #4b5563;
+            border-left: 4px solid #e5e7eb;
+            padding-left: 1rem;
+            margin: 1.5rem 0;
             font-style: italic;
+            color: #4b5563;
         }
         .prose h1 {
-            font-size: 2.5rem;
+            font-size: 2.25rem;
             font-weight: 700;
-            margin: 3rem 0 1.5rem;
-            color: #111827;
-            letter-spacing: -0.025em;
+            margin: 2rem 0 1rem;
         }
         .prose h2 {
-            font-size: 2rem;
+            font-size: 1.875rem;
             font-weight: 700;
-            margin: 2.5rem 0 1.25rem;
-            color: #111827;
-            letter-spacing: -0.025em;
+            margin: 1.75rem 0 0.875rem;
         }
         .prose h3 {
             font-size: 1.5rem;
-            font-weight: 600;
-            margin: 2rem 0 1rem;
-            color: #111827;
+            font-weight: 700;
+            margin: 1.5rem 0 0.75rem;
         }
         .prose p {
-            margin: 1.5rem 0;
+            margin: 1rem 0;
             line-height: 1.75;
         }
         .prose ul, .prose ol {
-            margin: 1.5rem 0;
-            padding-left: 1.75rem;
+            margin: 1rem 0;
+            padding-left: 1.5rem;
         }
         .prose li {
-            margin: 0.75rem 0;
-            padding-left: 0.5rem;
-        }
-        .prose li::marker {
-            color: #6b7280;
-        }
-        .page-header {
-            position: sticky;
-            top: 0;
-            background-color: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(8px);
-            border-bottom: 1px solid #e5e7eb;
-            padding: 1rem 0;
-            margin-bottom: 2rem;
-            z-index: 10;
-        }
-        .page-title {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #111827;
-            letter-spacing: -0.025em;
-            line-height: 1.25;
-            overflow-wrap: break-word;
-        }
-        .back-button {
-            display: inline-flex;
-            align-items: center;
-            padding: 0.5rem 1rem;
-            background-color: #f3f4f6;
-            color: #4b5563;
-            border-radius: 0.5rem;
-            font-size: 0.875rem;
-            font-weight: 500;
-            transition: all 0.2s ease;
-        }
-        .back-button:hover {
-            background-color: #e5e7eb;
-            color: #1f2937;
-            transform: translateY(-1px);
-        }
-        .back-button svg {
-            width: 1.25rem;
-            height: 1.25rem;
-            margin-right: 0.5rem;
-        }
-        .content-container {
-            background-color: white;
-            border-radius: 1rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            overflow: hidden;
-        }
-        .content-wrapper {
-            padding: 2rem;
-        }
-        @media (max-width: 768px) {
-            .content-wrapper {
-                padding: 1.5rem;
-            }
-            .prose {
-                font-size: 1rem;
-            }
-            .page-title {
-                font-size: 1.75rem;
-            }
+            margin: 0.5rem 0;
         }
         .image-modal {
             display: none;
@@ -269,23 +192,23 @@
 </head>
 <body class="bg-gray-50 min-h-screen">
     <div class="container mx-auto px-4 py-8 max-w-4xl">
-        <div class="content-container">
-            <div class="content-wrapper">
-                <div class="page-header">
-                    <h1 id="pageTitle" class="page-title"></h1>
-                </div>
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div class="p-6">
+                <h1 id="pageTitle" class="text-3xl font-bold mb-6 text-gray-900"></h1>
                 <div id="pageContent" class="prose">
                     <div class="flex justify-center py-8">
                         <div class="loading-spinner"></div>
                     </div>
                 </div>
                 <div class="mt-8 pt-6 border-t border-gray-200">
-                    <a href="/static/pages.html" class="back-button">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                        </svg>
-                        Back to Pages
-                    </a>
+                    <div class="flex justify-between items-center">
+                        <a href="/static/pages.html" class="text-blue-500 hover:text-blue-600 flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                            </svg>
+                            Back to Pages
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -298,44 +221,41 @@
     </div>
 
     <script>
-        // Compress image
+        // Compress image with optimized settings
         function compressImage(url) {
             return new Promise((resolve, reject) => {
                 const img = new Image();
                 img.crossOrigin = "anonymous";
-                
-                // Add loading attribute for better performance
-                img.loading = "lazy";
-                
                 img.onload = function() {
                     const canvas = document.createElement('canvas');
                     const ctx = canvas.getContext('2d');
                     
-                    const maxSize = 800;
+                    // Optimize compression based on image size
+                    const maxSize = img.width > 2000 || img.height > 2000 ? 1200 : 800;
                     let width = img.width;
                     let height = img.height;
                     
-                    // Only compress if image is larger than maxSize
-                    if (width > maxSize || height > maxSize) {
-                        if (width > height) {
+                    if (width > height) {
+                        if (width > maxSize) {
                             height *= maxSize / width;
                             width = maxSize;
-                        } else {
+                        }
+                    } else {
+                        if (height > maxSize) {
                             width *= maxSize / height;
                             height = maxSize;
                         }
-                        
-                        canvas.width = width;
-                        canvas.height = height;
-                        
-                        ctx.drawImage(img, 0, 0, width, height);
-                        resolve(canvas.toDataURL('image/jpeg', 0.8));
-                    } else {
-                        // Return original URL if image is small enough
-                        resolve(url);
                     }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    
+                    // Use better quality settings for smaller images
+                    const quality = width <= 800 ? 0.9 : 0.8;
+                    
+                    ctx.drawImage(img, 0, 0, width, height);
+                    resolve(canvas.toDataURL('image/jpeg', quality));
                 };
-                
                 img.onerror = reject;
                 img.src = url;
             });
@@ -556,7 +476,7 @@
             }
         }
 
-        // Load page content
+        // Load page content with optimized rendering
         async function loadPage(pageId = null) {
             const targetPageId = pageId || urlParams.get('id');
             
@@ -576,64 +496,59 @@
                 document.title = data.page.title;
                 document.getElementById('pageTitle').textContent = data.page.title;
                 
+                // Prepare content container
+                const contentElement = document.getElementById('pageContent');
+                contentElement.innerHTML = '';
+                
                 // Create a document fragment for better performance
                 const fragment = document.createDocumentFragment();
                 let currentList = null;
                 let currentListElement = null;
                 
-                // Process blocks in chunks to prevent UI blocking
+                // Process blocks in chunks to avoid blocking the UI
                 const chunkSize = 20;
-                const processChunk = async (startIndex) => {
-                    const endIndex = Math.min(startIndex + chunkSize, data.blocks.length);
-                    
-                    for (let i = startIndex; i < endIndex; i++) {
-                        const block = data.blocks[i];
-                        
-                        if (block.type === 'bulleted_list_item' || block.type === 'numbered_list_item') {
-                            if (!currentList || currentList.type !== block.type) {
-                                if (currentList) {
-                                    fragment.appendChild(currentListElement);
+                for (let i = 0; i < data.blocks.length; i += chunkSize) {
+                    const chunk = data.blocks.slice(i, i + chunkSize);
+                    await new Promise(resolve => {
+                        setTimeout(async () => {
+                            for (const block of chunk) {
+                                if (block.type === 'bulleted_list_item' || block.type === 'numbered_list_item') {
+                                    if (!currentList || currentList.type !== block.type) {
+                                        if (currentListElement) {
+                                            fragment.appendChild(currentListElement);
+                                        }
+                                        currentList = {
+                                            type: block.type,
+                                            tag: block.type === 'bulleted_list_item' ? 'ul' : 'ol'
+                                        };
+                                        currentListElement = document.createElement(currentList.tag);
+                                    }
+                                    const content = await renderBlock(block);
+                                    currentListElement.insertAdjacentHTML('beforeend', content);
+                                } else {
+                                    if (currentListElement) {
+                                        fragment.appendChild(currentListElement);
+                                        currentList = null;
+                                        currentListElement = null;
+                                    }
+                                    const content = await renderBlock(block);
+                                    const wrapper = document.createElement('div');
+                                    wrapper.innerHTML = content;
+                                    fragment.appendChild(wrapper.firstChild);
                                 }
-                                currentList = {
-                                    type: block.type,
-                                    tag: block.type === 'bulleted_list_item' ? 'ul' : 'ol'
-                                };
-                                currentListElement = document.createElement(currentList.tag);
                             }
-                            const content = await renderBlock(block);
-                            currentListElement.insertAdjacentHTML('beforeend', content);
-                        } else {
-                            if (currentList) {
-                                fragment.appendChild(currentListElement);
-                                currentList = null;
-                                currentListElement = null;
-                            }
-                            const content = await renderBlock(block);
-                            const tempDiv = document.createElement('div');
-                            tempDiv.innerHTML = content;
-                            while (tempDiv.firstChild) {
-                                fragment.appendChild(tempDiv.firstChild);
-                            }
-                        }
-                    }
+                            resolve();
+                        }, 0);
+                    });
                     
-                    if (endIndex < data.blocks.length) {
-                        // Process next chunk in the next frame
-                        requestAnimationFrame(() => processChunk(endIndex));
-                    } else {
-                        // Append final list if exists
-                        if (currentList) {
-                            fragment.appendChild(currentListElement);
-                        }
-                        // Clear and append all content at once
-                        const contentDiv = document.getElementById('pageContent');
-                        contentDiv.innerHTML = '';
-                        contentDiv.appendChild(fragment);
-                    }
-                };
+                    // Append the fragment after each chunk
+                    contentElement.appendChild(fragment.cloneNode(true));
+                }
                 
-                // Start processing the first chunk
-                await processChunk(0);
+                // Append any remaining list
+                if (currentListElement) {
+                    contentElement.appendChild(currentListElement);
+                }
                 
             } catch (error) {
                 console.error('Error loading page content:', error);
