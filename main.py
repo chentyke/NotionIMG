@@ -317,9 +317,11 @@ async def get_pages():
 @app.get("/page/{page_id}")
 async def get_page_content(page_id: str):
     try:
+        logger.info(f"Fetching page content for ID: {page_id}")
         # First try to get the block to check if it's a child page
         try:
             block = notion.blocks.retrieve(block_id=page_id)
+            logger.info(f"Retrieved block type: {block['type']}")
             if block["type"] == "child_page":
                 # If it's a child page, use the title from the block
                 page_info = {
@@ -329,11 +331,14 @@ async def get_page_content(page_id: str):
                     "last_edited_time": block["last_edited_time"],
                     "parent_id": block["parent"]["page_id"] if block["parent"]["type"] == "page_id" else None
                 }
+                logger.info(f"Found child page: {page_info['title']}")
             else:
                 # If it's not a child page, get page metadata normally
                 page = notion.pages.retrieve(page_id=page_id)
                 page_info = get_page_info(page)
+                logger.info(f"Found regular page: {page_info['title'] if page_info else 'None'}")
         except Exception as e:
+            logger.warning(f"Error retrieving block, trying page: {e}")
             # If block retrieval fails, try page retrieval as fallback
             page = notion.pages.retrieve(page_id=page_id)
             page_info = get_page_info(page)
@@ -341,20 +346,28 @@ async def get_page_content(page_id: str):
                 page_info["parent_id"] = page["parent"]["page_id"]
         
         if not page_info:
+            logger.error("Page info not found")
             raise HTTPException(status_code=404, detail="Page not found")
         
         # Get page blocks
         blocks = []
         has_more = True
         cursor = None
+        total_blocks = 0
         
+        logger.info("Fetching page blocks...")
         while has_more:
             if cursor:
                 response = notion.blocks.children.list(block_id=page_id, start_cursor=cursor)
             else:
                 response = notion.blocks.children.list(block_id=page_id)
             
-            for block in response["results"]:
+            current_blocks = response["results"]
+            total_blocks += len(current_blocks)
+            logger.info(f"Retrieved {len(current_blocks)} blocks (total: {total_blocks})")
+            
+            for block in current_blocks:
+                logger.info(f"Processing block type: {block['type']}")
                 processed_block = process_block_content(block)
                 if processed_block:
                     blocks.append(processed_block)
@@ -362,7 +375,9 @@ async def get_page_content(page_id: str):
             has_more = response["has_more"]
             if has_more:
                 cursor = response["next_cursor"]
+                logger.info("More blocks available, continuing...")
         
+        logger.info(f"Successfully processed {len(blocks)} blocks")
         return {
             "page": page_info,
             "blocks": blocks
