@@ -273,47 +273,25 @@ async def get_pages():
 @app.get("/page/{page_id}")
 async def get_page_content(page_id: str):
     try:
-        # Get page metadata
-        page = notion.pages.retrieve(page_id=page_id)
-        
-        # For child pages, try to get the title from parent page's child_page block
-        if not page.get("properties"):
-            try:
-                # Get parent page blocks to find this child page
-                parent_id = page.get("parent", {}).get("page_id")
-                if parent_id:
-                    parent_blocks = notion.blocks.children.list(block_id=parent_id)
-                    for block in parent_blocks["results"]:
-                        if block["type"] == "child_page" and block["id"] == page_id:
-                            # Create a properties structure similar to regular pages
-                            page["properties"] = {
-                                "Name": {
-                                    "title": [{
-                                        "text": {
-                                            "content": block["child_page"]["title"]
-                                        }
-                                    }]
-                                }
-                            }
-                            break
-                    
-                    # If we couldn't find the title in parent blocks, try to get it from the block itself
-                    if not page.get("properties"):
-                        block = notion.blocks.retrieve(block_id=page_id)
-                        if block["type"] == "child_page":
-                            page["properties"] = {
-                                "Name": {
-                                    "title": [{
-                                        "text": {
-                                            "content": block["child_page"]["title"]
-                                        }
-                                    }]
-                                }
-                            }
-            except Exception as e:
-                logger.warning(f"Error retrieving parent page blocks: {e}")
-        
-        page_info = get_page_info(page)
+        # First try to get the block to check if it's a child page
+        try:
+            block = notion.blocks.retrieve(block_id=page_id)
+            if block["type"] == "child_page":
+                # If it's a child page, use the title from the block
+                page_info = {
+                    "id": block["id"],
+                    "title": block["child_page"]["title"],
+                    "created_time": block["created_time"],
+                    "last_edited_time": block["last_edited_time"]
+                }
+            else:
+                # If it's not a child page, get page metadata normally
+                page = notion.pages.retrieve(page_id=page_id)
+                page_info = get_page_info(page)
+        except Exception as e:
+            # If block retrieval fails, try page retrieval as fallback
+            page = notion.pages.retrieve(page_id=page_id)
+            page_info = get_page_info(page)
         
         if not page_info:
             raise HTTPException(status_code=404, detail="Page not found")
