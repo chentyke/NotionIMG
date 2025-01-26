@@ -147,15 +147,27 @@ def process_block_content(block: dict) -> dict:
         result["table_width"] = content.get("table_width", 0)
         result["has_column_header"] = content.get("has_column_header", False)
         result["has_row_header"] = content.get("has_row_header", False)
+        result["children"] = []  # 添加一个空的 children 数组来存储表格行
         
     elif block_type == "table_row":
-        result["cells"] = content.get("cells", [])
+        cells = []
+        for cell in content.get("cells", []):
+            cell_text = "".join([text["plain_text"] for text in cell])
+            cells.append(cell_text)
+        result["cells"] = cells
         
     elif block_type == "to_do":
         result["checked"] = content.get("checked", False)
         
     elif block_type == "child_page":
         result["title"] = content.get("title", "")
+        # 获取页面的完整信息
+        try:
+            page = notion.pages.retrieve(page_id=block["id"])
+            if "properties" in page and "Name" in page["properties"]:
+                result["title"] = page["properties"]["Name"]["title"][0]["text"]["content"]
+        except Exception as e:
+            logger.warning(f"Error retrieving child page info: {e}")
         
     elif block_type == "child_database":
         result["title"] = content.get("title", "")
@@ -260,16 +272,21 @@ async def get_page_content(page_id: str):
             
             for block in response["results"]:
                 block_content = process_block_content(block)
-                blocks.append(block_content)
                 
-                # If block has children, recursively get them
+                # 如果块有子块，获取它们
                 if block["has_children"]:
-                    child_blocks = []
-                    child_response = notion.blocks.children.list(block_id=block["id"])
-                    for child_block in child_response["results"]:
-                        child_content = process_block_content(child_block)
-                        child_blocks.append(child_content)
-                    block_content["children"] = child_blocks
+                    try:
+                        child_response = notion.blocks.children.list(block_id=block["id"])
+                        child_blocks = []
+                        for child_block in child_response["results"]:
+                            child_content = process_block_content(child_block)
+                            child_blocks.append(child_content)
+                        block_content["children"] = child_blocks
+                    except Exception as e:
+                        logger.warning(f"Error fetching child blocks for {block['id']}: {e}")
+                        block_content["children"] = []
+                
+                blocks.append(block_content)
             
             has_more = response["has_more"]
             if has_more:

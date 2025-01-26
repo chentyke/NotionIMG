@@ -293,16 +293,29 @@
                         </iframe>
                     </div>`;
                 case 'table':
-                    return `<div class="overflow-x-auto my-4">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <!-- Table content will be added by table_row blocks -->
-                        </table>
-                    </div>`;
+                    let tableHtml = `<div class="overflow-x-auto my-4">
+                        <table class="min-w-full divide-y divide-gray-200">`;
+                    
+                    // 如果有子块（表格行），渲染它们
+                    if (block.children && block.children.length > 0) {
+                        for (const row of block.children) {
+                            if (row.type === 'table_row') {
+                                tableHtml += `<tr class="divide-x divide-gray-200">`;
+                                for (const cell of row.cells) {
+                                    tableHtml += `<td class="px-6 py-4 whitespace-pre-wrap text-sm text-gray-500">${cell}</td>`;
+                                }
+                                tableHtml += `</tr>`;
+                            }
+                        }
+                    }
+                    
+                    tableHtml += `</table></div>`;
+                    return tableHtml;
+                    
                 case 'table_row':
-                    const cells = block.cells.map(cell => 
-                        `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${cell}</td>`
-                    ).join('');
-                    return `<tr>${cells}</tr>`;
+                    // 表格行会在 table 类型中处理
+                    return '';
+                    
                 case 'to_do':
                     return `<div class="flex items-center my-2">
                         <input type="checkbox" ${block.checked ? 'checked' : ''} disabled class="mr-2">
@@ -314,7 +327,7 @@
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                             </svg>
-                            ${block.title}
+                            <span class="truncate">${block.title || 'Untitled'}</span>
                         </a>
                     </div>`;
                 case 'child_database':
