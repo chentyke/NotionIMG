@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notion Image Bed</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        .image-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold mb-8 text-center">Notion Image Bed</h1>
+        
+        <!-- Configuration Section -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">Configuration</h2>
+            <form id="configForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Notion Token</label>
+                    <input type="password" id="notionToken" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" required>
+                    <p class="text-sm text-gray-500 mt-1">Get your token from <a href="https://www.notion.so/my-integrations" target="_blank" class="text-blue-500">Notion Integrations</a></p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Database ID</label>
+                    <input type="text" id="databaseId" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" required>
+                    <p class="text-sm text-gray-500 mt-1">Found in your Notion database URL</p>
+                </div>
+                <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">Save Configuration</button>
+            </form>
+        </div>
+
+        <!-- Instructions Section -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">Instructions</h2>
+            <div class="space-y-4">
+                <div>
+                    <h3 class="font-medium">1. Create a Notion Integration</h3>
+                    <p class="text-gray-600">Visit <a href="https://www.notion.so/my-integrations" target="_blank" class="text-blue-500">Notion Integrations</a> and create a new integration. Copy the integration token.</p>
+                </div>
+                <div>
+                    <h3 class="font-medium">2. Share Your Database</h3>
+                    <p class="text-gray-600">Open your Notion database, click "..." menu, select "Add connections" and choose your integration.</p>
+                </div>
+                <div>
+                    <h3 class="font-medium">3. Get Database ID</h3>
+                    <p class="text-gray-600">Copy the database ID from your database URL (the part between the workspace name and "?")</p>
+                </div>
+                <div>
+                    <h3 class="font-medium">4. Configure Database</h3>
+                    <p class="text-gray-600">Make sure your database has:</p>
+                    <ul class="list-disc list-inside ml-4 text-gray-600">
+                        <li>Name (Title) property</li>
+                        <li>type (Text) property set to "image"</li>
+                        <li>Content (Files) property with your image</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Images Section -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold mb-4">Images</h2>
+            <button id="refreshImages" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 mb-4">Refresh Images</button>
+            <div id="imageGrid" class="image-grid">
+                <!-- Images will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Load existing configuration
+        async function loadConfig() {
+            try {
+                const response = await fetch('/config');
+                const config = await response.json();
+                document.getElementById('databaseId').value = config.database_id;
+            } catch (error) {
+                console.error('Error loading config:', error);
+            }
+        }
+
+        // Save configuration
+        document.getElementById('configForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const config = {
+                notion_token: document.getElementById('notionToken').value,
+                database_id: document.getElementById('databaseId').value
+            };
+            try {
+                const response = await fetch('/config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(config)
+                });
+                if (response.ok) {
+                    alert('Configuration saved successfully!');
+                    loadImages();
+                } else {
+                    alert('Error saving configuration');
+                }
+            } catch (error) {
+                alert('Error saving configuration: ' + error.message);
+            }
+        });
+
+        // Load images
+        async function loadImages() {
+            try {
+                const response = await fetch('/images');
+                const data = await response.json();
+                const imageGrid = document.getElementById('imageGrid');
+                imageGrid.innerHTML = '';
+                
+                data.images.forEach(image => {
+                    const card = document.createElement('div');
+                    card.className = 'image-card bg-white rounded-lg shadow-sm overflow-hidden';
+                    card.innerHTML = `
+                        <img src="/image/${image.id}" alt="${image.title}" loading="lazy">
+                        <div class="p-4">
+                            <h3 class="font-medium text-gray-800">${image.title}</h3>
+                            <div class="flex space-x-2">
+                                <button onclick="copyUrl('${window.location.origin}/image/${image.id}')" class="mt-2 text-sm text-blue-500 hover:text-blue-600">Copy URL</button>
+                                <button onclick="copyDirectUrl('${image.id}')" class="mt-2 text-sm text-blue-500 hover:text-blue-600">Copy Direct URL</button>
+                            </div>
+                        </div>
+                    `;
+                    imageGrid.appendChild(card);
+                });
+            } catch (error) {
+                console.error('Error loading images:', error);
+                document.getElementById('imageGrid').innerHTML = `
+                    <div class="col-span-full text-center text-red-500">
+                        Error loading images. Please check your configuration.
+                    </div>
+                `;
+            }
+        }
+
+        // Copy permanent URL to clipboard
+        function copyUrl(url) {
+            navigator.clipboard.writeText(url).then(() => {
+                alert('Permanent URL copied to clipboard! This URL will always redirect to the latest version of the image.');
+            }).catch(err => {
+                console.error('Error copying URL:', err);
+                alert('Error copying URL');
+            });
+        }
+
+        // Copy direct URL to clipboard
+        async function copyDirectUrl(imageId) {
+            try {
+                const response = await fetch(`/direct-image/${imageId}`);
+                const data = await response.json();
+                navigator.clipboard.writeText(data.url).then(() => {
+                    const expiryTime = new Date(data.expiry_time);
+                    alert(`Direct URL copied to clipboard!\nNote: This URL will expire on ${expiryTime.toLocaleString()}`);
+                });
+            } catch (err) {
+                console.error('Error copying direct URL:', err);
+                alert('Error copying direct URL');
+            }
+        }
+
+        // Refresh images button
+        document.getElementById('refreshImages').addEventListener('click', loadImages);
+
+        // Initial load
+        loadConfig();
+        loadImages();
+    </script>
+</body>
+</html> 
