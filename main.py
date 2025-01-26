@@ -42,7 +42,7 @@ def get_file_info(page: dict) -> dict:
     try:
         title = page["properties"]["Name"]["title"][0]["text"]["content"]
         content = page["properties"].get("Content", {}).get("files", [])
-        hidden = page["properties"].get("Hidden", {}).get("checkbox", False)
+        hidden = page["properties"].get("Hidden", {}).get("select", {}).get("name") == "True"
         
         if not content or hidden:
             return None
@@ -66,7 +66,7 @@ def get_page_info(page: dict) -> dict:
     """Extract page information."""
     try:
         title = page["properties"]["Name"]["title"][0]["text"]["content"]
-        hidden = page["properties"].get("Hidden", {}).get("checkbox", False)
+        hidden = page["properties"].get("Hidden", {}).get("select", {}).get("name") == "True"
         
         if hidden:
             return None
