@@ -151,7 +151,7 @@ def process_block_content(block):
         def process_rich_text(rich_text):
             if not rich_text:
                 return ""
-            return "".join([text["plain_text"] for text in rich_text])
+            return process_rich_text_with_formatting(rich_text)
         
         # Get children blocks if any
         children = []
@@ -171,16 +171,26 @@ def process_block_content(block):
         # Process block content based on type
         if block_type == "paragraph":
             result["text"] = process_rich_text(block["paragraph"]["rich_text"])
+            result["color"] = block["paragraph"].get("color", "default")
         elif block_type == "heading_1":
             result["text"] = process_rich_text(block["heading_1"]["rich_text"])
+            result["color"] = block["heading_1"].get("color", "default")
         elif block_type == "heading_2":
             result["text"] = process_rich_text(block["heading_2"]["rich_text"])
+            result["color"] = block["heading_2"].get("color", "default")
         elif block_type == "heading_3":
             result["text"] = process_rich_text(block["heading_3"]["rich_text"])
+            result["color"] = block["heading_3"].get("color", "default")
         elif block_type == "bulleted_list_item":
             result["text"] = process_rich_text(block["bulleted_list_item"]["rich_text"])
+            result["color"] = block["bulleted_list_item"].get("color", "default")
+            if has_children:
+                result["children"] = children
         elif block_type == "numbered_list_item":
             result["text"] = process_rich_text(block["numbered_list_item"]["rich_text"])
+            result["color"] = block["numbered_list_item"].get("color", "default")
+            if has_children:
+                result["children"] = children
         elif block_type == "to_do":
             result["text"] = process_rich_text(block["to_do"]["rich_text"])
             result["checked"] = block["to_do"]["checked"]

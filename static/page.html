@@ -443,6 +443,41 @@
                 ? `style="color: ${block.color === 'gray' ? '#9CA3AF' : block.color};"` 
                 : '';
 
+            // Helper function to render nested blocks
+            async function renderNestedBlocks(blocks) {
+                if (!blocks || blocks.length === 0) return '';
+                let nestedContent = '';
+                let currentList = null;
+                
+                for (const nestedBlock of blocks) {
+                    if (nestedBlock.type === 'bulleted_list_item' || nestedBlock.type === 'numbered_list_item') {
+                        if (!currentList || currentList.type !== nestedBlock.type) {
+                            if (currentList) {
+                                nestedContent += `</${currentList.tag}>`;
+                            }
+                            currentList = {
+                                type: nestedBlock.type,
+                                tag: nestedBlock.type === 'bulleted_list_item' ? 'ul' : 'ol'
+                            };
+                            nestedContent += `<${currentList.tag}>`;
+                        }
+                        nestedContent += await renderBlock(nestedBlock);
+                    } else {
+                        if (currentList) {
+                            nestedContent += `</${currentList.tag}>`;
+                            currentList = null;
+                        }
+                        nestedContent += await renderBlock(nestedBlock);
+                    }
+                }
+                
+                if (currentList) {
+                    nestedContent += `</${currentList.tag}>`;
+                }
+                
+                return nestedContent;
+            }
+
             switch (block.type) {
                 case 'paragraph':
                     return `<p ${colorStyle}>${block.text || ''}</p>`;
@@ -453,9 +488,19 @@
                 case 'heading_3':
                     return `<h3 ${colorStyle}>${block.text}</h3>`;
                 case 'bulleted_list_item':
-                    return `<li ${colorStyle}>${block.text}</li>`;
+                    let bulletContent = `<li ${colorStyle}>${block.text}`;
+                    if (block.children) {
+                        bulletContent += await renderNestedBlocks(block.children);
+                    }
+                    bulletContent += '</li>';
+                    return bulletContent;
                 case 'numbered_list_item':
-                    return `<li ${colorStyle}>${block.text}</li>`;
+                    let numberContent = `<li ${colorStyle}>${block.text}`;
+                    if (block.children) {
+                        numberContent += await renderNestedBlocks(block.children);
+                    }
+                    numberContent += '</li>';
+                    return numberContent;
                 case 'code':
                     return `<pre><code class="language-${block.language}">${block.text}</code></pre>`;
                 case 'image':
