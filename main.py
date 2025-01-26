@@ -44,23 +44,45 @@ def get_file_info(page: dict) -> dict:
         content = page["properties"].get("Content", {}).get("files", [])
         
         if not content:
+            logger.warning(f"No content found for page {page['id']}")
             return None
             
-        file_data = content[0].get("file", {})
-        file_url = file_data.get("url")
+        file_data = content[0]
+        logger.info(f"File data for {title}: {file_data}")
         
-        # Try to get preview image if available
+        # 获取文件 URL
+        file_url = None
+        if "file" in file_data:
+            file_url = file_data["file"].get("url")
+        elif "external" in file_data:
+            file_url = file_data["external"].get("url")
+            
+        if not file_url:
+            logger.warning(f"No file URL found for {title}")
+            return None
+        
+        # 获取预览图 URL
         preview_url = None
-        if "type" in file_data and file_data["type"] == "file":
-            preview = file_data.get("preview")
-            if preview and isinstance(preview, dict):
-                preview_url = preview.get("url")
+        
+        # 检查文件数据中的预览信息
+        if "file" in file_data:
+            file_obj = file_data["file"]
+            # 检查是否有预览字段
+            if "preview" in file_obj:
+                preview = file_obj["preview"]
+                if isinstance(preview, dict):
+                    preview_url = preview.get("url")
+                    logger.info(f"Found preview URL for {title}: {preview_url}")
+            # 如果是图片类型，直接使用文件 URL 作为预览
+            elif file_obj.get("type", "").startswith("image/"):
+                preview_url = file_url
+                logger.info(f"Using image URL as preview for {title}: {preview_url}")
         
         return {
             "id": page["id"],
             "title": title,
             "preview_url": preview_url
-        } if file_url else None
+        }
         
     except (KeyError, IndexError) as e:
         logger.warning(f"Error extracting file info: {e}")
