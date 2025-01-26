@@ -59,4 +59,13 @@ The server will start at `http://localhost:8000`
 ## Notes
 
 - The image URLs from Notion are temporary and expire after a certain time
-- Make sure your Notion database has a "type" property that can be used to filter images 
+- Make sure your Notion database has a "type" property that can be used to filter images
+
+## Features
+
+### Code Block Features
+- Syntax highlighting for various programming languages
+- One-click code copying
+  - Hover over any code block to reveal a "Copy" button in the top-right corner
+  - Click to copy the code to your clipboard
+  - Visual feedback confirms successful copy operation 

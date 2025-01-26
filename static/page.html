@@ -40,6 +40,32 @@
             overflow-x: auto;
             position: relative;
         }
+        .copy-button {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            padding: 0.25rem 0.5rem;
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
+            color: #4b5563;
+            cursor: pointer;
+            transition: all 0.2s;
+            opacity: 0;
+        }
+        .prose pre:hover .copy-button {
+            opacity: 1;
+        }
+        .copy-button:hover {
+            background-color: #f3f4f6;
+            border-color: #d1d5db;
+        }
+        .copy-button.copied {
+            background-color: #10B981;
+            color: white;
+            border-color: #059669;
+        }
         .prose blockquote {
             border-left: 4px solid #e5e7eb;
             padding-left: 1rem;
@@ -286,36 +312,6 @@
         .toggle-block .toggle-block {
             margin-left: 0;
         }
-        
-        .copy-button {
-            position: absolute;
-            top: 0.5rem;
-            right: 0.5rem;
-            padding: 0.25rem 0.5rem;
-            background-color: #ffffff;
-            border: 1px solid #e5e7eb;
-            border-radius: 0.25rem;
-            font-size: 0.875rem;
-            color: #6b7280;
-            cursor: pointer;
-            transition: all 0.2s;
-            opacity: 0;
-        }
-
-        .prose pre:hover .copy-button {
-            opacity: 1;
-        }
-
-        .copy-button:hover {
-            background-color: #f9fafb;
-            color: #374151;
-        }
-
-        .copy-button.copied {
-            background-color: #10b981;
-            color: white;
-            border-color: #059669;
-        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -326,7 +322,7 @@
     <div class="container mx-auto px-4 py-8 max-w-4xl">
         <div class="bg-white rounded-xl shadow-sm overflow-hidden">
             <div class="p-6">
-                <h1 id="pageTitle" class="text-3xl font-bold mb-6 text-gray-900 text-center"></h1>
+                <h1 id="pageTitle" class="text-3xl font-bold mb-6 text-gray-900"></h1>
                 <div id="pageContent" class="prose">
                     <div class="flex justify-center py-8">
                         <div class="loading-spinner"></div>
@@ -357,30 +353,6 @@
         let totalBlocks = 0;
         let loadedBlocks = 0;
         let parentPageId = null;  // Add variable to store parent page ID
-
-        // Add copy code function at the beginning of script
-        function copyCode(button) {
-            const pre = button.parentElement;
-            const code = pre.querySelector('code');
-            const text = code.textContent;
-
-            navigator.clipboard.writeText(text).then(() => {
-                button.textContent = 'Copied!';
-                button.classList.add('copied');
-                
-                setTimeout(() => {
-                    button.textContent = 'Copy';
-                    button.classList.remove('copied');
-                }, 2000);
-            }).catch(err => {
-                console.error('Failed to copy text:', err);
-                button.textContent = 'Failed';
-                
-                setTimeout(() => {
-                    button.textContent = 'Copy';
-                }, 2000);
-            });
-        }
         
         function updateLoadingProgress(progress) {
             const progressBar = document.getElementById('loadingProgressBar');
@@ -615,8 +587,263 @@
                         <div class="border rounded-lg p-4 my-4">
                             <iframe src="${block.pdf_url}" class="w-full h-96 rounded-lg"></iframe>
                         </div>`;
+                case 'embed':
+                    return `
+                        <div class="border rounded-lg p-4 my-4">
+                            <iframe src="${block.url}" class="w-full h-96 rounded-lg"></iframe>
+                        </div>`;
+                case 'table':
+                    let tableHtml = `<table>`;
+                    if (block.children) {
+                        block.children.forEach((row, rowIndex) => {
+                            const isHeader = (block.has_column_header && rowIndex === 0) || 
+                                          (block.has_row_header && row.cells && row.cells[0]);
+                            tableHtml += '<tr>';
+                            row.cells.forEach((cell, cellIndex) => {
+                                const isRowHeader = block.has_row_header && cellIndex === 0;
+                                const tag = isHeader || isRowHeader ? 'th' : 'td';
+                                tableHtml += `<${tag}>${cell}</${tag}>`;
+                            });
+                            tableHtml += '</tr>';
+                        });
+                    }
+                    tableHtml += '</table>';
+                    return tableHtml;
+                case 'to_do':
+                    return `
+                        <div class="flex items-center my-2">
+                            <input type="checkbox" ${block.checked ? 'checked' : ''} disabled class="mr-2">
+                            <span class="${block.checked ? 'line-through text-gray-500' : ''}">${block.text}</span>
+                        </div>`;
+                case 'child_page':
+                    return `<div class="border rounded-lg p-4 my-4 hover:bg-gray-50" 
+                        onclick="loadChildPage('${block.page_id}', '${block.title}')"
+                        style="cursor: pointer;">
+                        <div class="flex items-center text-blue-600">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                                </path>
+                            </svg>
+                            ${block.title}
+                        </div>
+                    </div>`;
+                case 'link_preview':
+                    return `
+                        <div class="border rounded-lg p-4 my-4 hover:bg-gray-50">
+                            <a href="${block.url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">
+                                ${block.url}
+                            </a>
+                        </div>`;
+                case 'synced_block':
+                    return block.synced_content ? await renderBlock(block.synced_content) : '';
+                case 'template':
+                    return `<div class="text-gray-500 italic my-4">[Template Block]</div>`;
+                case 'breadcrumb':
+                    return `<div class="text-sm text-gray-500 my-4">Navigation Breadcrumb</div>`;
+                case 'toggle':
+                    const toggleId = `toggle-${Math.random().toString(36).substr(2, 9)}`;
+                    let toggleContent = '';
+                    
+                    // Recursively render nested blocks
+                    if (block.children && block.children.length > 0) {
+                        console.log('Processing toggle children:', block.children);
+                        const nestedContent = await Promise.all(block.children.map(async child => {
+                            // Handle nested lists
+                            if (child.type === 'bulleted_list_item' || child.type === 'numbered_list_item') {
+                                const listType = child.type === 'bulleted_list_item' ? 'ul' : 'ol';
+                                return `<${listType}>${await renderBlock(child)}</${listType}>`;
+                            }
+                            return await renderBlock(child);
+                        }));
+                        toggleContent = nestedContent.join('');
+                    }
+
+                    return `
+                        <div class="toggle-block" id="${toggleId}">
+                            <div class="toggle-header" onclick="toggleBlock('${toggleId}')" ${colorStyle}>
+                                <svg class="toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5l7 7-7 7"></path>
+                                </svg>
+                                <div class="toggle-text">${block.text || ''}</div>
+                            </div>
+                            <div class="toggle-content">
+                                <div class="toggle-content-inner prose">
+                                    ${toggleContent}
+                                </div>
+                            </div>
+                        </div>`;
+                default:
+                    return '';
             }
+        }
+
+        // Optimize page loading
+        async function loadPage(pageId = null) {
+            const targetPageId = pageId || urlParams.get('id');
+            
+            if (!targetPageId) {
+                document.getElementById('pageContent').innerHTML = `
+                    <div class="text-center text-red-500">
+                        <p>No page ID provided.</p>
+                    </div>`;
+                return;
+            }
+
+            try {
+                updateLoadingProgress(10);
+                const response = await fetch(`/page/${targetPageId}`);
+                const data = await response.json();
+                
+                updateLoadingProgress(30);
+                
+                // Update page title
+                document.title = data.page.title;
+                document.getElementById('pageTitle').textContent = data.page.title;
+                
+                // Update back button based on parent page
+                const backButton = document.querySelector('.back-button');
+                if (data.page.parent_id) {
+                    parentPageId = data.page.parent_id;
+                    backButton.href = `/static/page.html?id=${parentPageId}`;
+                    backButton.innerHTML = `
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                        Back to Parent Page
+                    `;
+                } else {
+                    parentPageId = null;
+                    backButton.href = "/static/pages.html";
+                    backButton.innerHTML = `
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                        Back to Pages
+                    `;
+                }
+                
+                // Initialize block counting
+                totalBlocks = data.blocks.length;
+                loadedBlocks = 0;
+                
+                // Render content
+                let content = '';
+                let currentList = null;
+                
+                for (const block of data.blocks) {
+                    if (block.type === 'bulleted_list_item' || block.type === 'numbered_list_item') {
+                        if (!currentList || currentList.type !== block.type) {
+                            if (currentList) {
+                                content += `</${currentList.tag}>`;
+                            }
+                            currentList = {
+                                type: block.type,
+                                tag: block.type === 'bulleted_list_item' ? 'ul' : 'ol'
+                            };
+                            content += `<${currentList.tag} class="${block.type === 'bulleted_list_item' ? 'list-disc' : 'list-decimal'} ml-6">`;
+                        }
+                        content += await renderBlock(block);
+                    } else {
+                        if (currentList) {
+                            content += `</${currentList.tag}>`;
+                            currentList = null;
+                        }
+                        content += await renderBlock(block);
+                    }
+                }
+                
+                if (currentList) {
+                    content += `</${currentList.tag}>`;
+                }
+                
+                document.getElementById('pageContent').innerHTML = content;
+                
+                // Initialize lazy loading for images
+                document.querySelectorAll('img[data-src]').forEach(img => {
+                    imageObserver.observe(img);
+                });
+                
+            } catch (error) {
+                console.error('Error loading page content:', error);
+                document.getElementById('pageContent').innerHTML = `
+                    <div class="text-center text-red-500">
+                        <p>Error loading page content.</p>
+                        <p class="text-sm mt-2">${error.message}</p>
+                    </div>`;
+            }
+        }
+
+        // Load page on start
+        loadPage();
+
+        // Add toggle block function
+        function toggleBlock(id) {
+            const block = document.getElementById(id);
+            const content = block.querySelector('.toggle-content');
+            const contentInner = content.querySelector('.toggle-content-inner');
+            const isOpen = block.classList.contains('open');
+            
+            // Get the current height before any changes
+            const startHeight = content.offsetHeight;
+            
+            if (isOpen) {
+                // Set explicit height before closing
+                content.style.height = startHeight + 'px';
+                // Force reflow
+                content.offsetHeight;
+                // Start closing animation
+                requestAnimationFrame(() => {
+                    content.style.height = '0';
+                    content.style.opacity = '0';
+                    block.classList.remove('open');
+                });
+            } else {
+                // Start opening animation
+                block.classList.add('open');
+                const targetHeight = contentInner.offsetHeight;
+                content.style.height = '0';
+                // Force reflow
+                content.offsetHeight;
+                // Trigger animation
+                requestAnimationFrame(() => {
+                    content.style.height = targetHeight + 'px';
+                    content.style.opacity = '1';
+                });
+                
+                // Reset height after animation
+                content.addEventListener('transitionend', function handler(e) {
+                    if (e.propertyName === 'height' && block.classList.contains('open')) {
+                        content.style.height = 'auto';
+                        content.removeEventListener('transitionend', handler);
+                    }
+                });
+            }
+        }
+
+        // Add copy code function
+        function copyCode(button) {
+            const pre = button.parentElement;
+            const code = pre.querySelector('code');
+            const text = code.textContent;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                button.textContent = 'Copied!';
+                button.classList.add('copied');
+                
+                setTimeout(() => {
+                    button.textContent = 'Copy';
+                    button.classList.remove('copied');
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy text:', err);
+                button.textContent = 'Failed';
+                
+                setTimeout(() => {
+                    button.textContent = 'Copy';
+                }, 2000);
+            });
         }
     </script>
 </body>
-</html>
+</html> 
