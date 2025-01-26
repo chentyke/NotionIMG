@@ -202,12 +202,7 @@
                 </div>
                 <div class="mt-8 pt-6 border-t border-gray-200">
                     <div class="flex justify-between items-center">
-                        <a href="/static/pages.html" class="back-button text-blue-500 hover:text-blue-600 flex items-center">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                            </svg>
-                            Back to Pages
-                        </a>
+                        <div id="backButton"></div>
                     </div>
                 </div>
             </div>
@@ -297,122 +292,9 @@
             }
         });
 
-        // Load page content
-        async function loadPage(pageId = null, parentId = null) {
-            const targetPageId = pageId || urlParams.get('id');
-            
-            if (!targetPageId) {
-                document.getElementById('pageContent').innerHTML = `
-                    <div class="text-center text-red-500">
-                        <p>No page ID provided.</p>
-                    </div>`;
-                return;
-            }
-
-            try {
-                const response = await fetch(`/page/${targetPageId}`);
-                const data = await response.json();
-                
-                // Update page title immediately
-                document.title = data.page.title;
-                document.getElementById('pageTitle').textContent = data.page.title;
-
-                // Update back button based on parent page
-                const backButton = document.querySelector('.back-button');
-                if (parentId) {
-                    backButton.href = `/static/page.html?id=${parentId}`;
-                    backButton.innerHTML = `
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                        </svg>
-                        Back to Parent Page
-                    `;
-                } else {
-                    backButton.href = "/static/pages.html";
-                    backButton.innerHTML = `
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                        </svg>
-                        Back to Pages
-                    `;
-                }
-                
-                // Create a document fragment for better performance
-                const fragment = document.createDocumentFragment();
-                let currentList = null;
-                let currentListElement = null;
-                
-                // Process blocks in chunks to prevent UI blocking
-                const chunkSize = 20;
-                const processChunk = async (startIndex) => {
-                    const endIndex = Math.min(startIndex + chunkSize, data.blocks.length);
-                    
-                    for (let i = startIndex; i < endIndex; i++) {
-                        const block = data.blocks[i];
-                        
-                        if (block.type === 'bulleted_list_item' || block.type === 'numbered_list_item') {
-                            if (!currentList || currentList.type !== block.type) {
-                                if (currentList) {
-                                    fragment.appendChild(currentListElement);
-                                }
-                                currentList = {
-                                    type: block.type,
-                                    tag: block.type === 'bulleted_list_item' ? 'ul' : 'ol'
-                                };
-                                currentListElement = document.createElement(currentList.tag);
-                            }
-                            const content = await renderBlock(block);
-                            currentListElement.insertAdjacentHTML('beforeend', content);
-                        } else {
-                            if (currentList) {
-                                fragment.appendChild(currentListElement);
-                                currentList = null;
-                                currentListElement = null;
-                            }
-                            const content = await renderBlock(block);
-                            const tempDiv = document.createElement('div');
-                            tempDiv.innerHTML = content;
-                            while (tempDiv.firstChild) {
-                                fragment.appendChild(tempDiv.firstChild);
-                            }
-                        }
-                    }
-                    
-                    if (endIndex < data.blocks.length) {
-                        // Process next chunk in the next frame
-                        requestAnimationFrame(() => processChunk(endIndex));
-                    } else {
-                        // Append final list if exists
-                        if (currentList) {
-                            fragment.appendChild(currentListElement);
-                        }
-                        // Clear and append all content at once
-                        const contentDiv = document.getElementById('pageContent');
-                        contentDiv.innerHTML = '';
-                        contentDiv.appendChild(fragment);
-                    }
-                };
-                
-                // Start processing the first chunk
-                await processChunk(0);
-                
-            } catch (error) {
-                console.error('Error loading page content:', error);
-                document.getElementById('pageContent').innerHTML = `
-                    <div class="text-center text-red-500">
-                        <p>Error loading page content.</p>
-                        <p class="text-sm mt-2">${error.message}</p>
-                    </div>`;
-            }
-        }
-
-        // Load page on start
-        loadPage();
-
         // Load child page
         async function loadChildPage(pageId, title) {
-            // Update browser history with current page as parent
-            const currentPageId = urlParams.get('id');
+            // Update browser history
             window.history.pushState({}, "", `/static/page.html?id=${pageId}`);
             
             // Show loading state
@@ -425,8 +307,8 @@
             document.title = title;
             document.getElementById('pageTitle').textContent = title;
             
-            // Load the new page content with parent page ID
-            await loadPage(pageId, currentPageId);
+            // Load the new page content
+            await loadPage(pageId);
         }
 
         // Render block content
@@ -591,6 +473,118 @@
                     return '';
             }
         }
+
+        // Load page content
+        async function loadPage(pageId = null) {
+            const targetPageId = pageId || urlParams.get('id');
+            
+            if (!targetPageId) {
+                document.getElementById('pageContent').innerHTML = `
+                    <div class="text-center text-red-500">
+                        <p>No page ID provided.</p>
+                    </div>`;
+                return;
+            }
+
+            try {
+                const response = await fetch(`/page/${targetPageId}`);
+                const data = await response.json();
+                
+                // Update page title immediately
+                document.title = data.page.title;
+                document.getElementById('pageTitle').textContent = data.page.title;
+
+                // Update back button based on parent page
+                const backButton = document.getElementById('backButton');
+                if (data.page.parent_id) {
+                    backButton.innerHTML = `
+                        <a href="/static/page.html?id=${data.page.parent_id}" class="text-blue-500 hover:text-blue-600 flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                            </svg>
+                            Back to Parent Page
+                        </a>`;
+                } else {
+                    backButton.innerHTML = `
+                        <a href="/static/pages.html" class="text-blue-500 hover:text-blue-600 flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                            </svg>
+                            Back to Pages
+                        </a>`;
+                }
+                
+                // Create a document fragment for better performance
+                const fragment = document.createDocumentFragment();
+                let currentList = null;
+                let currentListElement = null;
+                
+                // Process blocks in chunks to prevent UI blocking
+                const chunkSize = 20;
+                const processChunk = async (startIndex) => {
+                    const endIndex = Math.min(startIndex + chunkSize, data.blocks.length);
+                    
+                    for (let i = startIndex; i < endIndex; i++) {
+                        const block = data.blocks[i];
+                        
+                        if (block.type === 'bulleted_list_item' || block.type === 'numbered_list_item') {
+                            if (!currentList || currentList.type !== block.type) {
+                                if (currentList) {
+                                    fragment.appendChild(currentListElement);
+                                }
+                                currentList = {
+                                    type: block.type,
+                                    tag: block.type === 'bulleted_list_item' ? 'ul' : 'ol'
+                                };
+                                currentListElement = document.createElement(currentList.tag);
+                            }
+                            const content = await renderBlock(block);
+                            currentListElement.insertAdjacentHTML('beforeend', content);
+                        } else {
+                            if (currentList) {
+                                fragment.appendChild(currentListElement);
+                                currentList = null;
+                                currentListElement = null;
+                            }
+                            const content = await renderBlock(block);
+                            const tempDiv = document.createElement('div');
+                            tempDiv.innerHTML = content;
+                            while (tempDiv.firstChild) {
+                                fragment.appendChild(tempDiv.firstChild);
+                            }
+                        }
+                    }
+                    
+                    if (endIndex < data.blocks.length) {
+                        // Process next chunk in the next frame
+                        requestAnimationFrame(() => processChunk(endIndex));
+                    } else {
+                        // Append final list if exists
+                        if (currentList) {
+                            fragment.appendChild(currentListElement);
+                        }
+                        // Clear and append all content at once
+                        const contentDiv = document.getElementById('pageContent');
+                        contentDiv.innerHTML = '';
+                        contentDiv.appendChild(fragment);
+                    }
+                };
+                
+                // Start processing the first chunk
+                await processChunk(0);
+                
+            } catch (error) {
+                console.error('Error loading page content:', error);
+                document.getElementById('pageContent').innerHTML = `
+                    <div class="text-center text-red-500">
+                        <p>Error loading page content.</p>
+                        <p class="text-sm mt-2">${error.message}</p>
+                    </div>`;
+            }
+        }
+
+        // Load page on start
+        loadPage();
     </script>
 </body>
 </html> 

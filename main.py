@@ -324,21 +324,30 @@ async def get_page_content(page_id: str):
         try:
             block = notion.blocks.retrieve(block_id=page_id)
             if block["type"] == "child_page":
-                # If it's a child page, use the title from the block
+                # If it's a child page, get the parent page ID
+                parent_id = block["parent"]["page_id"] if block["parent"]["type"] == "page_id" else None
+                # Use the title from the block
                 page_info = {
                     "id": block["id"],
                     "title": block["child_page"]["title"],
                     "created_time": block["created_time"],
-                    "last_edited_time": block["last_edited_time"]
+                    "last_edited_time": block["last_edited_time"],
+                    "parent_id": parent_id
                 }
             else:
                 # If it's not a child page, get page metadata normally
                 page = notion.pages.retrieve(page_id=page_id)
                 page_info = get_page_info(page)
+                # Add parent ID if available
+                if page["parent"]["type"] == "page_id":
+                    page_info["parent_id"] = page["parent"]["page_id"]
         except Exception as e:
             # If block retrieval fails, try page retrieval as fallback
             page = notion.pages.retrieve(page_id=page_id)
             page_info = get_page_info(page)
+            # Add parent ID if available
+            if page["parent"]["type"] == "page_id":
+                page_info["parent_id"] = page["parent"]["page_id"]
         
         if not page_info:
             raise HTTPException(status_code=404, detail="Page not found")
