@@ -128,10 +128,30 @@ async def get_images():
         response = notion.databases.query(
             database_id=DATABASE_ID,
             filter={
-                "property": "type",
-                "select": {
-                    "equals": "image"
-                }
+                "and": [
+                    {
+                        "property": "type",
+                        "select": {
+                            "equals": "image"
+                        }
+                    },
+                    {
+                        "or": [
+                            {
+                                "property": "Hidden",
+                                "checkbox": {
+                                    "equals": False
+                                }
+                            },
+                            {
+                                "property": "Hidden",
+                                "checkbox": {
+                                    "does_not_equal": True
+                                }
+                            }
+                        ]
+                    }
+                ]
             }
         )
         
@@ -152,10 +172,30 @@ async def get_files():
         response = notion.databases.query(
             database_id=DATABASE_ID,
             filter={
-                "property": "type",
-                "select": {
-                    "equals": "file"
-                }
+                "and": [
+                    {
+                        "property": "type",
+                        "select": {
+                            "equals": "file"
+                        }
+                    },
+                    {
+                        "or": [
+                            {
+                                "property": "Hidden",
+                                "checkbox": {
+                                    "equals": False
+                                }
+                            },
+                            {
+                                "property": "Hidden",
+                                "checkbox": {
+                                    "does_not_equal": True
+                                }
+                            }
+                        ]
+                    }
+                ]
             }
         )
         
@@ -176,10 +216,30 @@ async def get_pages():
         response = notion.databases.query(
             database_id=DATABASE_ID,
             filter={
-                "property": "type",
-                "select": {
-                    "equals": "page"
-                }
+                "and": [
+                    {
+                        "property": "type",
+                        "select": {
+                            "equals": "page"
+                        }
+                    },
+                    {
+                        "or": [
+                            {
+                                "property": "Hidden",
+                                "checkbox": {
+                                    "equals": False
+                                }
+                            },
+                            {
+                                "property": "Hidden",
+                                "checkbox": {
+                                    "does_not_equal": True
+                                }
+                            }
+                        ]
+                    }
+                ]
             }
         )
         
