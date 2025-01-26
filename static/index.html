@@ -20,6 +20,10 @@
             display: flex;
             gap: 0.5rem;
         }
+        .tab-active {
+            border-bottom: 2px solid #3b82f6;
+            color: #3b82f6;
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
@@ -30,28 +34,100 @@
         <div class="bg-white rounded-lg shadow-md p-6 mb-8">
             <h2 class="text-xl font-semibold mb-4">Instructions</h2>
             <div class="space-y-4">
-                <p class="text-gray-600">To add new images:</p>
+                <p class="text-gray-600">To add new items:</p>
                 <ul class="list-disc list-inside ml-4 text-gray-600">
                     <li>Open your Notion database</li>
                     <li>Create a new entry</li>
-                    <li>Set the "type" property to "image"</li>
-                    <li>Upload your image to the "Content" property</li>
+                    <li>Set the "type" property to "image" or "file"</li>
+                    <li>Upload your file to the "Content" property</li>
                     <li>Give it a name in the "Name" property</li>
                 </ul>
             </div>
         </div>
 
-        <!-- Images Section -->
+        <!-- Tabs -->
         <div class="bg-white rounded-lg shadow-md p-6">
-            <h2 class="text-xl font-semibold mb-4">Images</h2>
-            <button id="refreshImages" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 mb-4">Refresh Images</button>
-            <div id="imageGrid" class="image-grid">
-                <!-- Images will be loaded here -->
+            <div class="flex space-x-4 mb-6 border-b">
+                <button onclick="switchTab('images')" id="imagesTab" class="px-4 py-2 font-medium tab-active">Images</button>
+                <button onclick="switchTab('files')" id="filesTab" class="px-4 py-2 font-medium">Files</button>
+            </div>
+
+            <!-- Content Section -->
+            <div id="imagesSection" class="space-y-4">
+                <button id="refreshImages" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 mb-4">Refresh Images</button>
+                <div id="imageGrid" class="image-grid">
+                    <!-- Images will be loaded here -->
+                </div>
+            </div>
+
+            <div id="filesSection" class="space-y-4 hidden">
+                <button id="refreshFiles" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 mb-4">Refresh Files</button>
+                <div id="fileGrid" class="image-grid">
+                    <!-- Files will be loaded here -->
+                </div>
             </div>
         </div>
     </div>
 
     <script>
+        // Compress image before displaying
+        function compressImage(url) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.crossOrigin = "anonymous";
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Set target size (max width/height = 400px)
+                    const maxSize = 400;
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    if (width > height) {
+                        if (width > maxSize) {
+                            height *= maxSize / width;
+                            width = maxSize;
+                        }
+                    } else {
+                        if (height > maxSize) {
+                            width *= maxSize / height;
+                            height = maxSize;
+                        }
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    
+                    // Draw and compress
+                    ctx.drawImage(img, 0, 0, width, height);
+                    resolve(canvas.toDataURL('image/jpeg', 0.8));
+                };
+                img.onerror = reject;
+                img.src = url;
+            });
+        }
+
+        // Switch tabs
+        function switchTab(tab) {
+            const imagesTab = document.getElementById('imagesTab');
+            const filesTab = document.getElementById('filesTab');
+            const imagesSection = document.getElementById('imagesSection');
+            const filesSection = document.getElementById('filesSection');
+
+            if (tab === 'images') {
+                imagesTab.classList.add('tab-active');
+                filesTab.classList.remove('tab-active');
+                imagesSection.classList.remove('hidden');
+                filesSection.classList.add('hidden');
+            } else {
+                filesTab.classList.add('tab-active');
+                imagesTab.classList.remove('tab-active');
+                filesSection.classList.remove('hidden');
+                imagesSection.classList.add('hidden');
+            }
+        }
+
         // Load images
         async function loadImages() {
             try {
@@ -60,11 +136,15 @@
                 const imageGrid = document.getElementById('imageGrid');
                 imageGrid.innerHTML = '';
                 
-                data.images.forEach(image => {
+                for (const image of data.images) {
                     const card = document.createElement('div');
                     card.className = 'image-card bg-white rounded-lg shadow-sm overflow-hidden';
+                    
+                    // Get compressed preview URL
+                    const previewUrl = await compressImage(`/image/${image.id}`);
+                    
                     card.innerHTML = `
-                        <img src="/image/${image.id}" alt="${image.title}" loading="lazy">
+                        <img src="${previewUrl}" alt="${image.title}" loading="lazy">
                         <div class="p-4">
                             <h3 class="font-medium text-gray-800">${image.title}</h3>
                             <div class="button-group mt-2">
@@ -74,7 +154,7 @@
                         </div>
                     `;
                     imageGrid.appendChild(card);
-                });
+                }
             } catch (error) {
                 console.error('Error loading images:', error);
                 document.getElementById('imageGrid').innerHTML = `
@@ -85,10 +165,47 @@
             }
         }
 
+        // Load files
+        async function loadFiles() {
+            try {
+                const response = await fetch('/files');
+                const data = await response.json();
+                const fileGrid = document.getElementById('fileGrid');
+                fileGrid.innerHTML = '';
+                
+                data.files.forEach(file => {
+                    const card = document.createElement('div');
+                    card.className = 'image-card bg-white rounded-lg shadow-sm overflow-hidden';
+                    card.innerHTML = `
+                        <div class="h-[200px] flex items-center justify-center bg-gray-100">
+                            <svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                        </div>
+                        <div class="p-4">
+                            <h3 class="font-medium text-gray-800">${file.title}</h3>
+                            <div class="button-group mt-2">
+                                <button onclick="copyUrl('${window.location.origin}/file/${file.id}')" class="text-sm text-blue-500 hover:text-blue-600">Copy URL</button>
+                                <button onclick="downloadFile('${window.location.origin}/file/${file.id}', '${file.title}')" class="text-sm text-blue-500 hover:text-blue-600">Download</button>
+                            </div>
+                        </div>
+                    `;
+                    fileGrid.appendChild(card);
+                });
+            } catch (error) {
+                console.error('Error loading files:', error);
+                document.getElementById('fileGrid').innerHTML = `
+                    <div class="col-span-full text-center text-red-500">
+                        Error loading files. Please check your configuration.
+                    </div>
+                `;
+            }
+        }
+
         // Copy URL to clipboard
         function copyUrl(url) {
             navigator.clipboard.writeText(url).then(() => {
-                alert('URL copied to clipboard! This URL will always redirect to the latest version of the image.');
+                alert('URL copied to clipboard! This URL will always redirect to the latest version of the file.');
             }).catch(err => {
                 console.error('Error copying URL:', err);
                 alert('Error copying URL');
@@ -115,6 +232,26 @@
             }
         }
 
+        // Download file
+        async function downloadFile(url, filename) {
+            try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                const blobUrl = window.URL.createObjectURL(blob);
+                
+                const link = document.createElement('a');
+                link.href = blobUrl;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(blobUrl);
+            } catch (err) {
+                console.error('Error downloading file:', err);
+                alert('Error downloading file');
+            }
+        }
+
         // Get file extension from mime type
         function getFileExtension(mimeType) {
             const extensions = {
@@ -127,11 +264,13 @@
             return extensions[mimeType] || '.jpg';
         }
 
-        // Refresh images button
+        // Event listeners
         document.getElementById('refreshImages').addEventListener('click', loadImages);
+        document.getElementById('refreshFiles').addEventListener('click', loadFiles);
 
         // Initial load
         loadImages();
+        loadFiles();
     </script>
 </body>
 </html> 
