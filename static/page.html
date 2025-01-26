@@ -58,7 +58,7 @@
             line-height: 1.5;
             white-space: pre;
             padding: 0;
-            margin: 1.25rem 0 0.25rem;
+            margin: 1.25rem 0 0;
         }
         .copy-button {
             position: absolute;
@@ -537,11 +537,7 @@
                     
                     return `<li ${colorStyle}>${listContent}</li>`;
                 case 'code':
-                    return `<pre>
-                        <div class="language-label">${block.language || 'text'}</div>
-                        <button class="copy-button" onclick="copyCode(this)">Copy</button>
-                        <code class="language-${block.language || 'text'}">${block.text}</code>
-                    </pre>`;
+                    return `<pre><div class="language-label">${block.language || 'text'}</div><button class="copy-button" onclick="copyCode(this)">Copy</button><code class="language-${block.language || 'text'}">${block.text.trim()}</code></pre>`;
                 case 'image':
                     return `<figure>
                         <img class="opacity-0 transition-opacity duration-300" 
