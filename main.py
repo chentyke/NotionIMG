@@ -171,10 +171,9 @@ def process_block_content(block: dict) -> dict:
         result["checked"] = content.get("checked", False)
         
     elif block_type == "child_page":
-        # Get the title directly from the child_page block
-        result["title"] = content.get("title", "Untitled")
-        # The block ID is the page ID for child_page blocks
-        result["page_id"] = block["id"]
+        # According to Notion API docs, child_page title is directly in the content object
+        result["title"] = content.get("title", "")  # Get title directly from child_page object
+        result["page_id"] = block["id"]  # The block ID is the page ID for child_page blocks
         
     elif block_type == "child_database":
         result["title"] = content.get("title", "")
@@ -297,6 +296,20 @@ async def get_page_content(page_id: str):
                                 }
                             }
                             break
+                    
+                    # If we couldn't find the title in parent blocks, try to get it from the block itself
+                    if not page.get("properties"):
+                        block = notion.blocks.retrieve(block_id=page_id)
+                        if block["type"] == "child_page":
+                            page["properties"] = {
+                                "Name": {
+                                    "title": [{
+                                        "text": {
+                                            "content": block["child_page"]["title"]
+                                        }
+                                    }]
+                                }
+                            }
             except Exception as e:
                 logger.warning(f"Error retrieving parent page blocks: {e}")
         
