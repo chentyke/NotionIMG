@@ -357,6 +357,30 @@
         let totalBlocks = 0;
         let loadedBlocks = 0;
         let parentPageId = null;  // Add variable to store parent page ID
+
+        // Add copy code function at the beginning of script
+        function copyCode(button) {
+            const pre = button.parentElement;
+            const code = pre.querySelector('code');
+            const text = code.textContent;
+
+            navigator.clipboard.writeText(text).then(() => {
+                button.textContent = 'Copied!';
+                button.classList.add('copied');
+                
+                setTimeout(() => {
+                    button.textContent = 'Copy';
+                    button.classList.remove('copied');
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy text:', err);
+                button.textContent = 'Failed';
+                
+                setTimeout(() => {
+                    button.textContent = 'Copy';
+                }, 2000);
+            });
+        }
         
         function updateLoadingProgress(progress) {
             const progressBar = document.getElementById('loadingProgressBar');
@@ -592,30 +616,6 @@
                             <iframe src="${block.pdf_url}" class="w-full h-96 rounded-lg"></iframe>
                         </div>`;
             }
-        }
-
-        // Add copy code function before the closing </script> tag
-        function copyCode(button) {
-            const pre = button.parentElement;
-            const code = pre.querySelector('code');
-            const text = code.textContent;
-
-            navigator.clipboard.writeText(text).then(() => {
-                button.textContent = 'Copied!';
-                button.classList.add('copied');
-                
-                setTimeout(() => {
-                    button.textContent = 'Copy';
-                    button.classList.remove('copied');
-                }, 2000);
-            }).catch(err => {
-                console.error('Failed to copy text:', err);
-                button.textContent = 'Failed';
-                
-                setTimeout(() => {
-                    button.textContent = 'Copy';
-                }, 2000);
-            });
         }
     </script>
 </body>
