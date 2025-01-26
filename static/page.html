@@ -211,35 +211,57 @@
         /* Add toggle block styles */
         .toggle-block {
             border-radius: 0.375rem;
-            margin: 1rem 0;
+            margin: 0.5rem 0;
+            font-size: inherit;
         }
         .toggle-header {
             display: flex;
             align-items: center;
             cursor: pointer;
-            padding: 0.5rem;
+            padding: 0.25rem 0;
             border-radius: 0.375rem;
             transition: background-color 0.2s;
+            min-height: 1.5em;
+            color: inherit;
         }
         .toggle-header:hover {
-            background-color: #F3F4F6;
+            background-color: rgba(55, 53, 47, 0.08);
         }
         .toggle-icon {
-            width: 1.25rem;
-            height: 1.25rem;
+            width: 1rem;
+            height: 1rem;
             margin-right: 0.5rem;
-            transition: transform 0.2s;
+            transition: transform 0.15s ease-in;
+            flex-shrink: 0;
+            opacity: 0.5;
+        }
+        .toggle-text {
+            flex: 1;
+            white-space: pre-wrap;
+            word-break: break-word;
+            caret-color: rgb(55, 53, 47);
+            padding: 3px 2px;
+            min-height: 1.5em;
+            color: inherit;
         }
         .toggle-content {
-            margin-left: 2.25rem;
-            margin-top: 0.5rem;
-            display: none;
+            margin-left: 1.5rem;
+            overflow: hidden;
+            max-height: 0;
+            opacity: 0;
+            transition: max-height 0.15s ease-out, opacity 0.15s ease-out;
         }
         .toggle-block.open .toggle-icon {
             transform: rotate(90deg);
+            opacity: 0.8;
         }
         .toggle-block.open .toggle-content {
-            display: block;
+            max-height: none;
+            opacity: 1;
+            transition: max-height 0.25s ease-in, opacity 0.25s ease-in;
+        }
+        .toggle-block .toggle-block {
+            margin-left: 0;
         }
     </style>
 </head>
@@ -556,14 +578,28 @@
                     return `<div class="text-sm text-gray-500 my-4">Navigation Breadcrumb</div>`;
                 case 'toggle':
                     const toggleId = `toggle-${Math.random().toString(36).substr(2, 9)}`;
-                    const toggleContent = block.children ? await Promise.all(block.children.map(child => renderBlock(child))).then(contents => contents.join('')) : '';
+                    let toggleContent = '';
+                    
+                    // Recursively render nested blocks
+                    if (block.children && block.children.length > 0) {
+                        const nestedContent = await Promise.all(block.children.map(async child => {
+                            // Handle nested lists
+                            if (child.type === 'bulleted_list_item' || child.type === 'numbered_list_item') {
+                                const listType = child.type === 'bulleted_list_item' ? 'ul' : 'ol';
+                                return `<${listType}>${await renderBlock(child)}</${listType}>`;
+                            }
+                            return await renderBlock(child);
+                        }));
+                        toggleContent = nestedContent.join('');
+                    }
+
                     return `
                         <div class="toggle-block" id="${toggleId}">
                             <div class="toggle-header" onclick="toggleBlock('${toggleId}')" ${colorStyle}>
                                 <svg class="toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                                 </svg>
-                                <div class="toggle-text">${block.text}</div>
+                                <div class="toggle-text">${block.text || ''}</div>
                             </div>
                             <div class="toggle-content prose">
                                 ${toggleContent}
@@ -674,7 +710,27 @@
         // Add toggle block function
         function toggleBlock(id) {
             const block = document.getElementById(id);
-            block.classList.toggle('open');
+            const content = block.querySelector('.toggle-content');
+            const isOpen = block.classList.contains('open');
+            
+            if (isOpen) {
+                // Closing animation
+                content.style.maxHeight = content.scrollHeight + 'px';
+                // Force reflow
+                content.offsetHeight;
+                content.style.maxHeight = '0px';
+                block.classList.remove('open');
+            } else {
+                // Opening animation
+                block.classList.add('open');
+                content.style.maxHeight = content.scrollHeight + 'px';
+                // Reset maxHeight after animation
+                setTimeout(() => {
+                    if (block.classList.contains('open')) {
+                        content.style.maxHeight = 'none';
+                    }
+                }, 250);
+            }
         }
     </script>
 </body>
