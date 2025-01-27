@@ -571,9 +571,9 @@ async def read_root():
 
 @app.get("/page/{page_id}")
 async def read_page(page_id: str):
-    """处理页面访问请求"""
-    logger.info(f"Serving page.html for page_id: {page_id}")
-    return FileResponse("static/page.html")
+    """通过 page_id 访问页面"""
+    logger.info(f"Redirecting to page.html with id: {page_id}")
+    return RedirectResponse(f"/static/page.html?id={page_id}")
 
 @app.get("/{suffix}")
 async def read_suffix_pages(suffix: str):
@@ -710,6 +710,7 @@ async def get_page(page_id: str):
         logger.error(f"Error getting page {page_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# 添加获取页面块内容的端点
 @app.get("/api/blocks/{page_id}")
 async def get_blocks(page_id: str):
     try:
