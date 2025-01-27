@@ -1071,39 +1071,11 @@
             threshold: 0.1
         });
 
-        async function compressImage(url, quality = 80, isThumbnail = false) {
-            try {
-                // Get screen width for responsive sizing
-                const screenWidth = window.innerWidth;
-                let targetWidth;
-                
-                if (isThumbnail) {
-                    targetWidth = 100;
-                } else if (screenWidth <= 640) {
-                    targetWidth = 800;
-                } else if (screenWidth <= 1024) {
-                    targetWidth = 1000;
-                } else {
-                    targetWidth = 1200;
-                }
-
-                // Call compression API
-                const response = await fetch(`/api/compress-image?url=${encodeURIComponent(url)}&width=${targetWidth}&quality=${quality}&is_thumbnail=${isThumbnail}`);
-                if (!response.ok) {
-                    throw new Error('Failed to compress image');
-                }
-                const data = await response.json();
-                return data.url;
-            } catch (error) {
-                console.error('Error in compressImage:', error);
-                return url; // Fallback to original URL if compression fails
-            }
-        }
-
         async function loadImage(img) {
+            let placeholder = null;
             try {
                 // Create a low-quality placeholder
-                const placeholder = document.createElement('div');
+                placeholder = document.createElement('div');
                 placeholder.className = 'image-placeholder animate-pulse bg-gray-200 dark:bg-gray-700';
                 placeholder.style.paddingBottom = '56.25%';
                 img.parentNode.insertBefore(placeholder, img);
@@ -1114,25 +1086,31 @@
                 }
 
                 // Load a tiny thumbnail first
-                const thumbnailUrl = await compressImage(img.dataset.src, 10, true);
+                const thumbnailUrl = await compressImage(img.dataset.src, 5, true);
                 img.src = thumbnailUrl;
                 img.style.filter = 'blur(10px)';
                 img.style.transform = 'scale(1.1)';
 
                 // Then load the optimized version
-                const optimizedUrl = await compressImage(img.dataset.src, 80, false);
+                const optimizedUrl = await compressImage(img.dataset.src, 80);
                 const fullImg = new Image();
-                fullImg.src = optimizedUrl;
                 
-                fullImg.onload = () => {
-                    img.src = optimizedUrl;
-                    img.style.filter = '';
-                    img.style.transform = '';
-                    img.classList.add('loaded');
-                    if (placeholder) {
-                        placeholder.remove();
-                    }
-                };
+                // Create a promise that resolves when the image loads or rejects when it fails
+                await new Promise((resolve, reject) => {
+                    fullImg.onload = () => {
+                        img.src = optimizedUrl;
+                        img.style.filter = '';
+                        img.style.transform = '';
+                        img.classList.add('loaded');
+                        resolve();
+                    };
+                    
+                    fullImg.onerror = () => {
+                        reject(new Error('Failed to load full quality image'));
+                    };
+                    
+                    fullImg.src = optimizedUrl;
+                });
             } catch (error) {
                 console.error('Error loading image:', error);
                 img.src = img.dataset.src;
@@ -1143,6 +1121,71 @@
                     errorMsg.textContent = '图片加载失败';
                     img.parentNode.insertBefore(errorMsg, img.nextSibling);
                 };
+            } finally {
+                // Always clean up the placeholder
+                if (placeholder && placeholder.parentNode) {
+                    placeholder.remove();
+                }
+            }
+        }
+
+        // Optimize image compression with size consideration
+        async function compressImage(url, quality = 80, isThumbnail = false) {
+            let canvas = null;
+            let ctx = null;
+            
+            try {
+                return await new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.crossOrigin = "anonymous";
+                    
+                    img.onload = function() {
+                        try {
+                            canvas = document.createElement('canvas');
+                            ctx = canvas.getContext('2d');
+                            
+                            let { width, height } = img;
+                            
+                            // Calculate maximum size based on device and thumbnail
+                            const maxSize = isThumbnail ? 100 : (window.innerWidth <= 640 ? 800 : 1200);
+                            const scaleFactor = Math.min(1, maxSize / Math.max(width, height));
+                            
+                            width *= scaleFactor;
+                            height *= scaleFactor;
+                            
+                            canvas.width = width;
+                            canvas.height = height;
+                            
+                            // Use better quality settings for image scaling
+                            ctx.imageSmoothingEnabled = true;
+                            ctx.imageSmoothingQuality = 'high';
+                            
+                            ctx.drawImage(img, 0, 0, width, height);
+                            
+                            // Use lower quality for thumbnails
+                            const outputQuality = isThumbnail ? 0.1 : quality / 100;
+                            const dataUrl = canvas.toDataURL('image/jpeg', outputQuality);
+                            resolve(dataUrl);
+                        } catch (err) {
+                            reject(err);
+                        }
+                    };
+                    
+                    img.onerror = () => {
+                        reject(new Error('Failed to load image for compression'));
+                    };
+                    
+                    img.src = url;
+                });
+            } finally {
+                // Clean up canvas and context
+                if (canvas) {
+                    canvas.width = 0;
+                    canvas.height = 0;
+                }
+                if (ctx) {
+                    ctx = null;
+                }
             }
         }
 
