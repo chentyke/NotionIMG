@@ -455,7 +455,7 @@
         .copy-link-button {
             flex-shrink: 0;
             margin-top: 0.5rem;
-            padding: 0.5rem;
+            padding: 0.5rem 0;
             background-color: #ffffff;
             border: 1px solid #e5e7eb;
             border-radius: 0.375rem;
@@ -470,9 +470,24 @@
             overflow: hidden;
             width: 36px;
             min-width: 36px;
+            position: relative;
+        }
+        .copy-link-button i {
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
         }
         .copy-link-button:hover {
             width: 120px;
+        }
+        .copy-link-button:hover i {
+            position: static;
+            transform: none;
         }
         .copy-link-button span {
             opacity: 0;
@@ -493,6 +508,11 @@
         .copy-link-button.copied span {
             opacity: 0;
             max-width: 0;
+        }
+        .copy-link-button.copied i {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
         }
     </style>
 </head>
