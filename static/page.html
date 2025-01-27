@@ -1550,6 +1550,107 @@
                         </div>`;
             }
         }
+
+        // Load page content
+        async function loadPage(pageId) {
+            if (!pageId) {
+                showError('No page ID provided');
+                return;
+            }
+
+            try {
+                // Reset loading state
+                loadedBlocks = 0;
+                totalBlocks = 0;
+                updateLoadingProgress(0);
+                
+                // Fetch page data
+                const response = await fetch(`/api/blocks/${pageId}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                
+                // Update page title and edit date
+                document.title = data.title || 'Untitled';
+                document.getElementById('pageTitle').textContent = data.title || 'Untitled';
+                
+                if (data.last_edited_time) {
+                    const date = new Date(data.last_edited_time);
+                    document.getElementById('editDate').textContent = `Last edited on ${date.toLocaleDateString()} at ${date.toLocaleTimeString()}`;
+                }
+
+                // Set total blocks for progress tracking
+                totalBlocks = data.blocks ? data.blocks.length : 0;
+                
+                // Process blocks
+                if (data.blocks && data.blocks.length > 0) {
+                    const contentDiv = document.getElementById('pageContent');
+                    contentDiv.innerHTML = ''; // Clear loading spinner
+                    
+                    let currentList = null;
+                    let currentListType = null;
+                    
+                    for (const block of data.blocks) {
+                        // Handle list items
+                        if (block.type === 'bulleted_list_item' || block.type === 'numbered_list_item') {
+                            const listType = block.type === 'bulleted_list_item' ? 'ul' : 'ol';
+                            
+                            if (!currentList || currentListType !== listType) {
+                                if (currentList) {
+                                    contentDiv.appendChild(currentList);
+                                }
+                                currentList = document.createElement(listType);
+                                currentListType = listType;
+                            }
+                            
+                            const content = await renderBlock(block);
+                            currentList.insertAdjacentHTML('beforeend', content);
+                        } else {
+                            // Close any open list
+                            if (currentList) {
+                                contentDiv.appendChild(currentList);
+                                currentList = null;
+                                currentListType = null;
+                            }
+                            
+                            const content = await renderBlock(block);
+                            contentDiv.insertAdjacentHTML('beforeend', content);
+                        }
+                    }
+                    
+                    // Close any remaining list
+                    if (currentList) {
+                        contentDiv.appendChild(currentList);
+                    }
+
+                    // Initialize image observers
+                    const images = contentDiv.getElementsByTagName('img');
+                    Array.from(images).forEach(img => {
+                        if (img.dataset.src) {
+                            imageObserver.observe(img);
+                        }
+                    });
+                } else {
+                    showError('No content available');
+                }
+            } catch (error) {
+                console.error('Error loading page:', error);
+                showError('Error loading page content');
+            }
+        }
+
+        // Show error message
+        function showError(message) {
+            const contentDiv = document.getElementById('pageContent');
+            contentDiv.innerHTML = `
+                <div class="text-center py-8">
+                    <div class="text-red-500 mb-2">
+                        <i class="fas fa-exclamation-circle text-4xl"></i>
+                    </div>
+                    <div class="text-lg text-red-600">${message}</div>
+                </div>`;
+        }
     </script>
 </body>
 </html>
