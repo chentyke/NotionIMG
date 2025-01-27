@@ -180,7 +180,8 @@ async def startup_event():
 
 @app.get("/")
 async def root():
-    return RedirectResponse(url="/static/index.html")
+    """根路由处理"""
+    return FileResponse("static/pages.html")
 
 def get_file_info(page: dict) -> dict:
     """Extract file information from a Notion page."""
@@ -565,15 +566,11 @@ async def get_file(file_id: str):
         logger.error(f"Error retrieving file {file_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/")
-async def read_root():
-    return FileResponse("static/pages.html")
-
 @app.get("/page/{page_id}")
 async def read_page(page_id: str):
     """通过 page_id 访问页面"""
     logger.info(f"Redirecting to page.html with id: {page_id}")
-    return RedirectResponse(f"/static/page.html?id={page_id}")
+    return RedirectResponse(f"/static/page.html?id={page_id}", status_code=302)
 
 @app.get("/{suffix}")
 async def read_suffix_pages(suffix: str):
@@ -582,6 +579,11 @@ async def read_suffix_pages(suffix: str):
         logger.info(f"\n{'='*50}")
         logger.info(f"Accessing suffix route: '{suffix}'")
         
+        # 检查是否是特殊路由
+        if suffix == "page":
+            logger.info("Detected 'page' route, returning page.html")
+            return FileResponse("static/page.html")
+            
         # 直接调用 API 函数获取页面数据
         response = await get_pages(suffix=suffix)
         pages = response["pages"]
