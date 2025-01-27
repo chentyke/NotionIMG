@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import RedirectResponse, JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -8,6 +8,11 @@ import logging
 from typing import List, Dict, Optional
 import httpx
 from pydantic import BaseModel, BaseSettings, Field
+from fastapi.middleware.base import BaseHTTPMiddleware
+from datetime import datetime, timedelta
+import time
+import asyncio
+from collections import defaultdict
 
 class Settings(BaseSettings):
     """应用配置模型"""
@@ -22,6 +27,9 @@ class Settings(BaseSettings):
     
     # 日志配置
     log_level: str = Field("INFO", env='LOG_LEVEL', description="Logging level")
+    
+    # 速率限制配置
+    rate_limit: int = Field(60, env='RATE_LIMIT', description="Requests per minute per IP")
     
     class Config:
         env_file = ".env"
@@ -88,6 +96,92 @@ class APIResponse(BaseModel):
     success: bool
     message: str = ""
     data: Optional[dict] = None
+
+# 添加速率限制器类
+class RateLimiter:
+    def __init__(self, requests_per_minute: int = 60):
+        self.requests_per_minute = requests_per_minute
+        self.requests = defaultdict(list)
+    
+    def is_allowed(self, client_ip: str) -> bool:
+        now = datetime.now()
+        minute_ago = now - timedelta(minutes=1)
+        
+        # 清理旧的请求记录
+        self.requests[client_ip] = [req_time for req_time in self.requests[client_ip] 
+                                  if req_time > minute_ago]
+        
+        # 检查是否超过限制
+        if len(self.requests[client_ip]) >= self.requests_per_minute:
+            return False
+        
+        # 记录新的请求
+        self.requests[client_ip].append(now)
+        return True
+
+# 创建速率限制器实例
+rate_limiter = RateLimiter(requests_per_minute=settings.rate_limit)
+
+# 添加请求日志中间件
+class RequestLoggingMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        # 记录请求开始时间
+        start_time = time.time()
+        
+        # 获取客户端IP
+        client_ip = request.client.host if request.client else "unknown"
+        
+        # 记录请求信息
+        logger.info(f"Request started: {request.method} {request.url.path} "
+                   f"from {client_ip}")
+        
+        # 检查速率限制
+        if not rate_limiter.is_allowed(client_ip):
+            logger.warning(f"Rate limit exceeded for {client_ip}")
+            return JSONResponse(
+                status_code=429,
+                content={
+                    "success": False,
+                    "message": "Too many requests. Please try again later.",
+                    "data": None
+                }
+            )
+        
+        try:
+            # 处理请求
+            response = await call_next(request)
+            
+            # 计算处理时间
+            process_time = time.time() - start_time
+            
+            # 记录响应信息
+            logger.info(f"Request completed: {request.method} {request.url.path} "
+                       f"from {client_ip} - Status: {response.status_code} "
+                       f"- Time: {process_time:.2f}s")
+            
+            # 添加处理时间到响应头
+            response.headers["X-Process-Time"] = str(process_time)
+            
+            return response
+            
+        except Exception as e:
+            # 记录错误信息
+            logger.error(f"Request failed: {request.method} {request.url.path} "
+                        f"from {client_ip} - Error: {str(e)}")
+            logger.error("Stack trace:", exc_info=True)
+            
+            # 返回500错误
+            return JSONResponse(
+                status_code=500,
+                content={
+                    "success": False,
+                    "message": "Internal server error",
+                    "data": None
+                }
+            )
+
+# 添加中间件
+app.add_middleware(RequestLoggingMiddleware)
 
 async def init_pages():
     """初始化时加载所有页面的数据"""
@@ -807,6 +901,32 @@ async def verify_database_access():
     except Exception as e:
         logger.error(f"Failed to access database: {str(e)}")
         return False
+
+# 更新错误处理
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    logger.warning(f"HTTP error occurred: {exc.status_code} - {exc.detail}")
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "success": False,
+            "message": exc.detail,
+            "data": None
+        }
+    )
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled error occurred: {str(exc)}")
+    logger.error("Stack trace:", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={
+            "success": False,
+            "message": "Internal server error",
+            "data": None
+        }
+    )
 
 if __name__ == "__main__":
     import uvicorn
