@@ -1202,17 +1202,33 @@
                     const fileData = block.file;
                     if (!fileData) return '';
                     
+                    // 从 API 响应中获取文件信息
                     const fileUrl = fileData.file?.url;
                     const fileName = fileData.name || '未命名文件';
                     const fileCaption = fileData.caption?.length > 0 
-                        ? fileData.caption.map(text => text.plain_text).join('') 
+                        ? fileData.caption.map(text => text.plain_text || '').join('') 
                         : '';
+                    
+                    if (!fileUrl) {
+                        console.error('No file URL found:', fileData);
+                        return `
+                            <div class="file-block border rounded-lg overflow-hidden my-4 bg-secondary">
+                                <div class="file-info flex items-center gap-2 p-4">
+                                    <i class="fas fa-exclamation-circle text-red-500 text-xl"></i>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="text-sm font-medium text-primary truncate">文件加载失败</div>
+                                        <div class="text-sm text-tertiary truncate">无法获取文件链接</div>
+                                    </div>
+                                </div>
+                            </div>`;
+                    }
                     
                     // 检查文件类型
                     const fileExt = fileName.split('.').pop().toLowerCase();
                     const isPdf = fileExt === 'pdf';
                     const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExt);
                     
+                    // 根据文件类型返回不同的显示模板
                     if (isPdf) {
                         return `
                             <div class="file-block pdf-block border rounded-lg overflow-hidden my-4 bg-secondary">
@@ -1225,8 +1241,8 @@
                                         <div class="text-sm font-medium text-primary truncate">${fileName}</div>
                                         ${fileCaption ? `<div class="text-sm text-tertiary truncate">${fileCaption}</div>` : ''}
                                     </div>
-                                    <a href="${fileUrl}" target="_blank" rel="noopener noreferrer" 
-                                       class="download-button flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                                    <a href="${fileUrl}" target="_blank" rel="noopener noreferrer" download="${fileName}"
+                                       class="download-button flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">
                                         <i class="fas fa-download"></i>
                                         <span>下载</span>
                                     </a>
@@ -1242,8 +1258,8 @@
                                         <div class="text-sm font-medium text-primary truncate">${fileName}</div>
                                         ${fileCaption ? `<div class="text-sm text-tertiary truncate">${fileCaption}</div>` : ''}
                                     </div>
-                                    <a href="${fileUrl}" target="_blank" rel="noopener noreferrer" 
-                                       class="download-button flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                                    <a href="${fileUrl}" target="_blank" rel="noopener noreferrer" download="${fileName}"
+                                       class="download-button flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">
                                         <i class="fas fa-download"></i>
                                         <span>下载</span>
                                     </a>
@@ -1258,8 +1274,8 @@
                                         <div class="text-sm font-medium text-primary truncate">${fileName}</div>
                                         ${fileCaption ? `<div class="text-sm text-tertiary truncate">${fileCaption}</div>` : ''}
                                     </div>
-                                    <a href="${fileUrl}" target="_blank" rel="noopener noreferrer" 
-                                       class="download-button flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                                    <a href="${fileUrl}" target="_blank" rel="noopener noreferrer" download="${fileName}"
+                                       class="download-button flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">
                                         <i class="fas fa-download"></i>
                                         <span>下载</span>
                                     </a>
