@@ -3,10 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>页面 - Tyke 的云盘</title>
+    <title>Tyke's Drive - 页面列表</title>
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@heroicons/vue@2.0.18/dist/index.min.css" rel="stylesheet">
     <style>
+        .fade-enter-active,
+        .fade-leave-active {
+            transition: opacity 0.3s ease;
+        }
+        .fade-enter-from,
+        .fade-leave-to {
+            opacity: 0;
+        }
+        .page-card {
+            transition: all 0.3s ease;
+        }
+        .page-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        }
         .loading-spinner {
             border: 3px solid #f3f3f3;
             border-top: 3px solid #3b82f6;
@@ -19,112 +36,170 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        .page-card {
-            transition: transform 0.2s, box-shadow 0.2s;
+        .search-input {
+            transition: all 0.3s ease;
         }
-        .page-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+        .search-input:focus {
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
         }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
-    <div class="container mx-auto px-4 py-8 max-w-7xl">
-        <div class="flex justify-between items-center mb-8">
-            <h1 class="text-4xl font-bold text-gray-800">页面</h1>
-        </div>
-
-        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-            <div class="p-6">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-lg font-medium text-gray-800">所有页面</h2>
-                    <button id="refreshPages" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                        </svg>
-                        刷新
-                    </button>
-                </div>
-                <div id="pageList" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    <!-- Pages will be loaded here -->
+    <div id="app" class="min-h-screen">
+        <header class="bg-white shadow-sm">
+            <div class="container mx-auto px-4 py-6 max-w-6xl">
+                <div class="flex justify-between items-center">
+                    <h1 class="text-3xl font-bold text-gray-900">页面列表</h1>
+                    <div class="flex items-center space-x-4">
+                        <div class="relative">
+                            <input 
+                                type="text" 
+                                v-model="searchQuery" 
+                                placeholder="搜索页面..." 
+                                class="search-input w-64 px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:border-blue-500"
+                            >
+                            <span v-if="searchQuery" 
+                                  @click="searchQuery = ''" 
+                                  class="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 cursor-pointer">
+                                ✕
+                            </span>
+                        </div>
+                        <button 
+                            @click="refreshPages" 
+                            class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition duration-200 flex items-center space-x-2"
+                            :disabled="isLoading"
+                        >
+                            <span v-if="isLoading" class="loading-spinner mr-2"></span>
+                            <span>{{ isLoading ? '加载中...' : '刷新' }}</span>
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
+        </header>
+
+        <main class="container mx-auto px-4 py-8 max-w-6xl">
+            <!-- 加载状态 -->
+            <div v-if="isLoading" class="flex justify-center py-12">
+                <div class="loading-spinner"></div>
+            </div>
+
+            <!-- 错误提示 -->
+            <div v-else-if="error" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                <div class="flex items-center text-red-700">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                    </svg>
+                    <span>{{ error }}</span>
+                </div>
+                <button 
+                    @click="refreshPages" 
+                    class="mt-2 text-red-600 hover:text-red-800 text-sm font-medium"
+                >
+                    重试
+                </button>
+            </div>
+
+            <!-- 页面列表 -->
+            <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <template v-if="filteredPages.length">
+                    <div v-for="page in filteredPages" 
+                         :key="page.id" 
+                         class="page-card bg-white rounded-xl border border-gray-200 overflow-hidden hover:border-blue-300 cursor-pointer"
+                         @click="goToPage(page.id)">
+                        <div class="p-6">
+                            <h2 class="text-xl font-semibold text-gray-900 mb-3 line-clamp-2">{{ page.title }}</h2>
+                            <div class="flex items-center justify-between text-sm text-gray-500">
+                                <div class="flex items-center space-x-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    <span>{{ formatDate(page.last_edited_time) }}</span>
+                                </div>
+                                <div v-if="page.suffix" class="px-2 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-medium">
+                                    {{ page.suffix }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+                <div v-else class="col-span-full">
+                    <div class="text-center py-12 bg-white rounded-xl border border-gray-200">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <h3 class="mt-2 text-sm font-medium text-gray-900">{{ searchQuery ? '没有找到匹配的页面' : '暂无页面' }}</h3>
+                        <p class="mt-1 text-sm text-gray-500">{{ searchQuery ? '请尝试其他搜索关键词' : '开始创建你的第一个页面吧' }}</p>
+                    </div>
+                </div>
+            </div>
+        </main>
     </div>
 
     <script>
-        // Show loading state
-        function showLoading() {
-            document.getElementById('pageList').innerHTML = `
-                <div class="col-span-full flex justify-center py-12">
-                    <div class="loading-spinner"></div>
-                </div>
-            `;
-        }
+    const { createApp, ref, computed } = Vue
 
-        // Load pages
-        async function loadPages() {
-            try {
-                showLoading();
-                const response = await fetch('/pages');
-                const data = await response.json();
-                const pageList = document.getElementById('pageList');
-                pageList.innerHTML = '';
-                
-                if (data.pages.length === 0) {
-                    pageList.innerHTML = `
-                        <div class="col-span-full text-center text-gray-500 py-12">
-                            <svg class="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                            </svg>
-                            <p>暂无页面</p>
-                        </div>
-                    `;
-                    return;
+    createApp({
+        setup() {
+            const pages = ref([])
+            const isLoading = ref(true)
+            const error = ref(null)
+            const searchQuery = ref('')
+
+            const filteredPages = computed(() => {
+                if (!searchQuery.value) return pages.value
+                const query = searchQuery.value.toLowerCase()
+                return pages.value.filter(page => 
+                    page.title.toLowerCase().includes(query) ||
+                    (page.suffix && page.suffix.toLowerCase().includes(query))
+                )
+            })
+
+            const formatDate = (dateString) => {
+                const date = new Date(dateString)
+                return new Intl.DateTimeFormat('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }).format(date)
+            }
+
+            const refreshPages = async () => {
+                isLoading.value = true
+                error.value = null
+                try {
+                    const response = await fetch('/api/pages')
+                    if (!response.ok) throw new Error('获取页面列表失败')
+                    const data = await response.json()
+                    pages.value = data.pages
+                } catch (e) {
+                    error.value = e.message
+                    console.error('Error fetching pages:', e)
+                } finally {
+                    isLoading.value = false
                 }
-                
-                for (const page of data.pages) {
-                    const date = new Date(page.last_edited_time).toLocaleDateString('zh-CN');
-                    const card = document.createElement('div');
-                    card.className = 'page-card bg-white rounded-lg border border-gray-200 overflow-hidden hover:border-blue-500';
-                    card.innerHTML = `
-                        <a href="/static/page.html?id=${page.id}" class="block">
-                            <div class="p-6">
-                                <div class="flex items-center mb-4">
-                                    <svg class="w-8 h-8 text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                    </svg>
-                                    <h3 class="text-lg font-medium text-gray-900 truncate" title="${page.title}">${page.title}</h3>
-                                </div>
-                                <div class="flex items-center text-sm text-gray-500">
-                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                    </svg>
-                                    最后编辑: ${date}
-                                </div>
-                            </div>
-                        </a>
-                    `;
-                    pageList.appendChild(card);
-                }
-            } catch (error) {
-                console.error('Error loading pages:', error);
-                document.getElementById('pageList').innerHTML = `
-                    <div class="col-span-full text-center text-red-500 py-12">
-                        <svg class="w-12 h-12 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        <p>加载页面时出错</p>
-                    </div>
-                `;
+            }
+
+            const goToPage = (pageId) => {
+                window.location.href = `/static/page.html?id=${pageId}`
+            }
+
+            // 初始加载
+            refreshPages()
+
+            return {
+                pages,
+                isLoading,
+                error,
+                searchQuery,
+                filteredPages,
+                formatDate,
+                refreshPages,
+                goToPage
             }
         }
-
-        // Add event listener for refresh button
-        document.getElementById('refreshPages').addEventListener('click', loadPages);
-
-        // Load pages on start
-        loadPages();
+    }).mount('#app')
     </script>
 </body>
 </html> 
