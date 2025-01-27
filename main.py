@@ -53,7 +53,7 @@ async def init_pages():
                 "and": [
                     {
                         "property": "suffix",
-                        "rich_text": {
+                        "text": {
                             "is_not_empty": True
                         }
                     }
@@ -68,6 +68,7 @@ async def init_pages():
             try:
                 # 获取页面属性
                 properties = page.get('properties', {})
+                logger.info(f"Processing page properties: {properties}")
                 
                 # 获取标题
                 title = ''
@@ -78,11 +79,18 @@ async def init_pages():
                 # 获取 suffix
                 suffix = ''
                 suffix_obj = properties.get('suffix', {})
+                logger.info(f"Suffix object: {suffix_obj}")
                 
-                if suffix_obj and suffix_obj.get('type') == 'rich_text':
-                    rich_text = suffix_obj.get('rich_text', [])
-                    if rich_text:
-                        suffix = rich_text[0].get('plain_text', '')
+                # 处理文本类型的 suffix
+                if suffix_obj:
+                    if suffix_obj.get('type') == 'rich_text':
+                        rich_text = suffix_obj.get('rich_text', [])
+                        if rich_text:
+                            suffix = rich_text[0].get('plain_text', '')
+                    elif suffix_obj.get('type') == 'text':
+                        suffix = suffix_obj.get('text', {}).get('content', '')
+                
+                logger.info(f"Extracted suffix: {suffix}")
                 
                 if suffix:
                     logger.info(f"Processing page {page['id']} with suffix: {suffix}")
@@ -581,10 +589,14 @@ async def get_page(page_id: str):
         suffix_obj = properties.get('suffix', {})
         logger.info(f"Suffix object: {suffix_obj}")
         
-        if suffix_obj and suffix_obj.get('type') == 'rich_text':
-            rich_text = suffix_obj.get('rich_text', [])
-            if rich_text:
-                suffix = rich_text[0].get('plain_text', '')
+        # 处理文本类型的 suffix
+        if suffix_obj:
+            if suffix_obj.get('type') == 'rich_text':
+                rich_text = suffix_obj.get('rich_text', [])
+                if rich_text:
+                    suffix = rich_text[0].get('plain_text', '')
+            elif suffix_obj.get('type') == 'text':
+                suffix = suffix_obj.get('text', {}).get('content', '')
         
         logger.info(f"Extracted suffix: {suffix}")
         
