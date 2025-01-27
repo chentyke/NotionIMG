@@ -67,7 +67,7 @@
                 
                 const pagesListHtml = pages.map(page => `
                     <div class="page-card bg-white rounded-lg border border-gray-200 p-4 hover:border-blue-300 cursor-pointer"
-                         onclick="window.location.href='/page/${page.id}'">
+                         onclick="window.location.href='/static/page.html?id=${page.id}'">
                         <h2 class="text-xl font-semibold text-gray-900 mb-2">${page.title}</h2>
                         <div class="text-sm text-gray-500">
                             最后编辑: ${new Date(page.last_edited_time).toLocaleString('zh-CN')}
