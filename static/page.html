@@ -417,6 +417,12 @@
             } catch (error) {
                 console.error('Error loading image:', error);
                 img.src = img.dataset.src;
+                img.onerror = () => {
+                    img.onerror = null; // 防止无限循环
+                    img.src = ''; // 清除失败的src
+                    img.alt = 'Image failed to load';
+                    img.classList.add('border', 'border-red-300', 'bg-red-50', 'p-4', 'text-red-500');
+                };
                 img.classList.remove('opacity-0');
             }
         }
@@ -730,15 +736,24 @@
                 // Add edit date if available
                 const dateElement = document.getElementById('editDate');
                 if (data.page.last_edited_time) {
-                    const date = new Date(data.page.last_edited_time);
-                    dateElement.textContent = `Last edited on ${date.toLocaleDateString('en-US', { 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    })}`;
-                    dateElement.style.display = 'block';
+                    try {
+                        const date = new Date(data.page.last_edited_time);
+                        if (isNaN(date.getTime())) {
+                            throw new Error('Invalid date');
+                        }
+                        dateElement.textContent = `Last edited on ${date.toLocaleDateString('en-US', { 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        })}`;
+                        dateElement.style.display = 'block';
+                    } catch (error) {
+                        console.error('Error parsing date:', error);
+                        dateElement.textContent = `Last edited: ${data.page.last_edited_time}`;
+                        dateElement.style.display = 'block';
+                    }
                 } else {
                     dateElement.style.display = 'none';
                 }
@@ -822,8 +837,18 @@
         // Add toggle block function
         function toggleBlock(id) {
             const block = document.getElementById(id);
+            if (!block) {
+                console.error(`Toggle block with id ${id} not found`);
+                return;
+            }
+            
             const content = block.querySelector('.toggle-content');
             const contentInner = content.querySelector('.toggle-content-inner');
+            if (!content || !contentInner) {
+                console.error(`Toggle block ${id} is missing required elements`);
+                return;
+            }
+            
             const isOpen = block.classList.contains('open');
             
             // Get the current height before any changes
@@ -868,6 +893,16 @@
             const pre = button.parentElement;
             const code = pre.querySelector('code');
             const text = code.textContent;
+            
+            if (!text.trim()) {
+                button.textContent = 'Empty';
+                button.classList.add('copied');
+                setTimeout(() => {
+                    button.textContent = 'Copy';
+                    button.classList.remove('copied');
+                }, 2000);
+                return;
+            }
             
             navigator.clipboard.writeText(text).then(() => {
                 button.textContent = 'Copied!';
