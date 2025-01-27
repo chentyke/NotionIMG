@@ -91,8 +91,8 @@ async def init_pages():
                 # 获取 suffix
                 suffix = ''
                 suffix_obj = properties.get('suffix', {})
-                logger.info(f"Raw suffix object:")
-                logger.info(suffix_obj)
+                logger.info(f"\nProcessing suffix for page {page_id}")
+                logger.info(f"Raw suffix object: {suffix_obj}")
                 
                 # 处理 suffix 属性
                 if suffix_obj:
@@ -101,11 +101,13 @@ async def init_pages():
                     
                     if prop_type == 'rich_text':
                         rich_text_list = suffix_obj.get('rich_text', [])
-                        logger.info(f"Rich text content: {rich_text_list}")
-                        if rich_text_list and len(rich_text_list) > 0:
-                            # 获取第一个 rich_text 元素的 plain_text
-                            suffix = rich_text_list[0].get('plain_text', '')
-                            logger.info(f"Extracted suffix from rich_text: {suffix}")
+                        logger.info(f"Rich text list: {rich_text_list}")
+                        if rich_text_list:
+                            first_text = rich_text_list[0]
+                            logger.info(f"First text object: {first_text}")
+                            if isinstance(first_text, dict):
+                                suffix = first_text.get('plain_text', '')
+                                logger.info(f"Extracted plain_text: {suffix}")
                     elif prop_type == 'text':
                         text_content = suffix_obj.get('text', {})
                         logger.info(f"Text content: {text_content}")
@@ -118,43 +120,38 @@ async def init_pages():
                 
                 # 更新 suffix 索引
                 if suffix:
-                    logger.info(f"Processing suffix: '{suffix}'")
+                    logger.info(f"\nUpdating suffix index for '{suffix}'")
                     if suffix not in suffix_pages:
                         suffix_pages[suffix] = []
-                        logger.info(f"Created new suffix entry for '{suffix}'")
+                        logger.info(f"Created new suffix entry")
                     
-                    # 检查页面是否已存在于该 suffix 下
+                    # 创建页面对象
+                    page_obj = Page(
+                        id=page_id,
+                        title=title,
+                        created_time=page.get('created_time', ''),
+                        last_edited_time=page.get('last_edited_time', ''),
+                        parent_id=page.get('parent', {}).get('database_id'),
+                        edit_date=page.get('last_edited_time', ''),
+                        show_back=True,
+                        suffix=suffix
+                    )
+                    
+                    # 检查页面是否已存在
                     page_exists = any(p['id'] == page_id for p in suffix_pages[suffix])
                     if not page_exists:
-                        page_obj = Page(
-                            id=page_id,
-                            title=title,
-                            created_time=page.get('created_time', ''),
-                            last_edited_time=page.get('last_edited_time', ''),
-                            parent_id=page.get('parent', {}).get('database_id'),
-                            edit_date=page.get('last_edited_time', ''),
-                            show_back=True,
-                            suffix=suffix
-                        )
                         suffix_pages[suffix].append(page_obj.dict())
-                        logger.info(f"Added page to suffix '{suffix}'")
-                        logger.info(f"Current pages for suffix '{suffix}': {suffix_pages[suffix]}")
+                        logger.info(f"Added page to suffix index")
                     else:
-                        logger.info(f"Page already exists in suffix '{suffix}'")
+                        logger.info(f"Page already exists in suffix index")
+                    
+                    logger.info(f"Current pages for suffix '{suffix}': {len(suffix_pages[suffix])} pages")
+                    for p in suffix_pages[suffix]:
+                        logger.info(f"  - {p['title']} ({p['id']})")
                 
                 # 更新 pages_data
-                page_obj = Page(
-                    id=page_id,
-                    title=title,
-                    created_time=page.get('created_time', ''),
-                    last_edited_time=page.get('last_edited_time', ''),
-                    parent_id=page.get('parent', {}).get('database_id'),
-                    edit_date=page.get('last_edited_time', ''),
-                    show_back=True,
-                    suffix=suffix
-                )
                 pages_data[page_id] = page_obj.dict()
-                logger.info(f"Updated pages_data: {page_obj.dict()}")
+                logger.info(f"\nUpdated pages_data with: {page_obj.dict()}")
             
             except Exception as e:
                 logger.error(f"Error processing page {page.get('id', 'unknown')}: {str(e)}")
