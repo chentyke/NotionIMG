@@ -98,10 +98,20 @@
             font-weight: 700;
             margin: 2rem 0 0.5rem;
         }
+        .page-header {
+            border-bottom: 1px solid #E5E7EB;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+        }
+        .page-title {
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 0.5rem;
+        }
         .edit-date {
             color: #6B7280;
             font-size: 0.875rem;
-            margin-bottom: 1.5rem;
             font-style: italic;
         }
         .prose h2 {
@@ -349,8 +359,8 @@
     <div class="container mx-auto px-4 py-8 max-w-4xl">
         <div class="bg-white rounded-xl shadow-sm overflow-hidden">
             <div class="p-6">
-                <div class="mb-6">
-                    <h1 id="pageTitle" class="text-3xl font-bold text-gray-900"></h1>
+                <div class="page-header">
+                    <h1 id="pageTitle" class="page-title"></h1>
                     <div id="editDate" class="edit-date"></div>
                 </div>
                 <div id="pageContent" class="prose">
