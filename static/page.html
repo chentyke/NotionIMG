@@ -23,7 +23,7 @@
         .prose {
             max-width: 65ch;
             margin: 0 auto;
-            line-height: 1.5;
+            line-height: 1.6;
         }
         .prose img {
             border-radius: 0.5rem;
@@ -107,7 +107,7 @@
         .prose h1 {
             font-size: 2.25rem;
             font-weight: 700;
-            margin: 1.25rem 0 0.375rem;
+            margin: 1.5rem 0 0.5rem;
             line-height: 1.3;
         }
         .page-header {
@@ -139,32 +139,32 @@
         .prose h2 {
             font-size: 1.875rem;
             font-weight: 700;
-            margin: 1rem 0 0.375rem;
+            margin: 1.25rem 0 0.5rem;
             line-height: 1.3;
         }
         .prose h3 {
             font-size: 1.5rem;
             font-weight: 700;
-            margin: 0.75rem 0 0.375rem;
+            margin: 1rem 0 0.5rem;
             line-height: 1.3;
         }
         .prose p {
-            margin: 0.5rem 0;
-            line-height: 1.5;
+            margin: 0.625rem 0;
+            line-height: 1.6;
         }
         .prose ul, .prose ol {
-            margin: 0.375rem 0;
+            margin: 0.5rem 0;
             padding-left: 1.5rem;
             list-style-position: outside;
         }
         .prose ul ul, .prose ol ol,
         .prose ul ol, .prose ol ul {
-            margin: 0.125rem 0 0.125rem 0.5rem;
+            margin: 0.25rem 0 0.25rem 0.5rem;
         }
         .prose li {
-            margin: 0.125rem 0;
+            margin: 0.25rem 0;
             padding-left: 0.25rem;
-            line-height: 1.5;
+            line-height: 1.6;
         }
         .prose li::marker {
             color: #6B7280;
@@ -538,36 +538,69 @@
             }
             
             .edit-date {
-                margin-bottom: 1rem;
+                margin-bottom: 0.75rem;
             }
             
             .copy-link-button {
                 align-self: flex-start;
-                margin-top: 0;
+                margin-top: -0.5rem;
+                width: 120px !important;
+                margin-bottom: 0.5rem;
             }
-            .prose h1 {
-                margin: 1rem 0 0.25rem;
+
+            .copy-link-button i {
+                position: static;
+                transform: none;
             }
-            .prose h2 {
-                margin: 0.75rem 0 0.25rem;
+
+            .copy-link-button span {
+                opacity: 1;
+                max-width: 100px;
             }
-            .prose h3 {
-                margin: 0.5rem 0 0.25rem;
+
+            .copy-link-button.copied {
+                width: 120px !important;
             }
+
+            .copy-link-button.copied i {
+                position: static;
+                transform: none;
+            }
+
+            .copy-link-button.copied span {
+                opacity: 1;
+                max-width: 100px;
+            }
+            
             .prose p {
-                margin: 0.375rem 0;
-                line-height: 1.4;
+                margin: 0.5rem 0;
+                line-height: 1.5;
             }
+            
+            .prose h1 {
+                margin: 1.25rem 0 0.375rem;
+            }
+            
+            .prose h2 {
+                margin: 1rem 0 0.375rem;
+            }
+            
+            .prose h3 {
+                margin: 0.75rem 0 0.375rem;
+            }
+            
             .prose blockquote {
-                margin: 0.5rem 0;
+                margin: 0.75rem 0;
+                line-height: 1.5;
+            }
+            
+            .prose pre {
+                margin: 0.75rem 0;
                 line-height: 1.4;
             }
-            .prose pre {
-                margin: 0.5rem 0;
-                line-height: 1.3;
-            }
+            
             .prose img {
-                margin: 0.5rem 0;
+                margin: 0.75rem 0;
             }
         }
     </style>
@@ -1221,19 +1254,20 @@
             const currentUrl = window.location.href;
             const button = document.querySelector('.copy-link-button');
             const wasHovered = button.matches(':hover');
+            const isMobile = window.innerWidth <= 640;
             
             navigator.clipboard.writeText(currentUrl).then(() => {
                 button.classList.add('copied');
-                button.innerHTML = '<i class="fas fa-check"></i><span>已复制</span>';
+                button.innerHTML = '<i class="fas fa-check"></i><span>复制成功</span>';
                 
-                if (wasHovered) {
+                if (wasHovered && !isMobile) {
                     button.style.width = '120px';
                 }
                 
                 setTimeout(() => {
                     button.classList.remove('copied');
                     button.innerHTML = '<i class="fas fa-link"></i><span>复制链接</span>';
-                    if (!button.matches(':hover')) {
+                    if (!button.matches(':hover') && !isMobile) {
                         button.style.width = '';
                     }
                 }, 2000);
@@ -1241,13 +1275,13 @@
                 console.error('Failed to copy link:', err);
                 button.innerHTML = '<i class="fas fa-times"></i><span>复制失败</span>';
                 
-                if (wasHovered) {
+                if (wasHovered && !isMobile) {
                     button.style.width = '120px';
                 }
                 
                 setTimeout(() => {
                     button.innerHTML = '<i class="fas fa-link"></i><span>复制链接</span>';
-                    if (!button.matches(':hover')) {
+                    if (!button.matches(':hover') && !isMobile) {
                         button.style.width = '';
                     }
                 }, 2000);
