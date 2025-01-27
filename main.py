@@ -13,6 +13,9 @@ from datetime import datetime, timedelta
 import time
 import asyncio
 from collections import defaultdict
+from cachetools import TTLCache
+import psutil
+import platform
 
 class Settings(BaseSettings):
     """应用配置模型"""
@@ -30,6 +33,10 @@ class Settings(BaseSettings):
     
     # 速率限制配置
     rate_limit: int = Field(60, env='RATE_LIMIT', description="Requests per minute per IP")
+    
+    # 缓存配置
+    cache_ttl: int = Field(300, env='CACHE_TTL', description="Cache TTL in seconds")
+    cache_maxsize: int = Field(100, env='CACHE_MAXSIZE', description="Maximum cache size")
     
     class Config:
         env_file = ".env"
@@ -183,6 +190,40 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 # 添加中间件
 app.add_middleware(RequestLoggingMiddleware)
 
+# 创建缓存实例
+page_cache = TTLCache(
+    maxsize=settings.cache_maxsize,
+    ttl=settings.cache_ttl
+)
+blocks_cache = TTLCache(
+    maxsize=settings.cache_maxsize,
+    ttl=settings.cache_ttl
+)
+
+# 添加缓存装饰器
+def cache_response(cache: TTLCache):
+    def decorator(func):
+        async def wrapper(*args, **kwargs):
+            # 构建缓存键
+            cache_key = f"{func.__name__}:{args}:{kwargs}"
+            
+            # 尝试从缓存获取
+            cached_result = cache.get(cache_key)
+            if cached_result is not None:
+                logger.debug(f"Cache hit for {cache_key}")
+                return cached_result
+            
+            # 执行原函数
+            result = await func(*args, **kwargs)
+            
+            # 存入缓存
+            cache[cache_key] = result
+            logger.debug(f"Cached result for {cache_key}")
+            
+            return result
+        return wrapper
+    return decorator
+
 async def init_pages():
     """初始化时加载所有页面的数据"""
     try:
@@ -290,9 +331,15 @@ async def init_pages():
         logger.error(f"Stack trace:", exc_info=True)
         raise
 
+# 添加启动时间记录
+startup_time = time.time()
+
 @app.on_event("startup")
 async def startup_event():
     """应用启动时的初始化函数"""
+    global startup_time
+    startup_time = time.time()
+    
     logger.info("Starting application...")
     
     # 验证数据库访问
@@ -776,6 +823,7 @@ async def get_pages(suffix: Optional[str] = None):
         raise HTTPException(status_code=500, detail="Failed to retrieve pages")
 
 @app.get("/api/page/{page_id}", response_model=APIResponse)
+@cache_response(page_cache)
 async def get_page(page_id: str):
     """
     获取单个页面的详细信息
@@ -856,6 +904,7 @@ async def get_page(page_id: str):
         raise HTTPException(status_code=500, detail="Failed to retrieve page data")
 
 @app.get("/api/blocks/{page_id}", response_model=APIResponse)
+@cache_response(blocks_cache)
 async def get_blocks(page_id: str):
     """
     获取页面的块内容
@@ -883,13 +932,9 @@ async def get_blocks(page_id: str):
                 message="Blocks retrieved successfully",
                 data={"blocks": blocks_data}
             )
-    except httpx.HTTPError as e:
-        logger.error(f"HTTP error occurred: {str(e)}")
-        raise HTTPException(status_code=502, detail="Failed to fetch page blocks")
     except Exception as e:
         logger.error(f"Error getting blocks for page {page_id}: {str(e)}")
-        logger.error("Stack trace:", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Failed to retrieve blocks")
 
 async def verify_database_access():
     """验证数据库访问权限"""
@@ -927,6 +972,61 @@ async def general_exception_handler(request: Request, exc: Exception):
             "data": None
         }
     )
+
+# 添加健康检查端点
+@app.get("/health")
+async def health_check():
+    """
+    健康检查端点
+    
+    返回:
+        应用状态信息，包括:
+        - 系统信息
+        - 内存使用
+        - 缓存状态
+        - 数据库连接状态
+    """
+    try:
+        # 获取系统信息
+        system_info = {
+            "platform": platform.platform(),
+            "python_version": platform.python_version(),
+            "cpu_percent": psutil.cpu_percent(),
+            "memory_percent": psutil.virtual_memory().percent
+        }
+        
+        # 获取缓存状态
+        cache_info = {
+            "page_cache_size": len(page_cache),
+            "page_cache_maxsize": page_cache.maxsize,
+            "blocks_cache_size": len(blocks_cache),
+            "blocks_cache_maxsize": blocks_cache.maxsize
+        }
+        
+        # 检查数据库连接
+        db_status = await verify_database_access()
+        
+        return APIResponse(
+            success=True,
+            message="Service is healthy",
+            data={
+                "status": "healthy",
+                "system_info": system_info,
+                "cache_info": cache_info,
+                "database_status": "connected" if db_status else "disconnected",
+                "uptime": time.time() - startup_time
+            }
+        )
+    except Exception as e:
+        logger.error(f"Health check failed: {str(e)}")
+        return APIResponse(
+            success=False,
+            message="Service is unhealthy",
+            data={
+                "status": "unhealthy",
+                "error": str(e)
+            }
+        )
 
 if __name__ == "__main__":
     import uvicorn
