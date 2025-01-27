@@ -385,6 +385,15 @@ def process_block_content(block: dict) -> dict:
                 "caption": block_content.get("caption", [])
             }
             logger.info(f"Processed file block result: {result}")
+        elif block_type == "to_do":
+            # 处理待办事项块
+            logger.info(f"Processing to_do block: {block_content}")
+            result.update({
+                "checked": block_content.get("checked", False),
+                "text": process_rich_text(block_content.get("rich_text", [])),
+                "color": block_content.get("color", "default")
+            })
+            logger.info(f"Processed to_do block result: {result}")
 
         return result
     except Exception as e:
