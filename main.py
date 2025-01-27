@@ -459,22 +459,41 @@ async def read_page(page_id: str):
 
 @app.get("/{suffix}")
 async def read_suffix_pages(suffix: str):
-    # 检查是否有多个页面使用相同的 suffix
-    if suffix in suffix_pages and len(suffix_pages[suffix]) > 1:
-        return FileResponse("static/suffix_pages.html")
-    # 如果只有一个页面使用该 suffix，直接重定向到该页面
-    elif suffix in suffix_pages and len(suffix_pages[suffix]) == 1:
-        return FileResponse("static/page.html")
-    else:
-        raise HTTPException(status_code=404, detail="Suffix not found")
+    try:
+        logger.info(f"Accessing suffix route: {suffix}")
+        # 检查是否有页面使用该 suffix
+        if suffix not in suffix_pages:
+            logger.warning(f"Suffix not found: {suffix}")
+            raise HTTPException(status_code=404, detail="Suffix not found")
+            
+        pages = suffix_pages[suffix]
+        if len(pages) > 1:
+            logger.info(f"Multiple pages found for suffix {suffix}, returning list page")
+            return FileResponse("static/suffix_pages.html")
+        elif len(pages) == 1:
+            logger.info(f"Single page found for suffix {suffix}, returning page")
+            return FileResponse("static/page.html")
+        else:
+            logger.warning(f"No pages found for suffix {suffix}")
+            raise HTTPException(status_code=404, detail="No pages found for this suffix")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error processing suffix route {suffix}: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/pages")
 async def get_pages(suffix: Optional[str] = None):
-    if suffix:
-        # 返回具有特定 suffix 的页面列表
-        return suffix_pages.get(suffix, [])
-    # 返回所有页面
-    return list(pages_data.values())
+    try:
+        if suffix:
+            logger.info(f"Getting pages with suffix: {suffix}")
+            pages = suffix_pages.get(suffix, [])
+            logger.info(f"Found {len(pages)} pages with suffix {suffix}")
+            return pages
+        return list(pages_data.values())
+    except Exception as e:
+        logger.error(f"Error getting pages: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/page/{page_id}")
 async def get_page(page_id: str):
@@ -492,9 +511,20 @@ async def get_page(page_id: str):
             page_data = response.json()
             
             # 提取页面属性
-            title = page_data['properties'].get('title', {}).get('title', [{}])[0].get('plain_text', 'Untitled')
+            properties = page_data.get('properties', {})
+            
+            # 获取标题
+            title_obj = properties.get('title', properties.get('Name', {}))
+            title = title_obj.get('title', [{}])[0].get('plain_text', 'Untitled')
+            
+            # 获取 suffix
+            suffix_obj = properties.get('suffix', {})
+            suffix = ''
+            if suffix_obj.get('type') == 'rich_text' and suffix_obj.get('rich_text'):
+                suffix = suffix_obj['rich_text'][0].get('plain_text', '')
+            
+            # 获取其他属性
             last_edited_time = page_data.get('last_edited_time', '')
-            suffix = page_data['properties'].get('suffix', {}).get('rich_text', [{}])[0].get('plain_text', '')
             
             # 更新页面数据
             page = Page(
@@ -507,13 +537,17 @@ async def get_page(page_id: str):
             
             # 更新 suffix 索引
             if suffix:
+                logger.info(f"Adding page {page_id} with suffix {suffix}")
                 if suffix not in suffix_pages:
                     suffix_pages[suffix] = []
-                if page.dict() not in suffix_pages[suffix]:
+                # 检查是否已存在
+                existing_page = next((p for p in suffix_pages[suffix] if p['id'] == page_id), None)
+                if not existing_page:
                     suffix_pages[suffix].append(page.dict())
             
             return page_data
     except Exception as e:
+        logger.error(f"Error getting page {page_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # 添加获取页面块内容的端点
