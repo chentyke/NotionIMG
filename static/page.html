@@ -4,6 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>加载中...</title>
+    
+    <!-- 预加载关键资源 -->
+    <link rel="preload" href="/static/favicon.ico" as="image">
+    <link rel="preload" href="/static/css/main.css" as="style">
+    <link rel="preload" href="/static/js/core.js" as="script">
+    
+    <!-- 使用压缩和本地化的CSS -->
+    <link rel="stylesheet" href="/static/css/tailwind.min.css">
+    <link rel="stylesheet" href="/static/css/fontawesome.min.css">
+    
+    <!-- 分离主要样式 -->
+    <link rel="stylesheet" href="/static/css/main.css">
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -522,7 +534,32 @@
         <img id="modalImage" src="" alt="Full size image">
     </div>
 
-    <script>
+    <script type="module">
+        // 核心功能
+        import { initCore } from './js/core.js';
+        
+        // 按需加载其他模块
+        const modules = {
+            codeHighlight: () => import('./js/code-highlight.js'),
+            imageViewer: () => import('./js/image-viewer.js'),
+            toggleBlock: () => import('./js/toggle-block.js')
+        };
+        
+        // 初始化核心功能
+        initCore();
+        
+        // 按需加载代码高亮
+        document.querySelectorAll('pre code').forEach(async block => {
+            const { highlight } = await modules.codeHighlight();
+            highlight(block);
+        });
+        
+        // 按需加载图片查看器
+        document.querySelectorAll('.prose img').forEach(async img => {
+            const { initViewer } = await modules.imageViewer();
+            initViewer(img);
+        });
+
         // Add loading progress tracking
         let totalBlocks = 0;
         let loadedBlocks = 0;
@@ -554,25 +591,65 @@
             rootMargin: '50px 0px'
         });
 
-        async function loadImage(img) {
-            try {
-                const compressedUrl = await compressImage(img.dataset.src);
-                img.src = compressedUrl;
-                img.onload = () => {
-                    img.classList.remove('opacity-0');
-                    img.classList.add('loaded');
-                };
-            } catch (error) {
-                console.error('Error loading image:', error);
-                img.src = img.dataset.src;
-                img.onerror = () => {
-                    img.onerror = null;
-                    img.src = '';
-                    img.alt = 'Image failed to load';
-                    img.classList.add('border', 'border-red-300', 'bg-red-50', 'p-4', 'text-red-500');
-                };
-                img.classList.remove('opacity-0');
+        // 添加页面数据缓存
+        const pageCache = new Map();
+        
+        async function loadPage(pageId = null) {
+            const targetPageId = pageId || urlParams.get('id');
+            
+            // 检查缓存
+            if (pageCache.has(targetPageId)) {
+                const cachedData = pageCache.get(targetPageId);
+                if (Date.now() - cachedData.timestamp < 5 * 60 * 1000) { // 5分钟缓存
+                    renderPage(cachedData.data);
+                    return;
+                }
             }
+            
+            try {
+                const response = await fetch(`/page/${targetPageId}`);
+                const data = await response.json();
+                
+                // 存入缓存
+                pageCache.set(targetPageId, {
+                    data,
+                    timestamp: Date.now()
+                });
+                
+                renderPage(data);
+            } catch (error) {
+                console.error('Error loading page:', error);
+            }
+        }
+        
+        // 优化图片加载
+        const imageLoadingQueue = new Map();
+        
+        async function loadImage(img) {
+            const src = img.dataset.src;
+            
+            // 检查是否已在加载队列中
+            if (imageLoadingQueue.has(src)) {
+                return imageLoadingQueue.get(src);
+            }
+            
+            const loadPromise = new Promise(async (resolve, reject) => {
+                try {
+                    const compressedUrl = await compressImage(src);
+                    img.src = compressedUrl;
+                    img.onload = () => {
+                        img.classList.add('loaded');
+                        imageLoadingQueue.delete(src);
+                        resolve();
+                    };
+                } catch (error) {
+                    imageLoadingQueue.delete(src);
+                    reject(error);
+                }
+            });
+            
+            imageLoadingQueue.set(src, loadPromise);
+            return loadPromise;
         }
 
         // Compress image
@@ -903,133 +980,6 @@
                         </div>`;
                 default:
                     return '';
-            }
-        }
-
-        // Optimize page loading
-        async function loadPage(pageId = null) {
-            const targetPageId = pageId || urlParams.get('id');
-            
-            if (!targetPageId) {
-                document.getElementById('pageContent').innerHTML = `
-                    <div class="text-center text-red-500">
-                        <p>No page ID provided.</p>
-                    </div>`;
-                return;
-            }
-
-            try {
-                updateLoadingProgress(10);
-                const response = await fetch(`/page/${targetPageId}`);
-                const data = await response.json();
-                
-                updateLoadingProgress(30);
-                
-                // Update page title and date
-                document.title = data.page.title;
-                document.getElementById('pageTitle').textContent = data.page.title;
-                
-                // Add edit date if available
-                const dateElement = document.getElementById('editDate');
-                if (data.page.last_edited_time) {
-                    try {
-                        const date = new Date(data.page.last_edited_time);
-                        if (isNaN(date.getTime())) {
-                            throw new Error('Invalid date');
-                        }
-                        dateElement.textContent = `Last edited on ${date.toLocaleDateString('zh-CN', { 
-                            year: 'numeric', 
-                            month: 'long', 
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                        })}`;
-                        dateElement.style.display = 'block';
-                    } catch (error) {
-                        console.error('Error parsing date:', error);
-                        dateElement.textContent = `Last edited: ${data.page.last_edited_time}`;
-                        dateElement.style.display = 'block';
-                    }
-                } else {
-                    dateElement.style.display = 'none';
-                }
-                
-                // Update back button based on parent page and show_back property
-                const backButtonContainer = document.querySelector('.mt-8');
-                if (data.page.show_back === false) {
-                    backButtonContainer.style.display = 'none';
-                } else {
-                    backButtonContainer.style.display = 'block';
-                    const backButton = document.querySelector('.back-button');
-                    if (data.page.parent_id) {
-                        parentPageId = data.page.parent_id;
-                        backButton.href = `/static/page.html?id=${parentPageId}`;
-                        backButton.innerHTML = `
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                            </svg>
-                            Back to Parent Page
-                        `;
-                    } else {
-                        parentPageId = null;
-                        backButton.href = "/static/pages.html";
-                        backButton.innerHTML = `
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                            </svg>
-                            Back to Pages
-                        `;
-                    }
-                }
-                
-                // Initialize block counting
-                totalBlocks = data.blocks.length;
-                loadedBlocks = 0;
-                
-                // Render content
-                let content = '';
-                let currentList = null;
-                
-                for (const block of data.blocks) {
-                    if (block.type === 'bulleted_list_item' || block.type === 'numbered_list_item') {
-                        if (!currentList || currentList.type !== block.type) {
-                            if (currentList) {
-                                content += `</${currentList.tag}>`;
-                            }
-                            currentList = {
-                                type: block.type,
-                                tag: block.type === 'bulleted_list_item' ? 'ul' : 'ol'
-                            };
-                            content += `<${currentList.tag} class="${block.type === 'bulleted_list_item' ? 'list-disc' : 'list-decimal'} ml-6">`;
-                        }
-                        content += await renderBlock(block);
-                    } else {
-                        if (currentList) {
-                            content += `</${currentList.tag}>`;
-                            currentList = null;
-                        }
-                        content += await renderBlock(block);
-                    }
-                }
-                
-                if (currentList) {
-                    content += `</${currentList.tag}>`;
-                }
-                
-                document.getElementById('pageContent').innerHTML = content;
-                
-                // Initialize lazy loading for images
-                document.querySelectorAll('img[data-src]').forEach(img => {
-                    imageObserver.observe(img);
-                });
-                
-            } catch (error) {
-                console.error('Error loading page content:', error);
-                document.getElementById('pageContent').innerHTML = `
-                    <div class="text-center text-red-500">
-                        <p>Error loading page content.</p>
-                        <p class="text-sm mt-2">${error.message}</p>
-                    </div>`;
             }
         }
 
