@@ -1,11 +1,13 @@
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import RedirectResponse, JSONResponse
+from fastapi.responses import RedirectResponse, JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from notion_client import Client
 import os
 import logging
 from typing import List, Dict, Optional
+import httpx
+from pydantic import BaseModel
 
 # Configure logging
 logging.basicConfig(
@@ -434,6 +436,101 @@ async def get_file(file_id: str):
         
     except Exception as e:
         logger.error(f"Error retrieving file {file_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# 添加页面模型
+class Page(BaseModel):
+    id: str
+    title: str
+    last_edited_time: str
+    suffix: Optional[str] = None
+
+# 存储页面数据的字典
+pages_data = {}
+suffix_pages = {}
+
+@app.get("/")
+async def read_root():
+    return FileResponse("static/pages.html")
+
+@app.get("/page/{page_id}")
+async def read_page(page_id: str):
+    return FileResponse("static/page.html")
+
+@app.get("/{suffix}")
+async def read_suffix_pages(suffix: str):
+    # 检查是否有多个页面使用相同的 suffix
+    if suffix in suffix_pages and len(suffix_pages[suffix]) > 1:
+        return FileResponse("static/suffix_pages.html")
+    # 如果只有一个页面使用该 suffix，直接重定向到该页面
+    elif suffix in suffix_pages and len(suffix_pages[suffix]) == 1:
+        return FileResponse("static/page.html")
+    else:
+        raise HTTPException(status_code=404, detail="Suffix not found")
+
+@app.get("/api/pages")
+async def get_pages(suffix: Optional[str] = None):
+    if suffix:
+        # 返回具有特定 suffix 的页面列表
+        return suffix_pages.get(suffix, [])
+    # 返回所有页面
+    return list(pages_data.values())
+
+@app.get("/api/page/{page_id}")
+async def get_page(page_id: str):
+    try:
+        # 获取页面数据
+        headers = {
+            "Authorization": f"Bearer {os.getenv('NOTION_TOKEN')}",
+            "Notion-Version": "2022-06-28"
+        }
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"https://api.notion.com/v1/pages/{page_id}",
+                headers=headers
+            )
+            page_data = response.json()
+            
+            # 提取页面属性
+            title = page_data['properties'].get('title', {}).get('title', [{}])[0].get('plain_text', 'Untitled')
+            last_edited_time = page_data.get('last_edited_time', '')
+            suffix = page_data['properties'].get('suffix', {}).get('rich_text', [{}])[0].get('plain_text', '')
+            
+            # 更新页面数据
+            page = Page(
+                id=page_id,
+                title=title,
+                last_edited_time=last_edited_time,
+                suffix=suffix
+            )
+            pages_data[page_id] = page.dict()
+            
+            # 更新 suffix 索引
+            if suffix:
+                if suffix not in suffix_pages:
+                    suffix_pages[suffix] = []
+                if page.dict() not in suffix_pages[suffix]:
+                    suffix_pages[suffix].append(page.dict())
+            
+            return page_data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# 添加获取页面块内容的端点
+@app.get("/api/blocks/{page_id}")
+async def get_blocks(page_id: str):
+    try:
+        headers = {
+            "Authorization": f"Bearer {os.getenv('NOTION_TOKEN')}",
+            "Notion-Version": "2022-06-28"
+        }
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"https://api.notion.com/v1/blocks/{page_id}/children",
+                headers=headers
+            )
+            return response.json()
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":

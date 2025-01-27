@@ -592,7 +592,30 @@
 
         // Get page ID from URL
         const urlParams = new URLSearchParams(window.location.search);
-        const pageId = urlParams.get('id');
+        let pageId = urlParams.get('id');
+
+        // 如果没有页面 ID，尝试从路径中获取 suffix
+        if (!pageId) {
+            const suffix = window.location.pathname.substring(1);
+            if (suffix) {
+                // 获取具有该 suffix 的页面
+                fetch(`/api/pages?suffix=${suffix}`)
+                    .then(response => response.json())
+                    .then(pages => {
+                        if (pages && pages.length === 1) {
+                            // 如果只有一个页面，直接加载该页面
+                            pageId = pages[0].id;
+                            loadPage(pageId);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error loading page by suffix:', error);
+                        showError('Error loading page');
+                    });
+            }
+        } else {
+            loadPage(pageId);
+        }
 
         // Close modal when pressing Escape
         document.addEventListener('keydown', function(event) {

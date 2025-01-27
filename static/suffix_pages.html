@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pages</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .page-card {
+            transition: all 0.2s ease-out;
+        }
+        .page-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div class="p-6">
+                <h1 id="suffixTitle" class="text-3xl font-bold mb-8 pb-4 border-b border-gray-200"></h1>
+                <div id="pagesList" class="space-y-4">
+                    <div class="flex justify-center py-8">
+                        <div class="loading-spinner"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 获取当前 suffix
+        const suffix = window.location.pathname.substring(1);
+        
+        // 设置页面标题
+        document.getElementById('suffixTitle').textContent = `Pages with suffix: ${suffix}`;
+
+        // 加载具有相同 suffix 的页面列表
+        async function loadSuffixPages() {
+            try {
+                const response = await fetch(`/api/pages?suffix=${suffix}`);
+                const pages = await response.json();
+                
+                const pagesListHtml = pages.map(page => `
+                    <div class="page-card bg-white rounded-lg border border-gray-200 p-4 hover:border-blue-300 cursor-pointer"
+                         onclick="window.location.href='/page/${page.id}'">
+                        <h2 class="text-xl font-semibold text-gray-900 mb-2">${page.title}</h2>
+                        <div class="text-sm text-gray-500">
+                            Last edited: ${new Date(page.last_edited_time).toLocaleString()}
+                        </div>
+                    </div>
+                `).join('');
+                
+                document.getElementById('pagesList').innerHTML = pagesListHtml;
+            } catch (error) {
+                console.error('Error loading pages:', error);
+                document.getElementById('pagesList').innerHTML = `
+                    <div class="text-red-500 text-center py-4">
+                        Error loading pages. Please try again later.
+                    </div>
+                `;
+            }
+        }
+
+        // 加载页面列表
+        loadSuffixPages();
+    </script>
+</body>
+</html> 
