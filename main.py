@@ -39,17 +39,85 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 notion = Client(auth=os.environ.get("NOTION_TOKEN"))
 DATABASE_ID = os.environ.get("NOTION_DATABASE_ID")
 
-# Add request logging middleware
-@app.middleware("http")
-async def log_requests(request, call_next):
-    logger.info(f"Request: {request.method} {request.url.path}")
+# 存储页面数据的字典
+pages_data = {}
+suffix_pages = {}
+
+async def init_pages():
+    """初始化时加载所有页面的数据"""
     try:
-        response = await call_next(request)
-        logger.info(f"Response: {response.status_code}")
-        return response
+        # 查询数据库中的所有页面
+        pages = notion.databases.query(
+            database_id=DATABASE_ID,
+            filter={
+                "and": [
+                    {
+                        "property": "suffix",
+                        "rich_text": {
+                            "is_not_empty": True
+                        }
+                    }
+                ]
+            }
+        )
+        
+        logger.info(f"Found {len(pages['results'])} pages with suffix")
+        
+        # 处理每个页面
+        for page in pages['results']:
+            try:
+                # 获取页面属性
+                properties = page.get('properties', {})
+                
+                # 获取标题
+                title = ''
+                title_obj = properties.get('title', properties.get('Name', {}))
+                if title_obj and title_obj.get('title'):
+                    title = title_obj['title'][0].get('plain_text', 'Untitled')
+                
+                # 获取 suffix
+                suffix = ''
+                suffix_obj = properties.get('suffix', {})
+                
+                if suffix_obj and suffix_obj.get('type') == 'rich_text':
+                    rich_text = suffix_obj.get('rich_text', [])
+                    if rich_text:
+                        suffix = rich_text[0].get('plain_text', '')
+                
+                if suffix:
+                    logger.info(f"Processing page {page['id']} with suffix: {suffix}")
+                    
+                    # 创建页面对象
+                    page_obj = Page(
+                        id=page['id'],
+                        title=title,
+                        last_edited_time=page.get('last_edited_time', ''),
+                        suffix=suffix
+                    )
+                    
+                    # 更新数据存储
+                    pages_data[page['id']] = page_obj.dict()
+                    
+                    # 更新 suffix 索引
+                    if suffix not in suffix_pages:
+                        suffix_pages[suffix] = []
+                    if page_obj.dict() not in suffix_pages[suffix]:
+                        suffix_pages[suffix].append(page_obj.dict())
+            
+            except Exception as e:
+                logger.error(f"Error processing page {page['id']}: {e}")
+                continue
+        
+        logger.info(f"Initialized with {len(suffix_pages)} unique suffixes")
+        logger.info(f"Suffix pages: {suffix_pages}")
+        
     except Exception as e:
-        logger.error(f"Error processing request: {e}")
-        raise
+        logger.error(f"Error initializing pages: {e}")
+
+@app.on_event("startup")
+async def startup_event():
+    """应用启动时的初始化函数"""
+    await init_pages()
 
 @app.get("/")
 async def root():
@@ -445,10 +513,6 @@ class Page(BaseModel):
     last_edited_time: str
     suffix: Optional[str] = None
 
-# 存储页面数据的字典
-pages_data = {}
-suffix_pages = {}
-
 @app.get("/")
 async def read_root():
     return FileResponse("static/pages.html")
@@ -498,87 +562,52 @@ async def get_pages(suffix: Optional[str] = None):
 @app.get("/api/page/{page_id}")
 async def get_page(page_id: str):
     try:
-        # 获取页面数据
-        headers = {
-            "Authorization": f"Bearer {os.getenv('NOTION_TOKEN')}",
-            "Notion-Version": "2022-06-28"
-        }
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"https://api.notion.com/v1/pages/{page_id}",
-                headers=headers
-            )
-            page_data = response.json()
-            logger.info(f"Raw page data: {page_data}")  # 添加调试日志
-            
-            # 提取页面属性
-            properties = page_data.get('properties', {})
-            logger.info(f"Page properties: {properties}")  # 添加调试日志
-            
-            # 获取标题
-            title = ''
-            title_obj = properties.get('title', properties.get('Name', {}))
-            if title_obj and title_obj.get('title'):
-                title = title_obj['title'][0].get('plain_text', 'Untitled')
-            
-            # 获取 suffix
-            suffix = ''
-            suffix_obj = properties.get('suffix', {})
-            logger.info(f"Suffix object: {suffix_obj}")  # 添加调试日志
-            
-            # 处理不同类型的 suffix 属性
-            if suffix_obj:
-                prop_type = suffix_obj.get('type', '')
-                logger.info(f"Suffix property type: {prop_type}")  # 添加属性类型日志
-                
-                if prop_type == 'rich_text':
-                    rich_text = suffix_obj.get('rich_text', [])
-                    if rich_text and len(rich_text) > 0:
-                        suffix = rich_text[0].get('plain_text', '')
-                elif prop_type == 'text':
-                    text = suffix_obj.get('text', '')
-                    if isinstance(text, str):
-                        suffix = text
-                    elif isinstance(text, dict):
-                        suffix = text.get('content', '')
-                else:
-                    logger.warning(f"Unexpected suffix property type: {prop_type}")
-
-            logger.info(f"Extracted suffix: {suffix}")  # 添加调试日志
-
-            # 如果提取失败，尝试其他可能的位置
-            if not suffix and isinstance(suffix_obj, dict):
-                # 尝试直接获取内容
-                if 'content' in suffix_obj:
-                    suffix = suffix_obj['content']
-                elif 'plain_text' in suffix_obj:
-                    suffix = suffix_obj['plain_text']
-
-            logger.info(f"Final suffix value: {suffix}")  # 添加最终值日志
-            
-            # 获取其他属性
-            last_edited_time = page_data.get('last_edited_time', '')
-            
-            # 更新页面数据
-            page = Page(
-                id=page_id,
-                title=title,
-                last_edited_time=last_edited_time,
-                suffix=suffix
-            )
-            pages_data[page_id] = page.dict()
-            
-            # 更新 suffix 索引
-            if suffix:
-                logger.info(f"Adding page {page_id} with suffix {suffix}")
-                if suffix not in suffix_pages:
-                    suffix_pages[suffix] = []
-                # 检查是否已存在
-                existing_page = next((p for p in suffix_pages[suffix] if p['id'] == page_id), None)
-                if not existing_page:
-                    suffix_pages[suffix].append(page.dict())
-            
-            return page_data
+        # 使用 notion_client 获取页面数据
+        page_data = notion.pages.retrieve(page_id=page_id)
+        logger.info(f"Raw page data: {page_data}")
+        
+        # 提取页面属性
+        properties = page_data.get('properties', {})
+        logger.info(f"Page properties: {properties}")
+        
+        # 获取标题
+        title = ''
+        title_obj = properties.get('title', properties.get('Name', {}))
+        if title_obj and title_obj.get('title'):
+            title = title_obj['title'][0].get('plain_text', 'Untitled')
+        
+        # 获取 suffix
+        suffix = ''
+        suffix_obj = properties.get('suffix', {})
+        logger.info(f"Suffix object: {suffix_obj}")
+        
+        if suffix_obj and suffix_obj.get('type') == 'rich_text':
+            rich_text = suffix_obj.get('rich_text', [])
+            if rich_text:
+                suffix = rich_text[0].get('plain_text', '')
+        
+        logger.info(f"Extracted suffix: {suffix}")
+        
+        # 更新页面数据
+        page = Page(
+            id=page_id,
+            title=title,
+            last_edited_time=page_data.get('last_edited_time', ''),
+            suffix=suffix
+        )
+        pages_data[page_id] = page.dict()
+        
+        # 更新 suffix 索引
+        if suffix:
+            logger.info(f"Adding page {page_id} with suffix {suffix}")
+            if suffix not in suffix_pages:
+                suffix_pages[suffix] = []
+            # 检查是否已存在
+            existing_page = next((p for p in suffix_pages[suffix] if p['id'] == page_id), None)
+            if not existing_page:
+                suffix_pages[suffix].append(page.dict())
+        
+        return page_data
     except Exception as e:
         logger.error(f"Error getting page {page_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
