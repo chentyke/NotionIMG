@@ -1073,25 +1073,30 @@
 
         async function loadImage(img) {
             try {
-                // 添加占位符
+                // Create a low-quality placeholder
                 const placeholder = document.createElement('div');
                 placeholder.className = 'image-placeholder animate-pulse bg-gray-200 dark:bg-gray-700';
-                placeholder.style.paddingBottom = '56.25%'; // 16:9 aspect ratio
+                placeholder.style.paddingBottom = '56.25%';
                 img.parentNode.insertBefore(placeholder, img);
 
-                // 先加载缩略图
-                const thumbnailUrl = await compressImage(img.dataset.src, 20);
+                // Set fetchpriority for the first image
+                if (loadedBlocks === 1) {
+                    img.fetchPriority = 'high';
+                }
+
+                // Load a tiny thumbnail first
+                const thumbnailUrl = await compressImage(img.dataset.src, 5, true);
                 img.src = thumbnailUrl;
                 img.style.filter = 'blur(10px)';
                 img.style.transform = 'scale(1.1)';
 
-                // 加载高清图
-                const fullQualityUrl = await compressImage(img.dataset.src, 80);
+                // Then load the optimized version
+                const optimizedUrl = await compressImage(img.dataset.src, 80);
                 const fullImg = new Image();
-                fullImg.src = fullQualityUrl;
+                fullImg.src = optimizedUrl;
                 
                 fullImg.onload = () => {
-                    img.src = fullQualityUrl;
+                    img.src = optimizedUrl;
                     img.style.filter = '';
                     img.style.transform = '';
                     img.classList.add('loaded');
@@ -1103,17 +1108,17 @@
                 console.error('Error loading image:', error);
                 img.src = img.dataset.src;
                 img.onerror = () => {
-                    img.onerror = null;
-                    img.src = '';
-                    img.alt = 'Image failed to load';
-                    img.classList.add('border', 'border-red-300', 'bg-red-50', 'p-4', 'text-red-500');
+                    img.style.display = 'none';
+                    const errorMsg = document.createElement('div');
+                    errorMsg.className = 'text-red-500 text-sm mt-2';
+                    errorMsg.textContent = '图片加载失败';
+                    img.parentNode.insertBefore(errorMsg, img.nextSibling);
                 };
             }
-            img.classList.remove('opacity-0');
         }
 
-        // Compress image with quality parameter
-        function compressImage(url, quality = 80) {
+        // Optimize image compression with size consideration
+        async function compressImage(url, quality = 80, isThumbnail = false) {
             return new Promise((resolve, reject) => {
                 const img = new Image();
                 img.crossOrigin = "anonymous";
@@ -1123,26 +1128,25 @@
                     
                     let { width, height } = img;
                     
-                    // 计算最大尺寸
-                    const maxSize = window.innerWidth <= 640 ? 800 : 1200;
-                    if (width > maxSize) {
-                        height = (height * maxSize) / width;
-                        width = maxSize;
-                    }
-                    if (height > maxSize) {
-                        width = (width * maxSize) / height;
-                        height = maxSize;
-                    }
+                    // Calculate maximum size based on device and thumbnail
+                    const maxSize = isThumbnail ? 100 : (window.innerWidth <= 640 ? 800 : 1200);
+                    const scaleFactor = Math.min(1, maxSize / Math.max(width, height));
+                    
+                    width *= scaleFactor;
+                    height *= scaleFactor;
                     
                     canvas.width = width;
                     canvas.height = height;
                     
-                    // 使用双线性插值
+                    // Use better quality settings for image scaling
                     ctx.imageSmoothingEnabled = true;
                     ctx.imageSmoothingQuality = 'high';
                     
                     ctx.drawImage(img, 0, 0, width, height);
-                    resolve(canvas.toDataURL('image/jpeg', quality / 100));
+                    
+                    // Use lower quality for thumbnails
+                    const outputQuality = isThumbnail ? 0.1 : quality / 100;
+                    resolve(canvas.toDataURL('image/jpeg', outputQuality));
                 };
                 img.onerror = reject;
                 img.src = url;
