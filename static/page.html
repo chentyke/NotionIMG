@@ -841,6 +841,63 @@
                 color: var(--link-hover-color) !important;
             }
         }
+
+        .file-block {
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-secondary);
+            transition: all 0.3s ease;
+        }
+
+        .file-block:hover {
+            border-color: var(--link-color);
+        }
+
+        .file-block .file-info {
+            border-top-color: var(--border-color);
+        }
+
+        .file-block .text-primary {
+            color: var(--text-primary);
+        }
+
+        .file-block .text-tertiary {
+            color: var(--text-tertiary);
+        }
+
+        .file-block .download-button {
+            background-color: var(--link-color);
+            color: var(--bg-secondary);
+            border: 1px solid var(--link-color);
+            transition: all 0.3s ease;
+        }
+
+        .file-block .download-button:hover {
+            background-color: var(--link-hover-color);
+            border-color: var(--link-hover-color);
+        }
+
+        .file-block iframe {
+            background-color: var(--bg-primary);
+            border: none;
+        }
+
+        /* Mobile optimization for file blocks */
+        @media (max-width: 640px) {
+            .file-block .file-info {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .file-block .download-button {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .file-block iframe {
+                height: 60vh;
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -1142,19 +1199,73 @@
                         return `<video src="${videoUrl}" controls class="w-full my-4 rounded-lg"></video>`;
                     }
                 case 'file':
-                    return `
-                        <div class="border rounded-lg p-4 my-4">
-                            <a href="${block.file_url}" target="_blank" rel="noopener noreferrer" 
-                               class="flex items-center text-blue-600 hover:underline">
-                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                          d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
-                                    </path>
-                                </svg>
-                                Download File
-                            </a>
-                            ${block.caption ? `<div class="text-sm text-gray-500 mt-2">${block.caption}</div>` : ''}
-                        </div>`;
+                    const fileData = block.file;
+                    if (!fileData) return '';
+                    
+                    const fileUrl = fileData.file?.url;
+                    const fileName = fileData.name || '未命名文件';
+                    const fileCaption = fileData.caption?.length > 0 
+                        ? fileData.caption.map(text => text.plain_text).join('') 
+                        : '';
+                    
+                    // 检查文件类型
+                    const fileExt = fileName.split('.').pop().toLowerCase();
+                    const isPdf = fileExt === 'pdf';
+                    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExt);
+                    
+                    if (isPdf) {
+                        return `
+                            <div class="file-block pdf-block border rounded-lg overflow-hidden my-4 bg-secondary">
+                                <div class="file-preview bg-opacity-50 mb-2">
+                                    <iframe src="${fileUrl}" class="w-full h-96 rounded-t-lg"></iframe>
+                                </div>
+                                <div class="file-info flex items-center gap-2 p-4 border-t">
+                                    <i class="fas fa-file-pdf text-red-500 text-xl"></i>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="text-sm font-medium text-primary truncate">${fileName}</div>
+                                        ${fileCaption ? `<div class="text-sm text-tertiary truncate">${fileCaption}</div>` : ''}
+                                    </div>
+                                    <a href="${fileUrl}" target="_blank" rel="noopener noreferrer" 
+                                       class="download-button flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                                        <i class="fas fa-download"></i>
+                                        <span>下载</span>
+                                    </a>
+                                </div>
+                            </div>`;
+                    } else if (isImage) {
+                        return `
+                            <div class="file-block image-block border rounded-lg overflow-hidden my-4 bg-secondary">
+                                <img src="${fileUrl}" alt="${fileName}" class="w-full rounded-t-lg">
+                                <div class="file-info flex items-center gap-2 p-4 border-t">
+                                    <i class="fas fa-file-image text-blue-500 text-xl"></i>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="text-sm font-medium text-primary truncate">${fileName}</div>
+                                        ${fileCaption ? `<div class="text-sm text-tertiary truncate">${fileCaption}</div>` : ''}
+                                    </div>
+                                    <a href="${fileUrl}" target="_blank" rel="noopener noreferrer" 
+                                       class="download-button flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                                        <i class="fas fa-download"></i>
+                                        <span>下载</span>
+                                    </a>
+                                </div>
+                            </div>`;
+                    } else {
+                        return `
+                            <div class="file-block border rounded-lg overflow-hidden my-4 bg-secondary">
+                                <div class="file-info flex items-center gap-2 p-4">
+                                    <i class="fas fa-file text-gray-500 text-xl"></i>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="text-sm font-medium text-primary truncate">${fileName}</div>
+                                        ${fileCaption ? `<div class="text-sm text-tertiary truncate">${fileCaption}</div>` : ''}
+                                    </div>
+                                    <a href="${fileUrl}" target="_blank" rel="noopener noreferrer" 
+                                       class="download-button flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                                        <i class="fas fa-download"></i>
+                                        <span>下载</span>
+                                    </a>
+                                </div>
+                            </div>`;
+                    }
                 case 'pdf':
                     return `
                         <div class="border rounded-lg p-4 my-4">
