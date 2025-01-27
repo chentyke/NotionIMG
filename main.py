@@ -331,12 +331,21 @@ async def get_page_content(page_id: str):
             logger.info(f"Retrieved block type: {block['type']}")
             if block["type"] == "child_page":
                 # If it's a child page, use the title from the block
+                # Try to get the full page to check for Back property
+                try:
+                    page = notion.pages.retrieve(page_id=page_id)
+                    back_property = page.get("properties", {}).get("Back", {}).get("select", {}).get("name")
+                    show_back = True if back_property is None else back_property != "False"
+                except:
+                    show_back = True  # Default to True if can't get the property
+                
                 page_info = {
                     "id": block["id"],
                     "title": block["child_page"]["title"],
                     "created_time": block["created_time"],
                     "last_edited_time": block["last_edited_time"],
-                    "parent_id": block["parent"]["page_id"] if block["parent"]["type"] == "page_id" else None
+                    "parent_id": block["parent"]["page_id"] if block["parent"]["type"] == "page_id" else None,
+                    "show_back": show_back
                 }
                 logger.info(f"Found child page: {page_info['title']}")
             else:
