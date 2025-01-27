@@ -1,6 +1,52 @@
 # Notion Image Bed
 
-A FastAPI-based image hosting service that reads images from your Notion database. This service allows you to use Notion as an image hosting platform by accessing images stored in your Notion database.
+A FastAPI-based image hosting service that reads images and pages from your Notion database. This service allows you to use Notion as a content management platform, supporting rich text formatting, images, code blocks, and more.
+
+## Features
+
+### Content Display
+- Rich text formatting (bold, italic, underline, strikethrough)
+- Text colors and background colors
+- Headings (H1, H2, H3)
+- Lists (ordered and unordered)
+- Code blocks with syntax highlighting
+- Images with captions
+- Quotes and callouts
+- Tables
+- Toggle blocks
+- Links and bookmarks
+- File attachments
+- Embedded content (videos, PDFs)
+
+### Image Features
+- Lazy loading for better performance
+- Image compression for faster loading
+- Click to view full size in modal
+- Image captions support
+- Responsive image sizing
+
+### Code Block Features
+- Syntax highlighting for various programming languages
+- Language label in top-left corner
+- One-click code copying
+- Copy button appears on hover
+- Visual feedback for copy operations
+
+### Navigation
+- Back button to return to parent page or pages list
+- Configurable back button visibility (using Back property)
+- Breadcrumb-style navigation
+- Child page support
+
+### Page Information
+- Page title
+- Last edited time display
+- Loading progress indicator
+- Error handling and fallbacks
+
+### Customization Properties
+- `Back`: Control back button visibility (True/False, defaults to True)
+- `Hidden`: Hide pages from listing (True/False)
 
 ## Setup
 
@@ -48,24 +94,14 @@ The server will start at `http://localhost:8000`
 
 - `GET /`: Welcome message
 - `GET /images`: List all images from the Notion database
-- `GET /image/{image_id}`: Get a specific image by its block ID (redirects to the actual image URL)
-
-## Usage
-
-1. Store images in your Notion database
-2. Access the `/images` endpoint to get a list of all available images
-3. Use the `/image/{image_id}` endpoint to access specific images
+- `GET /image/{image_id}`: Get a specific image by its block ID
+- `GET /pages`: List all pages from the Notion database
+- `GET /page/{page_id}`: Get a specific page content
 
 ## Notes
 
 - The image URLs from Notion are temporary and expire after a certain time
-- Make sure your Notion database has a "type" property that can be used to filter images
-
-## Features
-
-### Code Block Features
-- Syntax highlighting for various programming languages
-- One-click code copying
-  - Hover over any code block to reveal a "Copy" button in the top-right corner
-  - Click to copy the code to your clipboard
-  - Visual feedback confirms successful copy operation 
+- Make sure your Notion database has the following properties:
+  - "type" (Select): Used to filter content types (page, image, file)
+  - "Back" (Select): Optional, controls back button visibility
+  - "Hidden" (Select): Optional, controls page visibility in listings 
