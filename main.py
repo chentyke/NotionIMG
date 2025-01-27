@@ -593,12 +593,15 @@ async def read_suffix_pages(suffix: str):
             logger.info(f"  - {page['title']} ({page['id']})")
         
         # 根据页面数量返回不同的视图
-        if len(pages) > 1:
+        if len(pages) == 1:
+            # 如果只有一个页面，直接重定向到该页面
+            page_id = pages[0]['id']
+            logger.info(f"Redirecting to single page: {page_id}")
+            return RedirectResponse(f"/page/{page_id}")
+        else:
+            # 如果有多个页面，返回列表页面
             logger.info("Returning suffix_pages.html for multiple pages")
             return FileResponse("static/suffix_pages.html")
-        else:
-            logger.info("Returning page.html for single page")
-            return FileResponse("static/page.html")
             
     except HTTPException:
         raise
