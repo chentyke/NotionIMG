@@ -1073,95 +1073,108 @@
 
         // Optimize image compression with size consideration
         async function compressImage(url, quality = 80, isThumbnail = false) {
-            // 如果是 Notion 图片，使用 URL 参数进行压缩
-            if (url.includes('amazonaws.com') || url.includes('notion.so')) {
-                const urlObj = new URL(url);
-                const params = new URLSearchParams(urlObj.search);
+            try {
+                // 检查是否是 Notion 图片
+                const isNotionImage = url.includes('secure.notion-static.com') || 
+                                   url.includes('prod-files-secure.s3') ||
+                                   url.includes('amazonaws.com/secure.notion-static.com');
                 
-                // 根据设备和用途计算合适的宽度
-                const screenWidth = window.innerWidth;
-                let targetWidth;
-                
-                if (isThumbnail) {
-                    targetWidth = 100; // 缩略图固定宽度
-                } else if (screenWidth <= 640) {
-                    targetWidth = 640; // 移动设备
-                } else if (screenWidth <= 1024) {
-                    targetWidth = 800; // 平板设备
-                } else {
-                    targetWidth = 1200; // 桌面设备
-                }
-                
-                // 设置宽度参数
-                params.set('width', targetWidth);
-                
-                // 如果是缩略图，使用较低质量
-                if (isThumbnail) {
-                    params.set('quality', '10');
-                }
-                
-                // 更新 URL 参数
-                urlObj.search = params.toString();
-                return urlObj.toString();
-            }
-            
-            // 对于其他图片，使用 canvas 压缩
-            return new Promise((resolve, reject) => {
-                const img = new Image();
-                img.crossOrigin = "anonymous";
-                img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
+                if (isNotionImage) {
+                    console.log('Using Notion URL parameters for:', url);
+                    const urlObj = new URL(url);
+                    const params = new URLSearchParams(urlObj.search);
                     
-                    let { width, height } = img;
-                    
-                    // 计算最大尺寸
+                    // 根据设备和用途计算合适的宽度
                     const screenWidth = window.innerWidth;
-                    let maxSize;
+                    let targetWidth;
                     
                     if (isThumbnail) {
-                        maxSize = 100;
+                        targetWidth = 100; // 缩略图固定宽度
                     } else if (screenWidth <= 640) {
-                        maxSize = 640;
+                        targetWidth = 640; // 移动设备
                     } else if (screenWidth <= 1024) {
-                        maxSize = 800;
+                        targetWidth = 800; // 平板设备
                     } else {
-                        maxSize = 1200;
+                        targetWidth = 1200; // 桌面设备
                     }
                     
-                    // 计算缩放比例
-                    const scaleFactor = Math.min(1, maxSize / Math.max(width, height));
-                    width *= scaleFactor;
-                    height *= scaleFactor;
+                    // 设置宽度参数
+                    params.set('width', targetWidth);
                     
-                    canvas.width = width;
-                    canvas.height = height;
+                    // 如果是缩略图，使用较低质量
+                    if (isThumbnail) {
+                        params.set('quality', '10');
+                    }
                     
-                    // 使用高质量的图像缩放
-                    ctx.imageSmoothingEnabled = true;
-                    ctx.imageSmoothingQuality = 'high';
-                    
-                    // 绘制图像
-                    ctx.drawImage(img, 0, 0, width, height);
-                    
-                    // 设置输出质量
-                    const outputQuality = isThumbnail ? 0.1 : quality / 100;
-                    
-                    // 优先使用 webp 格式
-                    try {
-                        const webpData = canvas.toDataURL('image/webp', outputQuality);
-                        if (webpData.length < 5) {
-                            throw new Error('WebP conversion failed');
+                    // 更新 URL 参数
+                    urlObj.search = params.toString();
+                    const optimizedUrl = urlObj.toString();
+                    console.log('Optimized Notion URL:', optimizedUrl);
+                    return optimizedUrl;
+                }
+                
+                console.log('Using canvas compression for non-Notion image:', url);
+                // 对于其他图片，使用 canvas 压缩
+                return new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.crossOrigin = "anonymous";
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        
+                        let { width, height } = img;
+                        
+                        // 计算最大尺寸
+                        const screenWidth = window.innerWidth;
+                        let maxSize;
+                        
+                        if (isThumbnail) {
+                            maxSize = 100;
+                        } else if (screenWidth <= 640) {
+                            maxSize = 640;
+                        } else if (screenWidth <= 1024) {
+                            maxSize = 800;
+                        } else {
+                            maxSize = 1200;
                         }
-                        resolve(webpData);
-                    } catch (e) {
-                        // 如果不支持 webp，回退到 jpeg
-                        resolve(canvas.toDataURL('image/jpeg', outputQuality));
-                    }
-                };
-                img.onerror = reject;
-                img.src = url;
-            });
+                        
+                        // 计算缩放比例
+                        const scaleFactor = Math.min(1, maxSize / Math.max(width, height));
+                        width *= scaleFactor;
+                        height *= scaleFactor;
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        
+                        // 使用高质量的图像缩放
+                        ctx.imageSmoothingEnabled = true;
+                        ctx.imageSmoothingQuality = 'high';
+                        
+                        // 绘制图像
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        // 设置输出质量
+                        const outputQuality = isThumbnail ? 0.1 : quality / 100;
+                        
+                        // 优先使用 webp 格式
+                        try {
+                            const webpData = canvas.toDataURL('image/webp', outputQuality);
+                            if (webpData.length < 5) {
+                                throw new Error('WebP conversion failed');
+                            }
+                            resolve(webpData);
+                        } catch (e) {
+                            // 如果不支持 webp，回退到 jpeg
+                            resolve(canvas.toDataURL('image/jpeg', outputQuality));
+                        }
+                    };
+                    img.onerror = reject;
+                    img.src = url;
+                });
+            } catch (error) {
+                console.error('Error in compressImage:', error);
+                return url; // 如果出错，返回原始 URL
+            }
         }
 
         async function loadImage(img) {
