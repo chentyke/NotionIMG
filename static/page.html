@@ -8,6 +8,166 @@
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        :root {
+            /* Light mode colors */
+            --bg-primary: #f9fafb;
+            --bg-secondary: #ffffff;
+            --text-primary: #111827;
+            --text-secondary: #4b5563;
+            --text-tertiary: #6B7280;
+            --border-color: #E5E7EB;
+            --link-color: #2563EB;
+            --link-hover-color: #1D4ED8;
+            --success-color: #10B981;
+            --success-border: #059669;
+            --code-bg: #f3f4f6;
+            --hover-bg: #f3f4f6;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                /* Dark mode colors */
+                --bg-primary: #111827;
+                --bg-secondary: #1f2937;
+                --text-primary: #f9fafb;
+                --text-secondary: #e5e7eb;
+                --text-tertiary: #9ca3af;
+                --border-color: #374151;
+                --link-color: #60a5fa;
+                --link-hover-color: #93c5fd;
+                --success-color: #059669;
+                --success-border: #10B981;
+                --code-bg: #1f2937;
+                --hover-bg: #374151;
+                --shadow-color: rgba(0, 0, 0, 0.3);
+            }
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+        }
+
+        .bg-white {
+            background-color: var(--bg-secondary) !important;
+        }
+
+        .prose {
+            color: var(--text-primary);
+        }
+
+        .prose pre {
+            background-color: var(--code-bg);
+        }
+
+        .prose blockquote {
+            border-left-color: var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        .prose code.inline-code {
+            background-color: var(--code-bg);
+        }
+
+        .prose a {
+            color: var(--link-color);
+        }
+
+        .prose a:hover {
+            color: var(--link-hover-color);
+        }
+
+        .page-header {
+            border-bottom-color: var(--border-color);
+        }
+
+        .page-title {
+            color: var(--text-primary);
+        }
+
+        .edit-date {
+            color: var(--text-tertiary);
+        }
+
+        .copy-link-button {
+            background-color: var(--bg-secondary);
+            border-color: var(--border-color);
+            color: var(--text-tertiary);
+        }
+
+        .copy-link-button:hover {
+            background-color: var(--hover-bg);
+        }
+
+        .copy-link-button.copied {
+            background-color: var(--success-color);
+            border-color: var(--success-border);
+            color: var(--bg-secondary);
+        }
+
+        .prose table {
+            border-color: var(--border-color);
+        }
+
+        .prose th, .prose td {
+            border-color: var(--border-color);
+        }
+
+        .prose th {
+            background-color: var(--code-bg);
+        }
+
+        .prose tr:hover {
+            background-color: var(--hover-bg);
+        }
+
+        .shadow-sm {
+            box-shadow: 0 1px 2px var(--shadow-color);
+        }
+
+        .toggle-header:hover {
+            background-color: var(--hover-bg);
+        }
+
+        .language-label {
+            color: var(--text-tertiary);
+        }
+
+        .copy-button {
+            background-color: var(--bg-secondary);
+            border-color: var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        .copy-button:hover {
+            background-color: var(--hover-bg);
+            border-color: var(--border-color);
+        }
+
+        .copy-button.copied {
+            background-color: var(--success-color);
+            color: var(--bg-secondary);
+            border-color: var(--success-border);
+        }
+
+        .todo-checkbox {
+            border-color: var(--border-color);
+        }
+
+        .todo-checkbox:checked {
+            background-color: var(--success-color);
+            border-color: var(--success-border);
+        }
+
+        .todo-text.completed {
+            color: var(--text-tertiary);
+        }
+
+        /* Add smooth transition for color scheme changes */
+        * {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
         .loading-spinner {
             border: 3px solid #f3f3f3;
             border-top: 3px solid #3b82f6;
