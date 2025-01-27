@@ -567,10 +567,10 @@ async def read_suffix_pages(suffix: str):
         logger.info(f"Accessing suffix route: '{suffix}'")
         logger.info(f"Current suffix_pages keys: {list(suffix_pages.keys())}")
         
-        # 检查是否有页面使用该 suffix
-        if suffix not in suffix_pages:
-            logger.warning(f"Suffix '{suffix}' not found in suffix_pages")
-            raise HTTPException(status_code=404, detail="Suffix not found")
+        # 检查suffix是否存在且有对应的页面
+        if suffix not in suffix_pages or not suffix_pages[suffix]:
+            logger.warning(f"No valid pages found for suffix '{suffix}'")
+            raise HTTPException(status_code=404, detail="No pages found for this suffix")
             
         pages = suffix_pages[suffix]
         logger.info(f"Found {len(pages)} pages for suffix '{suffix}'")
@@ -578,18 +578,17 @@ async def read_suffix_pages(suffix: str):
         if len(pages) > 1:
             logger.info(f"Multiple pages found for suffix '{suffix}', returning list page")
             return FileResponse("static/suffix_pages.html")
-        elif len(pages) == 1:
+        else:
             logger.info(f"Single page found for suffix '{suffix}', returning page")
             return FileResponse("static/page.html")
-        else:
-            logger.warning(f"No pages found for suffix '{suffix}'")
-            raise HTTPException(status_code=404, detail="No pages found for this suffix")
+            
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error processing suffix route '{suffix}': {str(e)}")
-        logger.error(f"Stack trace:", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Stack trace:", exc_info=True)
+        logger.error(f"Current suffix_pages state: {suffix_pages}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.get("/api/pages")
 async def get_pages(suffix: Optional[str] = None):
@@ -610,28 +609,23 @@ async def get_page(page_id: str):
         # 使用 notion_client 获取页面数据
         page_data = notion.pages.retrieve(page_id=page_id)
         logger.info(f"\nProcessing API request for page {page_id}")
-        logger.info(f"Raw page data: {page_data}")
         
         # 提取页面属性
         properties = page_data.get('properties', {})
-        logger.info(f"All properties: {properties}")
         
         # 获取标题
         title = ''
         title_obj = properties.get('title', properties.get('Name', {}))
         if title_obj and title_obj.get('title'):
             title = title_obj['title'][0].get('plain_text', 'Untitled')
-        logger.info(f"Title: {title}")
         
         # 获取 suffix
         suffix = ''
         suffix_obj = properties.get('suffix', {})
-        logger.info(f"Raw suffix object: {suffix_obj}")
         
         # 处理文本类型的 suffix
         if suffix_obj:
             prop_type = suffix_obj.get('type', '')
-            logger.info(f"Suffix property type: {prop_type}")
             
             if prop_type == 'rich_text':
                 rich_text = suffix_obj.get('rich_text', [])
@@ -639,13 +633,10 @@ async def get_page(page_id: str):
                     suffix = rich_text[0].get('plain_text', '')
             elif prop_type == 'text':
                 text_content = suffix_obj.get('text', {})
-                logger.info(f"Text content: {text_content}")
                 if isinstance(text_content, str):
                     suffix = text_content
                 elif isinstance(text_content, dict):
                     suffix = text_content.get('content', '')
-        
-        logger.info(f"Final extracted suffix: {suffix}")
         
         # 更新页面数据
         page = Page(
@@ -658,26 +649,35 @@ async def get_page(page_id: str):
             show_back=True,
             suffix=suffix
         )
-        pages_data[page_id] = page.dict()
-        logger.info(f"Updated pages_data with: {page.dict()}")
         
-        # 更新 suffix 索引
+        # 更新 pages_data
+        pages_data[page_id] = page.dict()
+        
+        # 更新 suffix_pages
+        # 1. 先从所有suffix列表中移除这个页面
+        for s in list(suffix_pages.keys()):
+            suffix_pages[s] = [p for p in suffix_pages[s] if p['id'] != page_id]
+            # 如果某个suffix没有页面了，删除这个suffix
+            if not suffix_pages[s]:
+                del suffix_pages[s]
+        
+        # 2. 将页面添加到新的suffix下
         if suffix:
-            logger.info(f"Adding page {page_id} with suffix: {suffix}")
             if suffix not in suffix_pages:
                 suffix_pages[suffix] = []
-            # 检查是否已存在
-            existing_page = next((p for p in suffix_pages[suffix] if p['id'] == page_id), None)
-            if not existing_page:
-                suffix_pages[suffix].append(page.dict())
-                logger.info(f"Added to suffix_pages[{suffix}]")
+            suffix_pages[suffix].append(page.dict())
+            logger.info(f"Updated page {page_id} with suffix: {suffix}")
         
         return page_data
     except Exception as e:
         logger.error(f"Error getting page {page_id}: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Stack trace:", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to retrieve page data"
+        )
 
-# 添加获取页面块内容的端点
+# 改进blocks API的错误处理
 @app.get("/api/blocks/{page_id}")
 async def get_blocks(page_id: str):
     try:
@@ -690,9 +690,15 @@ async def get_blocks(page_id: str):
                 f"https://api.notion.com/v1/blocks/{page_id}/children",
                 headers=headers
             )
+            response.raise_for_status()  # 确保请求成功
             return response.json()
+    except httpx.HTTPError as e:
+        logger.error(f"HTTP error occurred: {str(e)}")
+        raise HTTPException(status_code=502, detail="Failed to fetch page blocks")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error getting blocks for page {page_id}: {str(e)}")
+        logger.error("Stack trace:", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 if __name__ == "__main__":
     import uvicorn
