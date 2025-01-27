@@ -594,10 +594,10 @@ async def read_suffix_pages(suffix: str):
         
         # 根据页面数量返回不同的视图
         if len(pages) == 1:
-            # 如果只有一个页面，直接重定向到该页面
+            # 如果只有一个页面，重定向到带查询参数的页面
             page_id = pages[0]['id']
             logger.info(f"Redirecting to single page: {page_id}")
-            return RedirectResponse(f"/page/{page_id}")
+            return RedirectResponse(f"/static/page.html?id={page_id}")
         else:
             # 如果有多个页面，返回列表页面
             logger.info("Returning suffix_pages.html for multiple pages")
