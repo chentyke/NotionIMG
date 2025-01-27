@@ -399,6 +399,50 @@
                 opacity: 1;
             }
         }
+        /* Add todo item styles */
+        .todo-item {
+            display: flex;
+            align-items: center;
+            margin: 0.5rem 0;
+            transition: all 0.2s ease-out;
+        }
+        .todo-checkbox {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 1.2em;
+            height: 1.2em;
+            border: 2px solid #d1d5db;
+            border-radius: 0.25em;
+            margin-right: 0.75em;
+            cursor: not-allowed;
+            position: relative;
+            transition: all 0.2s ease-out;
+        }
+        .todo-checkbox:checked {
+            background-color: #10B981;
+            border-color: #10B981;
+        }
+        .todo-checkbox:checked::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 45%;
+            width: 0.25em;
+            height: 0.5em;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: translate(-50%, -50%) rotate(45deg);
+        }
+        .todo-text {
+            transition: all 0.2s ease-out;
+            flex: 1;
+        }
+        .todo-text.completed {
+            color: #9CA3AF;
+            text-decoration: line-through;
+            text-decoration-thickness: 2px;
+            text-decoration-color: #D1D5DB;
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -713,9 +757,12 @@
                     return tableHtml;
                 case 'to_do':
                     return `
-                        <div class="flex items-center my-2">
-                            <input type="checkbox" ${block.checked ? 'checked' : ''} disabled class="mr-2">
-                            <span class="${block.checked ? 'line-through text-gray-500' : ''}">${block.text}</span>
+                        <div class="todo-item">
+                            <input type="checkbox" ${block.checked ? 'checked' : ''} disabled 
+                                class="todo-checkbox">
+                            <span class="todo-text ${block.checked ? 'completed' : ''}" ${block.color && block.color !== 'default' ? `style="color: ${block.color === 'gray' ? '#9CA3AF' : block.color};"` : ''}>
+                                ${block.text}
+                            </span>
                         </div>`;
                 case 'child_page':
                     return `<div class="border rounded-lg p-4 my-4 hover:bg-gray-50" 
