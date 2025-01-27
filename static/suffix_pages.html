@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pages</title>
+    <title>页面列表</title>
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <style>
@@ -13,6 +13,18 @@
         .page-card:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
@@ -35,20 +47,30 @@
         const suffix = window.location.pathname.substring(1);
         
         // 设置页面标题
-        document.getElementById('suffixTitle').textContent = `Pages with suffix: ${suffix}`;
+        document.getElementById('suffixTitle').textContent = `标签: ${suffix}`;
 
         // 加载具有相同 suffix 的页面列表
         async function loadSuffixPages() {
             try {
                 const response = await fetch(`/api/pages?suffix=${suffix}`);
-                const pages = await response.json();
+                const data = await response.json();
+                const pages = data.pages;
+                
+                if (pages.length === 0) {
+                    document.getElementById('pagesList').innerHTML = `
+                        <div class="text-gray-500 text-center py-4">
+                            暂无页面
+                        </div>
+                    `;
+                    return;
+                }
                 
                 const pagesListHtml = pages.map(page => `
                     <div class="page-card bg-white rounded-lg border border-gray-200 p-4 hover:border-blue-300 cursor-pointer"
                          onclick="window.location.href='/page/${page.id}'">
                         <h2 class="text-xl font-semibold text-gray-900 mb-2">${page.title}</h2>
                         <div class="text-sm text-gray-500">
-                            Last edited: ${new Date(page.last_edited_time).toLocaleString()}
+                            最后编辑: ${new Date(page.last_edited_time).toLocaleString('zh-CN')}
                         </div>
                     </div>
                 `).join('');
@@ -58,7 +80,7 @@
                 console.error('Error loading pages:', error);
                 document.getElementById('pagesList').innerHTML = `
                     <div class="text-red-500 text-center py-4">
-                        Error loading pages. Please try again later.
+                        加载页面时出错，请稍后重试
                     </div>
                 `;
             }

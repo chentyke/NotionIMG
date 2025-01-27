@@ -57,32 +57,42 @@ async def init_pages():
     """初始化时加载所有页面的数据"""
     try:
         logger.info("Starting to initialize pages...")
-        # 查询数据库中的所有页面
-        pages = notion.databases.query(database_id=DATABASE_ID)
+        # 清空现有数据
+        pages_data.clear()
+        suffix_pages.clear()
         
-        logger.info(f"Found total {len(pages['results'])} pages")
+        # 查询数据库中的所有页面
+        response = notion.databases.query(database_id=DATABASE_ID)
+        pages = response['results']
+        
+        logger.info(f"Found total {len(pages)} pages in database")
+        logger.info("Database query response:")
+        logger.info(response)
         
         # 处理每个页面
-        for page in pages['results']:
+        for page in pages:
             try:
                 page_id = page['id']
-                logger.info(f"\nProcessing page {page_id}")
+                logger.info(f"\n{'='*50}")
+                logger.info(f"Processing page {page_id}")
                 
                 # 获取页面属性
                 properties = page.get('properties', {})
-                logger.info(f"All properties: {properties}")
+                logger.info(f"Raw properties data:")
+                logger.info(properties)
                 
                 # 获取标题
                 title = ''
                 title_obj = properties.get('title', properties.get('Name', {}))
                 if title_obj and title_obj.get('title'):
                     title = title_obj['title'][0].get('plain_text', 'Untitled')
-                logger.info(f"Title: {title}")
+                logger.info(f"Extracted title: {title}")
                 
                 # 获取 suffix
                 suffix = ''
                 suffix_obj = properties.get('suffix', {})
-                logger.info(f"Raw suffix object: {suffix_obj}")
+                logger.info(f"Raw suffix object:")
+                logger.info(suffix_obj)
                 
                 # 处理文本类型的 suffix
                 if suffix_obj:
@@ -95,13 +105,14 @@ async def init_pages():
                             suffix = rich_text[0].get('plain_text', '')
                     elif prop_type == 'text':
                         text_content = suffix_obj.get('text', {})
-                        logger.info(f"Text content: {text_content}")
+                        logger.info(f"Text content:")
+                        logger.info(text_content)
                         if isinstance(text_content, str):
                             suffix = text_content
                         elif isinstance(text_content, dict):
                             suffix = text_content.get('content', '')
                 
-                logger.info(f"Final extracted suffix: {suffix}")
+                logger.info(f"Final extracted suffix: '{suffix}'")
                 
                 # 创建页面对象
                 page_obj = Page(
@@ -117,28 +128,36 @@ async def init_pages():
                 
                 # 更新数据存储
                 pages_data[page_id] = page_obj.dict()
-                logger.info(f"Updated pages_data with: {page_obj.dict()}")
+                logger.info(f"Added to pages_data: {page_obj.dict()}")
                 
                 # 更新 suffix 索引
                 if suffix:
-                    logger.info(f"Adding page {page_id} with suffix: {suffix}")
+                    logger.info(f"Processing suffix: '{suffix}'")
                     if suffix not in suffix_pages:
                         suffix_pages[suffix] = []
+                        logger.info(f"Created new suffix entry for '{suffix}'")
                     if page_obj.dict() not in suffix_pages[suffix]:
                         suffix_pages[suffix].append(page_obj.dict())
-                        logger.info(f"Added to suffix_pages[{suffix}]")
+                        logger.info(f"Added page to suffix '{suffix}'")
             
             except Exception as e:
                 logger.error(f"Error processing page {page.get('id', 'unknown')}: {str(e)}")
+                logger.error(f"Stack trace:", exc_info=True)
                 continue
         
-        logger.info(f"\nInitialization complete:")
+        logger.info(f"\n{'='*50}")
+        logger.info("Initialization complete:")
         logger.info(f"Total pages in pages_data: {len(pages_data)}")
         logger.info(f"Total unique suffixes: {len(suffix_pages)}")
-        logger.info(f"Suffix pages mapping: {suffix_pages}")
+        logger.info("Suffix pages mapping:")
+        for suffix, pages in suffix_pages.items():
+            logger.info(f"Suffix '{suffix}': {len(pages)} pages")
+            for page in pages:
+                logger.info(f"  - {page['title']} ({page['id']})")
         
     except Exception as e:
         logger.error(f"Error initializing pages: {str(e)}")
+        logger.error(f"Stack trace:", exc_info=True)
         raise
 
 @app.on_event("startup")
@@ -544,26 +563,32 @@ async def read_page(page_id: str):
 @app.get("/{suffix}")
 async def read_suffix_pages(suffix: str):
     try:
-        logger.info(f"Accessing suffix route: {suffix}")
+        logger.info(f"\n{'='*50}")
+        logger.info(f"Accessing suffix route: '{suffix}'")
+        logger.info(f"Current suffix_pages keys: {list(suffix_pages.keys())}")
+        
         # 检查是否有页面使用该 suffix
         if suffix not in suffix_pages:
-            logger.warning(f"Suffix not found: {suffix}")
+            logger.warning(f"Suffix '{suffix}' not found in suffix_pages")
             raise HTTPException(status_code=404, detail="Suffix not found")
             
         pages = suffix_pages[suffix]
+        logger.info(f"Found {len(pages)} pages for suffix '{suffix}'")
+        
         if len(pages) > 1:
-            logger.info(f"Multiple pages found for suffix {suffix}, returning list page")
+            logger.info(f"Multiple pages found for suffix '{suffix}', returning list page")
             return FileResponse("static/suffix_pages.html")
         elif len(pages) == 1:
-            logger.info(f"Single page found for suffix {suffix}, returning page")
+            logger.info(f"Single page found for suffix '{suffix}', returning page")
             return FileResponse("static/page.html")
         else:
-            logger.warning(f"No pages found for suffix {suffix}")
+            logger.warning(f"No pages found for suffix '{suffix}'")
             raise HTTPException(status_code=404, detail="No pages found for this suffix")
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error processing suffix route {suffix}: {str(e)}")
+        logger.error(f"Error processing suffix route '{suffix}': {str(e)}")
+        logger.error(f"Stack trace:", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/pages")

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tyke's Drive</title>
+    <title>Tyke 的云盘</title>
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <style>
@@ -123,7 +123,7 @@
 </head>
 <body class="bg-gray-50 min-h-screen">
     <div class="container mx-auto px-4 py-8 max-w-7xl">
-        <h1 class="text-4xl font-bold mb-8 text-center text-gray-800">Tyke's Drive</h1>
+        <h1 class="text-4xl font-bold mb-8 text-center text-gray-800">Tyke 的云盘</h1>
 
         <!-- Tabs -->
         <div class="bg-white rounded-xl shadow-sm overflow-hidden">
@@ -133,7 +133,7 @@
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                         </svg>
-                        Images
+                        图片
                     </span>
                 </button>
                 <button onclick="switchTab('files')" id="filesTab" class="tab-button">
@@ -141,7 +141,7 @@
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                         </svg>
-                        Files
+                        文件
                     </span>
                 </button>
                 <button onclick="switchTab('pages')" id="pagesTab" class="tab-button">
@@ -149,7 +149,7 @@
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path>
                         </svg>
-                        Pages
+                        页面
                     </span>
                 </button>
                 <a href="/static/pages.html" class="tab-button">
@@ -157,7 +157,7 @@
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
                         </svg>
-                        Page List
+                        页面列表
                     </span>
                 </a>
             </div>
@@ -165,12 +165,12 @@
             <!-- Content Section -->
             <div id="imagesSection" class="space-y-4 p-6">
                 <div class="flex justify-between items-center">
-                    <h3 class="text-lg font-medium text-gray-800">Image Gallery</h3>
+                    <h3 class="text-lg font-medium text-gray-800">图片库</h3>
                     <button id="refreshImages" class="action-button bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                         </svg>
-                        Refresh
+                        刷新
                     </button>
                 </div>
                 <div id="imageGrid" class="image-grid">
@@ -180,12 +180,12 @@
 
             <div id="filesSection" class="space-y-4 p-6 hidden">
                 <div class="flex justify-between items-center">
-                    <h3 class="text-lg font-medium text-gray-800">File Library</h3>
+                    <h3 class="text-lg font-medium text-gray-800">文件库</h3>
                     <button id="refreshFiles" class="action-button bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                         </svg>
-                        Refresh
+                        刷新
                     </button>
                 </div>
                 <div id="fileGrid" class="image-grid">
@@ -195,12 +195,12 @@
 
             <div id="pagesSection" class="space-y-4 p-6 hidden">
                 <div class="flex justify-between items-center">
-                    <h3 class="text-lg font-medium text-gray-800">Page Library</h3>
+                    <h3 class="text-lg font-medium text-gray-800">页面库</h3>
                     <button id="refreshPages" class="action-button bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                         </svg>
-                        Refresh
+                        刷新
                     </button>
                 </div>
                 <div id="pageGrid" class="image-grid">
