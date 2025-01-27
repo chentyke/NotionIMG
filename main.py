@@ -582,7 +582,7 @@ async def read_suffix_pages(suffix: str):
         logger.info(f"\n{'='*50}")
         logger.info(f"Accessing suffix route: '{suffix}'")
         
-        # 先通过 API 获取页面数据
+        # 直接调用 API 函数获取页面数据
         response = await get_pages(suffix=suffix)
         pages = response["pages"]
         
@@ -599,7 +599,7 @@ async def read_suffix_pages(suffix: str):
             # 如果只有一个页面，重定向到带查询参数的页面
             page_id = pages[0]['id']
             logger.info(f"Redirecting to single page: {page_id}")
-            return RedirectResponse(f"/static/page.html?id={page_id}")
+            return RedirectResponse(f"/static/page.html?id={page_id}", status_code=302)
         else:
             # 如果有多个页面，返回列表页面
             logger.info("Returning suffix_pages.html for multiple pages")
