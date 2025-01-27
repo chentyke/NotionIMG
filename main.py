@@ -526,15 +526,35 @@ async def get_page(page_id: str):
             suffix_obj = properties.get('suffix', {})
             logger.info(f"Suffix object: {suffix_obj}")  # 添加调试日志
             
+            # 处理不同类型的 suffix 属性
             if suffix_obj:
-                if suffix_obj.get('type') == 'rich_text' and suffix_obj.get('rich_text'):
-                    suffix = suffix_obj['rich_text'][0].get('plain_text', '')
-                elif suffix_obj.get('type') == 'text' and suffix_obj.get('text'):
-                    suffix = suffix_obj['text'].get('content', '')
-                elif isinstance(suffix_obj, list) and suffix_obj:
-                    suffix = suffix_obj[0].get('plain_text', '')
-            
+                prop_type = suffix_obj.get('type', '')
+                logger.info(f"Suffix property type: {prop_type}")  # 添加属性类型日志
+                
+                if prop_type == 'rich_text':
+                    rich_text = suffix_obj.get('rich_text', [])
+                    if rich_text and len(rich_text) > 0:
+                        suffix = rich_text[0].get('plain_text', '')
+                elif prop_type == 'text':
+                    text = suffix_obj.get('text', '')
+                    if isinstance(text, str):
+                        suffix = text
+                    elif isinstance(text, dict):
+                        suffix = text.get('content', '')
+                else:
+                    logger.warning(f"Unexpected suffix property type: {prop_type}")
+
             logger.info(f"Extracted suffix: {suffix}")  # 添加调试日志
+
+            # 如果提取失败，尝试其他可能的位置
+            if not suffix and isinstance(suffix_obj, dict):
+                # 尝试直接获取内容
+                if 'content' in suffix_obj:
+                    suffix = suffix_obj['content']
+                elif 'plain_text' in suffix_obj:
+                    suffix = suffix_obj['plain_text']
+
+            logger.info(f"Final suffix value: {suffix}")  # 添加最终值日志
             
             # 获取其他属性
             last_edited_time = page_data.get('last_edited_time', '')
