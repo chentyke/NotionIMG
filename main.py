@@ -1028,6 +1028,34 @@ async def health_check():
             }
         )
 
+@app.get("/api/notion/page/{page_id}")
+async def get_raw_notion_page(page_id: str):
+    """
+    获取Notion API返回的原始页面数据
+    
+    参数:
+        page_id: Notion页面ID
+        
+    返回:
+        Notion API的原始响应数据
+    """
+    try:
+        # 直接使用notion-client获取页面数据
+        page_data = notion.pages.retrieve(page_id=page_id)
+        
+        # 获取页面的blocks
+        blocks_response = notion.blocks.children.list(block_id=page_id)
+        
+        # 返回完整的原始数据
+        return {
+            "page": page_data,
+            "blocks": blocks_response
+        }
+    except Exception as e:
+        logger.error(f"Error getting raw page data for {page_id}: {str(e)}")
+        logger.error("Stack trace:", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host=settings.host, port=settings.port) 
