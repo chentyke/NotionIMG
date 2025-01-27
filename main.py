@@ -43,6 +43,16 @@ DATABASE_ID = os.environ.get("NOTION_DATABASE_ID")
 pages_data = {}
 suffix_pages = {}
 
+class Page(BaseModel):
+    id: str
+    title: str
+    last_edited_time: str
+    created_time: Optional[str] = None
+    parent_id: Optional[str] = None
+    edit_date: Optional[str] = None
+    show_back: Optional[bool] = True
+    suffix: Optional[str] = None
+
 async def init_pages():
     """初始化时加载所有页面的数据"""
     try:
@@ -93,22 +103,25 @@ async def init_pages():
                 
                 logger.info(f"Final extracted suffix: {suffix}")
                 
+                # 创建页面对象
+                page_obj = Page(
+                    id=page_id,
+                    title=title,
+                    created_time=page.get('created_time', ''),
+                    last_edited_time=page.get('last_edited_time', ''),
+                    parent_id=page.get('parent', {}).get('database_id'),
+                    edit_date=page.get('last_edited_time', ''),
+                    show_back=True,
+                    suffix=suffix
+                )
+                
+                # 更新数据存储
+                pages_data[page_id] = page_obj.dict()
+                logger.info(f"Updated pages_data with: {page_obj.dict()}")
+                
+                # 更新 suffix 索引
                 if suffix:
                     logger.info(f"Adding page {page_id} with suffix: {suffix}")
-                    
-                    # 创建页面对象
-                    page_obj = Page(
-                        id=page_id,
-                        title=title,
-                        last_edited_time=page.get('last_edited_time', ''),
-                        suffix=suffix
-                    )
-                    
-                    # 更新数据存储
-                    pages_data[page_id] = page_obj.dict()
-                    logger.info(f"Updated pages_data with: {page_obj.dict()}")
-                    
-                    # 更新 suffix 索引
                     if suffix not in suffix_pages:
                         suffix_pages[suffix] = []
                     if page_obj.dict() not in suffix_pages[suffix]:
@@ -520,13 +533,6 @@ async def get_file(file_id: str):
         logger.error(f"Error retrieving file {file_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-# 添加页面模型
-class Page(BaseModel):
-    id: str
-    title: str
-    last_edited_time: str
-    suffix: Optional[str] = None
-
 @app.get("/")
 async def read_root():
     return FileResponse("static/pages.html")
@@ -567,8 +573,8 @@ async def get_pages(suffix: Optional[str] = None):
             logger.info(f"Getting pages with suffix: {suffix}")
             pages = suffix_pages.get(suffix, [])
             logger.info(f"Found {len(pages)} pages with suffix {suffix}")
-            return pages
-        return list(pages_data.values())
+            return {"pages": pages}
+        return {"pages": list(pages_data.values())}
     except Exception as e:
         logger.error(f"Error getting pages: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -621,6 +627,10 @@ async def get_page(page_id: str):
             id=page_id,
             title=title,
             last_edited_time=page_data.get('last_edited_time', ''),
+            created_time=page_data.get('created_time', ''),
+            parent_id=page_data.get('parent', {}).get('database_id'),
+            edit_date=page_data.get('last_edited_time', ''),
+            show_back=True,
             suffix=suffix
         )
         pages_data[page_id] = page.dict()
