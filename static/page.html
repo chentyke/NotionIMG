@@ -27,10 +27,17 @@
             border-radius: 0.5rem;
             margin: 1.5rem 0;
             cursor: pointer;
-            transition: transform 0.2s;
+            transition: all 0.3s ease-out;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        .prose img.loaded {
+            opacity: 1;
+            transform: translateY(0);
         }
         .prose img:hover {
-            transform: scale(1.02);
+            transform: scale(1.02) translateY(0);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
         .prose pre {
             background-color: #f3f4f6;
@@ -102,6 +109,7 @@
             border-bottom: 1px solid #E5E7EB;
             margin-bottom: 2rem;
             padding-bottom: 1.5rem;
+            animation: slideDown 0.5s ease-out;
         }
         .page-title {
             font-size: 2.25rem;
@@ -159,9 +167,13 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.9);
+            background-color: rgba(0, 0, 0, 0);
             z-index: 1000;
             cursor: zoom-out;
+            transition: background-color 0.3s ease-out;
+        }
+        .image-modal.visible {
+            background-color: rgba(0, 0, 0, 0.9);
         }
         .image-modal img {
             max-width: 90%;
@@ -170,9 +182,15 @@
             position: absolute;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%);
+            transform: translate(-50%, -50%) scale(0.95);
             border-radius: 0.5rem;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            transition: all 0.3s ease-out;
+        }
+        .image-modal.visible img {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
         }
         .close-button {
             position: absolute;
@@ -349,6 +367,38 @@
         .toggle-block .toggle-block {
             margin-left: 0;
         }
+        /* Add smooth transitions */
+        .prose * {
+            transition: all 0.2s ease-out;
+        }
+        #pageContent {
+            animation: fadeIn 0.5s ease-out;
+        }
+        .back-button {
+            transition: transform 0.2s ease-out;
+        }
+        .back-button:hover {
+            transform: translateX(-4px);
+        }
+        /* Add keyframe animations */
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -424,13 +474,16 @@
             try {
                 const compressedUrl = await compressImage(img.dataset.src);
                 img.src = compressedUrl;
-                img.classList.remove('opacity-0');
+                img.onload = () => {
+                    img.classList.remove('opacity-0');
+                    img.classList.add('loaded');
+                };
             } catch (error) {
                 console.error('Error loading image:', error);
                 img.src = img.dataset.src;
                 img.onerror = () => {
-                    img.onerror = null; // 防止无限循环
-                    img.src = ''; // 清除失败的src
+                    img.onerror = null;
+                    img.src = '';
                     img.alt = 'Image failed to load';
                     img.classList.add('border', 'border-red-300', 'bg-red-50', 'p-4', 'text-red-500');
                 };
@@ -480,11 +533,17 @@
             const modalImg = document.getElementById('modalImage');
             modal.style.display = "block";
             modalImg.src = originalUrl;
+            // Force reflow
+            modal.offsetHeight;
+            modal.classList.add('visible');
         }
 
         function closeImageModal() {
             const modal = document.getElementById('imageModal');
-            modal.style.display = "none";
+            modal.classList.remove('visible');
+            setTimeout(() => {
+                modal.style.display = "none";
+            }, 300);
         }
 
         // Get page ID from URL
