@@ -575,24 +575,29 @@ async def read_page(page_id: str):
 
 @app.get("/{suffix}")
 async def read_suffix_pages(suffix: str):
+    """通过 suffix 访问页面"""
     try:
         logger.info(f"\n{'='*50}")
         logger.info(f"Accessing suffix route: '{suffix}'")
-        logger.info(f"Current suffix_pages keys: {list(suffix_pages.keys())}")
         
-        # 检查suffix是否存在且有对应的页面
-        if suffix not in suffix_pages or not suffix_pages[suffix]:
-            logger.warning(f"No valid pages found for suffix '{suffix}'")
+        # 先通过 API 获取页面数据
+        response = await get_pages(suffix=suffix)
+        pages = response["pages"]
+        
+        if not pages:
+            logger.warning(f"No pages found for suffix '{suffix}'")
             raise HTTPException(status_code=404, detail="No pages found for this suffix")
-            
-        pages = suffix_pages[suffix]
-        logger.info(f"Found {len(pages)} pages for suffix '{suffix}'")
         
+        logger.info(f"Found {len(pages)} pages for suffix '{suffix}'")
+        for page in pages:
+            logger.info(f"  - {page['title']} ({page['id']})")
+        
+        # 根据页面数量返回不同的视图
         if len(pages) > 1:
-            logger.info(f"Multiple pages found for suffix '{suffix}', returning list page")
+            logger.info("Returning suffix_pages.html for multiple pages")
             return FileResponse("static/suffix_pages.html")
         else:
-            logger.info(f"Single page found for suffix '{suffix}', returning page")
+            logger.info("Returning page.html for single page")
             return FileResponse("static/page.html")
             
     except HTTPException:
@@ -600,20 +605,31 @@ async def read_suffix_pages(suffix: str):
     except Exception as e:
         logger.error(f"Error processing suffix route '{suffix}': {str(e)}")
         logger.error("Stack trace:", exc_info=True)
-        logger.error(f"Current suffix_pages state: {suffix_pages}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.get("/api/pages")
 async def get_pages(suffix: Optional[str] = None):
+    """获取页面列表，支持通过 suffix 筛选"""
     try:
+        # 确保数据是最新的
+        await init_pages()
+        
         if suffix:
-            logger.info(f"Getting pages with suffix: {suffix}")
+            logger.info(f"\nGetting pages with suffix: '{suffix}'")
+            logger.info(f"Available suffixes: {list(suffix_pages.keys())}")
             pages = suffix_pages.get(suffix, [])
-            logger.info(f"Found {len(pages)} pages with suffix {suffix}")
+            logger.info(f"Found {len(pages)} pages with suffix '{suffix}'")
+            for page in pages:
+                logger.info(f"  - {page['title']} ({page['id']})")
             return {"pages": pages}
-        return {"pages": list(pages_data.values())}
+            
+        # 如果没有指定 suffix，返回所有页面
+        all_pages = list(pages_data.values())
+        logger.info(f"\nReturning all pages: {len(all_pages)} pages")
+        return {"pages": all_pages}
     except Exception as e:
         logger.error(f"Error getting pages: {str(e)}")
+        logger.error("Stack trace:", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/page/{page_id}")
