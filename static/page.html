@@ -130,6 +130,7 @@
             color: #6B7280;
             font-size: 0.875rem;
             font-style: italic;
+            margin-bottom: 0.5rem;
         }
         .prose h2 {
             font-size: 1.875rem;
@@ -513,6 +514,30 @@
             position: absolute;
             left: 50%;
             transform: translateX(-50%);
+        }
+
+        /* Mobile-specific styles */
+        @media (max-width: 640px) {
+            .page-header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.5rem;
+            }
+            
+            .page-title {
+                font-size: 1.75rem;
+                line-height: 1.2;
+                margin-bottom: 0.25rem;
+            }
+            
+            .edit-date {
+                margin-bottom: 1rem;
+            }
+            
+            .copy-link-button {
+                align-self: flex-start;
+                margin-top: 0;
+            }
         }
     </style>
 </head>
