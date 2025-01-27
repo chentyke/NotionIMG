@@ -373,6 +373,18 @@ def process_block_content(block: dict) -> dict:
                 cell_text = process_rich_text(cell)
                 cells.append(cell_text)
             result["cells"] = cells
+        elif block_type == "file":
+            # 处理文件块
+            logger.info(f"Processing file block: {block_content}")
+            result["file"] = {
+                "type": block_content.get("type", "file"),
+                "name": block_content.get("name", "Untitled"),
+                "file": {
+                    "url": block_content.get("file", {}).get("url", "")
+                },
+                "caption": block_content.get("caption", [])
+            }
+            logger.info(f"Processed file block result: {result}")
 
         return result
     except Exception as e:
