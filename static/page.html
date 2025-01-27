@@ -169,8 +169,8 @@
             transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
         }
         .loading-spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #3b82f6;
+            border: 3px solid var(--border-color);
+            border-top: 3px solid var(--link-color);
             border-radius: 50%;
             width: 24px;
             height: 24px;
@@ -470,12 +470,12 @@
             left: 0;
             width: 100%;
             height: 3px;
-            background: #f3f4f6;
+            background: var(--border-color);
             z-index: 1000;
         }
         .loading-progress-bar {
             height: 100%;
-            background: #3b82f6;
+            background: var(--link-color);
             width: 0;
             transition: width 0.3s ease;
         }
@@ -761,6 +761,84 @@
             
             .prose img {
                 margin: 0.75rem 0;
+            }
+        }
+
+        .container {
+            background-color: var(--bg-primary);
+        }
+
+        .bg-gray-50 {
+            background-color: var(--bg-primary) !important;
+        }
+
+        .bg-white {
+            background-color: var(--bg-secondary) !important;
+        }
+
+        .page-title {
+            color: var(--text-primary) !important;
+        }
+
+        .loading-spinner {
+            border: 3px solid var(--border-color);
+            border-top: 3px solid var(--link-color);
+        }
+
+        .loading-progress {
+            background: var(--border-color);
+        }
+
+        .loading-progress-bar {
+            background: var(--link-color);
+        }
+
+        .copy-link-button {
+            background-color: var(--bg-secondary);
+            border-color: var(--border-color);
+            color: var(--text-tertiary);
+        }
+
+        .copy-link-button:hover {
+            background-color: var(--hover-bg);
+            border-color: var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .copy-link-button.copied {
+            background-color: var(--success-color);
+            border-color: var(--success-border);
+            color: var(--bg-primary);
+        }
+
+        .back-button {
+            color: var(--link-color) !important;
+        }
+
+        .back-button:hover {
+            color: var(--link-hover-color) !important;
+        }
+
+        .border-gray-200 {
+            border-color: var(--border-color) !important;
+        }
+
+        /* Dark mode specific overrides */
+        @media (prefers-color-scheme: dark) {
+            .text-gray-500 {
+                color: var(--text-tertiary) !important;
+            }
+
+            .text-blue-500 {
+                color: var(--link-color) !important;
+            }
+
+            .text-blue-600 {
+                color: var(--link-color) !important;
+            }
+
+            .hover\:text-blue-600:hover {
+                color: var(--link-hover-color) !important;
             }
         }
     </style>
