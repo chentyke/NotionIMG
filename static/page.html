@@ -110,12 +110,39 @@
             margin-bottom: 2rem;
             padding-bottom: 1.5rem;
             animation: slideDown 0.5s ease-out;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .page-title-section {
+            flex: 1;
         }
         .page-title {
             font-size: 2.25rem;
             font-weight: 700;
             color: #111827;
             margin-bottom: 0.5rem;
+        }
+        .copy-link-button {
+            background-color: #F3F4F6;
+            color: #4B5563;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s ease-out;
+            cursor: pointer;
+            margin-left: 1rem;
+            white-space: nowrap;
+        }
+        .copy-link-button:hover {
+            background-color: #E5E7EB;
+            transform: translateY(-1px);
+        }
+        .copy-link-button.copied {
+            background-color: #10B981;
+            color: white;
         }
         .edit-date {
             color: #6B7280;
@@ -454,8 +481,16 @@
         <div class="bg-white rounded-xl shadow-sm overflow-hidden">
             <div class="p-6">
                 <div class="page-header">
-                    <h1 id="pageTitle" class="page-title"></h1>
-                    <div id="editDate" class="edit-date"></div>
+                    <div class="page-title-section">
+                        <h1 id="pageTitle" class="page-title"></h1>
+                        <div id="editDate" class="edit-date"></div>
+                    </div>
+                    <button id="copyLinkButton" class="copy-link-button" onclick="copyPageLink()">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                        </svg>
+                        复制链接
+                    </button>
                 </div>
                 <div id="pageContent" class="prose">
                     <div class="flex justify-center py-8">
@@ -1082,6 +1117,37 @@
                     button.textContent = 'Copy';
                 }, 2000);
             });
+        }
+
+        // Add copy link function
+        async function copyPageLink() {
+            try {
+                const button = document.getElementById('copyLinkButton');
+                await navigator.clipboard.writeText(window.location.href);
+                
+                // Show success state
+                button.classList.add('copied');
+                button.innerHTML = `
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    已复制
+                `;
+                
+                // Reset after 2 seconds
+                setTimeout(() => {
+                    button.classList.remove('copied');
+                    button.innerHTML = `
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                        </svg>
+                        复制链接
+                    `;
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy:', err);
+                alert('复制失败，请手动复制链接');
+            }
         }
     </script>
 </body>
