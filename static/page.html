@@ -561,7 +561,7 @@
                             alt="${block.caption || 'Page image'}" 
                             onclick="openImageModal('${block.image_url}')"
                             title="Click to view full size">
-                        ${block.caption ? `<figcaption class="text-sm text-gray-500 mt-2">${block.caption}</figcaption>` : ''}
+                        ${block.caption ? `<figcaption class="text-sm text-gray-500 mt-1">${block.caption}</figcaption>` : ''}
                     </figure>`;
                 case 'divider':
                     return `<hr class="my-6">`;
