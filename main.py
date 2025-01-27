@@ -7,11 +7,36 @@ import os
 import logging
 from typing import List, Dict, Optional
 import httpx
-from pydantic import BaseModel
+from pydantic import BaseModel, BaseSettings, Field
 
-# Configure logging
+class Settings(BaseSettings):
+    """应用配置模型"""
+    # Notion API配置
+    notion_token: str = Field(..., env='NOTION_TOKEN', description="Notion API Token")
+    notion_database_id: str = Field(..., env='NOTION_DATABASE_ID', description="Notion Database ID")
+    notion_api_version: str = Field("2022-06-28", env='NOTION_API_VERSION', description="Notion API Version")
+    
+    # 服务器配置
+    host: str = Field("0.0.0.0", env='HOST', description="Server host")
+    port: int = Field(8000, env='PORT', description="Server port")
+    
+    # 日志配置
+    log_level: str = Field("INFO", env='LOG_LEVEL', description="Logging level")
+    
+    class Config:
+        env_file = ".env"
+        case_sensitive = False
+
+# 创建配置实例
+try:
+    settings = Settings()
+except Exception as e:
+    print(f"Error loading configuration: {str(e)}")
+    raise SystemExit(1)
+
+# 配置日志级别
 logging.basicConfig(
-    level=logging.INFO,
+    level=getattr(logging, settings.log_level.upper()),
     format='%(asctime)s [%(levelname)s] %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S'
 )
@@ -36,8 +61,13 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Initialize Notion client
-notion = Client(auth=os.environ.get("NOTION_TOKEN"))
-DATABASE_ID = os.environ.get("NOTION_DATABASE_ID")
+try:
+    notion = Client(auth=settings.notion_token)
+except Exception as e:
+    logger.error(f"Failed to initialize Notion client: {str(e)}")
+    raise SystemExit(1)
+
+DATABASE_ID = settings.notion_database_id
 
 # 存储页面数据的字典
 pages_data = {}
@@ -169,7 +199,30 @@ async def init_pages():
 @app.on_event("startup")
 async def startup_event():
     """应用启动时的初始化函数"""
-    await init_pages()
+    logger.info("Starting application...")
+    
+    # 验证数据库访问
+    if not await verify_database_access():
+        logger.error("Database access verification failed")
+        raise SystemExit(1)
+    
+    # 初始化页面数据
+    try:
+        await init_pages()
+    except Exception as e:
+        logger.error(f"Failed to initialize pages: {str(e)}")
+        raise SystemExit(1)
+    
+    logger.info(f"Application started successfully on {settings.host}:{settings.port}")
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """应用关闭时的清理函数"""
+    logger.info("Shutting down application...")
+    # 清理资源
+    pages_data.clear()
+    suffix_pages.clear()
+    logger.info("Application shutdown complete")
 
 @app.get("/")
 async def root():
@@ -721,8 +774,8 @@ async def get_blocks(page_id: str):
     """
     try:
         headers = {
-            "Authorization": f"Bearer {os.getenv('NOTION_TOKEN')}",
-            "Notion-Version": "2022-06-28"
+            "Authorization": f"Bearer {settings.notion_token}",
+            "Notion-Version": settings.notion_api_version
         }
         async with httpx.AsyncClient() as client:
             response = await client.get(
@@ -744,6 +797,17 @@ async def get_blocks(page_id: str):
         logger.error("Stack trace:", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
+async def verify_database_access():
+    """验证数据库访问权限"""
+    try:
+        logger.info("Verifying database access...")
+        response = notion.databases.retrieve(database_id=DATABASE_ID)
+        logger.info(f"Successfully connected to database: {response.get('title', [{}])[0].get('plain_text', 'Untitled')}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to access database: {str(e)}")
+        return False
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000) 
+    uvicorn.run(app, host=settings.host, port=settings.port) 
