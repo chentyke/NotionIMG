@@ -693,6 +693,45 @@ async def get_blocks(page_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/notion/page/{page_id}")
+async def get_notion_page(page_id: str):
+    """直接返回 Notion API 的原始页面数据"""
+    try:
+        page_data = notion.pages.retrieve(page_id=page_id)
+        return page_data
+    except Exception as e:
+        logger.error(f"Error retrieving page {page_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/notion/database/query")
+async def query_notion_database(
+    filter: Optional[dict] = None,
+    sorts: Optional[List[dict]] = None,
+    start_cursor: Optional[str] = None,
+    page_size: Optional[int] = None
+):
+    """直接返回 Notion API 的原始数据库查询结果"""
+    try:
+        query = {}
+        if filter:
+            query["filter"] = filter
+        if sorts:
+            query["sorts"] = sorts
+        if start_cursor:
+            query["start_cursor"] = start_cursor
+        if page_size:
+            query["page_size"] = page_size
+
+        logger.info(f"Querying database with params: {query}")
+        response = notion.databases.query(
+            database_id=DATABASE_ID,
+            **query
+        )
+        return response
+    except Exception as e:
+        logger.error(f"Error querying database: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000) 
