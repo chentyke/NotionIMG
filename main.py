@@ -53,6 +53,12 @@ class Page(BaseModel):
     show_back: Optional[bool] = True
     suffix: Optional[str] = None
 
+class APIResponse(BaseModel):
+    """标准API响应模型"""
+    success: bool
+    message: str = ""
+    data: Optional[dict] = None
+
 async def init_pages():
     """初始化时加载所有页面的数据"""
     try:
@@ -590,27 +596,51 @@ async def read_suffix_pages(suffix: str):
         logger.error(f"Current suffix_pages state: {suffix_pages}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-@app.get("/api/pages")
+@app.get("/api/pages", response_model=APIResponse)
 async def get_pages(suffix: Optional[str] = None):
+    """
+    获取页面列表
+    
+    参数:
+        suffix: 可选的后缀过滤器
+        
+    返回:
+        - 如果指定了suffix，返回具有该后缀的页面列表
+        - 否则返回所有页面列表
+    """
     try:
         if suffix:
             logger.info(f"Getting pages with suffix: {suffix}")
             pages = suffix_pages.get(suffix, [])
             logger.info(f"Found {len(pages)} pages with suffix {suffix}")
-            return {"pages": pages}
-        return {"pages": list(pages_data.values())}
+            return APIResponse(
+                success=True,
+                message=f"Found {len(pages)} pages with suffix '{suffix}'",
+                data={"pages": pages}
+            )
+        return APIResponse(
+            success=True,
+            message=f"Retrieved all pages",
+            data={"pages": list(pages_data.values())}
+        )
     except Exception as e:
         logger.error(f"Error getting pages: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Stack trace:", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to retrieve pages")
 
-@app.get("/api/page/{page_id}")
+@app.get("/api/page/{page_id}", response_model=APIResponse)
 async def get_page(page_id: str):
-    try:
-        # 使用 notion_client 获取页面数据
-        page_data = notion.pages.retrieve(page_id=page_id)
-        logger.info(f"\nProcessing API request for page {page_id}")
+    """
+    获取单个页面的详细信息
+    
+    参数:
+        page_id: Notion页面ID
         
-        # 提取页面属性
+    返回:
+        包含页面详细信息的响应
+    """
+    try:
+        page_data = notion.pages.retrieve(page_id=page_id)
         properties = page_data.get('properties', {})
         
         # 获取标题
@@ -668,18 +698,27 @@ async def get_page(page_id: str):
             suffix_pages[suffix].append(page.dict())
             logger.info(f"Updated page {page_id} with suffix: {suffix}")
         
-        return page_data
+        return APIResponse(
+            success=True,
+            message="Page retrieved successfully",
+            data={"page": page_data}
+        )
     except Exception as e:
         logger.error(f"Error getting page {page_id}: {str(e)}")
         logger.error("Stack trace:", exc_info=True)
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to retrieve page data"
-        )
+        raise HTTPException(status_code=500, detail="Failed to retrieve page data")
 
-# 改进blocks API的错误处理
-@app.get("/api/blocks/{page_id}")
+@app.get("/api/blocks/{page_id}", response_model=APIResponse)
 async def get_blocks(page_id: str):
+    """
+    获取页面的块内容
+    
+    参数:
+        page_id: Notion页面ID
+        
+    返回:
+        包含页面块内容的响应
+    """
     try:
         headers = {
             "Authorization": f"Bearer {os.getenv('NOTION_TOKEN')}",
@@ -690,8 +729,13 @@ async def get_blocks(page_id: str):
                 f"https://api.notion.com/v1/blocks/{page_id}/children",
                 headers=headers
             )
-            response.raise_for_status()  # 确保请求成功
-            return response.json()
+            response.raise_for_status()
+            blocks_data = response.json()
+            return APIResponse(
+                success=True,
+                message="Blocks retrieved successfully",
+                data={"blocks": blocks_data}
+            )
     except httpx.HTTPError as e:
         logger.error(f"HTTP error occurred: {str(e)}")
         raise HTTPException(status_code=502, detail="Failed to fetch page blocks")
