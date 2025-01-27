@@ -5,6 +5,62 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>加载中...</title>
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    
+    <!-- 预加载关键资源 -->
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" as="style">
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" as="style">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    
+    <!-- 内联关键 CSS -->
+    <style>
+        /* 最小化初始渲染所需的关键样式 */
+        .loading-spinner {
+            border: 3px solid #e5e7eb;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            margin: 2rem auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .container { opacity: 0; transition: opacity 0.3s; }
+        .container.loaded { opacity: 1; }
+        #loadingProgress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: #e5e7eb;
+            z-index: 1000;
+        }
+        .loading-progress-bar {
+            height: 100%;
+            background: #3b82f6;
+            width: 0;
+            transition: width 0.3s ease;
+        }
+    </style>
+    
+    <!-- 异步加载非关键 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" 
+          media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+          media="print" onload="this.media='all'">
+    
+    <!-- 添加资源提示 -->
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+    
+    <noscript>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    </noscript>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -1750,6 +1806,260 @@
                     }
                 }, 2000);
             });
+        }
+
+        // 优化初始化逻辑
+        document.addEventListener('DOMContentLoaded', () => {
+            const container = document.querySelector('.container');
+            if (container) {
+                requestAnimationFrame(() => {
+                    container.classList.add('loaded');
+                });
+            }
+        });
+
+        // 使用 requestIdleCallback 延迟加载非关键功能
+        const initNonCriticalFeatures = () => {
+            if ('requestIdleCallback' in window) {
+                requestIdleCallback(() => {
+                    // 初始化图片查看器
+                    initImageViewer();
+                    // 初始化代码复制功能
+                    initCodeCopy();
+                    // 初始化其他非关键功能
+                    initMiscFeatures();
+                });
+            } else {
+                setTimeout(() => {
+                    initImageViewer();
+                    initCodeCopy();
+                    initMiscFeatures();
+                }, 1000);
+            }
+        };
+
+        // 优化图片加载策略
+        const imageLoadingStrategy = {
+            lowQuality: 20,
+            highQuality: 80,
+            timeout: 2000,
+            retryDelay: 1000,
+            maxRetries: 3
+        };
+
+        async function loadImage(img, retryCount = 0) {
+            try {
+                const placeholder = createPlaceholder(img);
+                
+                // 使用 Promise.race 实现超时控制
+                const thumbnailPromise = Promise.race([
+                    compressImage(img.dataset.src, imageLoadingStrategy.lowQuality),
+                    new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('Timeout')), imageLoadingStrategy.timeout)
+                    )
+                ]);
+
+                try {
+                    const thumbnailUrl = await thumbnailPromise;
+                    await loadThumbnail(img, thumbnailUrl);
+                } catch (error) {
+                    console.warn('Thumbnail load failed, proceeding with full quality:', error);
+                }
+
+                const fullQualityUrl = await compressImage(img.dataset.src, imageLoadingStrategy.highQuality);
+                await loadFullQuality(img, fullQualityUrl, placeholder);
+
+            } catch (error) {
+                console.error('Error loading image:', error);
+                if (retryCount < imageLoadingStrategy.maxRetries) {
+                    setTimeout(() => {
+                        loadImage(img, retryCount + 1);
+                    }, imageLoadingStrategy.retryDelay);
+                } else {
+                    handleImageError(img);
+                }
+            }
+        }
+
+        function createPlaceholder(img) {
+            const placeholder = document.createElement('div');
+            placeholder.className = 'image-placeholder animate-pulse bg-gray-200 dark:bg-gray-700';
+            placeholder.style.paddingBottom = '56.25%';
+            img.parentNode.insertBefore(placeholder, img);
+            return placeholder;
+        }
+
+        async function loadThumbnail(img, thumbnailUrl) {
+            img.src = thumbnailUrl;
+            img.style.filter = 'blur(10px)';
+            img.style.transform = 'scale(1.1)';
+            await new Promise(resolve => {
+                img.onload = resolve;
+            });
+        }
+
+        async function loadFullQuality(img, fullQualityUrl, placeholder) {
+            return new Promise((resolve, reject) => {
+                const fullImg = new Image();
+                fullImg.src = fullQualityUrl;
+                
+                fullImg.onload = () => {
+                    img.src = fullQualityUrl;
+                    img.style.filter = '';
+                    img.style.transform = '';
+                    img.classList.add('loaded');
+                    if (placeholder) {
+                        placeholder.remove();
+                    }
+                    resolve();
+                };
+                
+                fullImg.onerror = reject;
+            });
+        }
+
+        function handleImageError(img) {
+            img.onerror = null;
+            img.src = '';
+            img.alt = 'Image failed to load';
+            img.classList.add('border', 'border-red-300', 'bg-red-50', 'p-4', 'text-red-500');
+        }
+
+        // 优化压缩函数
+        const compressImageCache = new Map();
+
+        async function compressImage(url, quality = 80) {
+            const cacheKey = `${url}-${quality}`;
+            if (compressImageCache.has(cacheKey)) {
+                return compressImageCache.get(cacheKey);
+            }
+
+            try {
+                const result = await new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.crossOrigin = "anonymous";
+                    
+                    const timeoutId = setTimeout(() => {
+                        reject(new Error('Image load timeout'));
+                    }, imageLoadingStrategy.timeout);
+
+                    img.onload = function() {
+                        clearTimeout(timeoutId);
+                        const { width, height } = calculateDimensions(img);
+                        const canvas = createOptimizedCanvas(width, height);
+                        const ctx = canvas.getContext('2d');
+                        
+                        optimizeContext(ctx);
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        resolve(canvas.toDataURL('image/jpeg', quality / 100));
+                    };
+
+                    img.onerror = () => {
+                        clearTimeout(timeoutId);
+                        reject(new Error('Image load failed'));
+                    };
+
+                    img.src = url;
+                });
+
+                compressImageCache.set(cacheKey, result);
+                return result;
+            } catch (error) {
+                console.error('Compression failed:', error);
+                throw error;
+            }
+        }
+
+        function calculateDimensions(img) {
+            const maxSize = window.innerWidth <= 640 ? 800 : 1200;
+            let { width, height } = img;
+
+            if (width > maxSize) {
+                height = (height * maxSize) / width;
+                width = maxSize;
+            }
+            if (height > maxSize) {
+                width = (width * maxSize) / height;
+                height = maxSize;
+            }
+
+            return { width: Math.floor(width), height: Math.floor(height) };
+        }
+
+        function createOptimizedCanvas(width, height) {
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            return canvas;
+        }
+
+        function optimizeContext(ctx) {
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.mozImageSmoothingEnabled = true;
+            ctx.webkitImageSmoothingEnabled = true;
+        }
+
+        // 优化页面加载
+        async function loadPage(pageId = null) {
+            const targetPageId = pageId || urlParams.get('id');
+            
+            if (!targetPageId) {
+                showError('No page ID provided');
+                return;
+            }
+
+            try {
+                updateLoadingProgress(10);
+                
+                // 并行加载数据
+                const [pageData, blocksData] = await Promise.all([
+                    fetchWithTimeout(`/page/${targetPageId}/meta`),
+                    fetchWithTimeout(`/page/${targetPageId}/blocks`)
+                ]);
+
+                updateLoadingProgress(30);
+                
+                // 更新页面元数据
+                updatePageMetadata(pageData);
+                
+                // 渲染内容
+                await renderContent(blocksData);
+                
+                // 初始化非关键功能
+                initNonCriticalFeatures();
+                
+            } catch (error) {
+                console.error('Error loading page:', error);
+                showError(error.message);
+            }
+        }
+
+        // 添加超时控制的 fetch
+        function fetchWithTimeout(url, timeout = 5000) {
+            return Promise.race([
+                fetch(url),
+                new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Request timeout')), timeout)
+                )
+            ]);
+        }
+
+        // 错误处理
+        function showError(message) {
+            const content = document.getElementById('pageContent');
+            if (content) {
+                content.innerHTML = `
+                    <div class="text-center text-red-500">
+                        <p>Error loading content</p>
+                        <p class="text-sm mt-2">${message}</p>
+                        <button onclick="location.reload()" 
+                                class="mt-4 px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200">
+                            Retry
+                        </button>
+                    </div>`;
+            }
         }
     </script>
 </body>
