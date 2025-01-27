@@ -756,17 +756,15 @@
                     tableHtml += '</table>';
                     return tableHtml;
                 case 'to_do':
-                    console.log('Todo block:', block); // 添加调试日志
-                    if (!block || !block.to_do) {
-                        console.error('Invalid todo block structure:', block);
-                        return '<div class="text-red-500">Error: Invalid todo item</div>';
-                    }
+                    console.log('Todo block:', block); // 调试日志
                     try {
-                        const todoText = block.to_do.rich_text ? 
-                            block.to_do.rich_text.map(text => text.plain_text).join('') :
-                            'Untitled todo item';
-                        const isChecked = block.to_do.checked || false;
-                        const color = block.to_do.color || 'default';
+                        // 处理两种可能的数据格式
+                        const todoText = block.to_do?.rich_text ? 
+                            block.to_do.rich_text.map(text => text.plain_text).join('') : 
+                            block.text || 'Untitled todo item';
+                            
+                        const isChecked = block.to_do?.checked || block.checked || false;
+                        const color = block.to_do?.color || block.color || 'default';
                         
                         return `
                             <div class="todo-item">
