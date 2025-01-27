@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import RedirectResponse, JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -7,51 +7,11 @@ import os
 import logging
 from typing import List, Dict, Optional
 import httpx
-from pydantic import BaseModel, BaseSettings, Field
-from fastapi.middleware.base import BaseHTTPMiddleware
-from datetime import datetime, timedelta
-import time
-import asyncio
-from collections import defaultdict
-from cachetools import TTLCache
-import psutil
-import platform
+from pydantic import BaseModel
 
-class Settings(BaseSettings):
-    """应用配置模型"""
-    # Notion API配置
-    notion_token: str = Field(..., env='NOTION_TOKEN', description="Notion API Token")
-    notion_database_id: str = Field(..., env='NOTION_DATABASE_ID', description="Notion Database ID")
-    notion_api_version: str = Field("2022-06-28", env='NOTION_API_VERSION', description="Notion API Version")
-    
-    # 服务器配置
-    host: str = Field("0.0.0.0", env='HOST', description="Server host")
-    port: int = Field(8000, env='PORT', description="Server port")
-    
-    # 日志配置
-    log_level: str = Field("INFO", env='LOG_LEVEL', description="Logging level")
-    
-    # 速率限制配置
-    rate_limit: int = Field(60, env='RATE_LIMIT', description="Requests per minute per IP")
-    
-    # 缓存配置
-    cache_ttl: int = Field(300, env='CACHE_TTL', description="Cache TTL in seconds")
-    cache_maxsize: int = Field(100, env='CACHE_MAXSIZE', description="Maximum cache size")
-    
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
-
-# 创建配置实例
-try:
-    settings = Settings()
-except Exception as e:
-    print(f"Error loading configuration: {str(e)}")
-    raise SystemExit(1)
-
-# 配置日志级别
+# Configure logging
 logging.basicConfig(
-    level=getattr(logging, settings.log_level.upper()),
+    level=logging.INFO,
     format='%(asctime)s [%(levelname)s] %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S'
 )
@@ -76,13 +36,8 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Initialize Notion client
-try:
-    notion = Client(auth=settings.notion_token)
-except Exception as e:
-    logger.error(f"Failed to initialize Notion client: {str(e)}")
-    raise SystemExit(1)
-
-DATABASE_ID = settings.notion_database_id
+notion = Client(auth=os.environ.get("NOTION_TOKEN"))
+DATABASE_ID = os.environ.get("NOTION_DATABASE_ID")
 
 # 存储页面数据的字典
 pages_data = {}
@@ -97,132 +52,6 @@ class Page(BaseModel):
     edit_date: Optional[str] = None
     show_back: Optional[bool] = True
     suffix: Optional[str] = None
-
-class APIResponse(BaseModel):
-    """标准API响应模型"""
-    success: bool
-    message: str = ""
-    data: Optional[dict] = None
-
-# 添加速率限制器类
-class RateLimiter:
-    def __init__(self, requests_per_minute: int = 60):
-        self.requests_per_minute = requests_per_minute
-        self.requests = defaultdict(list)
-    
-    def is_allowed(self, client_ip: str) -> bool:
-        now = datetime.now()
-        minute_ago = now - timedelta(minutes=1)
-        
-        # 清理旧的请求记录
-        self.requests[client_ip] = [req_time for req_time in self.requests[client_ip] 
-                                  if req_time > minute_ago]
-        
-        # 检查是否超过限制
-        if len(self.requests[client_ip]) >= self.requests_per_minute:
-            return False
-        
-        # 记录新的请求
-        self.requests[client_ip].append(now)
-        return True
-
-# 创建速率限制器实例
-rate_limiter = RateLimiter(requests_per_minute=settings.rate_limit)
-
-# 添加请求日志中间件
-class RequestLoggingMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        # 记录请求开始时间
-        start_time = time.time()
-        
-        # 获取客户端IP
-        client_ip = request.client.host if request.client else "unknown"
-        
-        # 记录请求信息
-        logger.info(f"Request started: {request.method} {request.url.path} "
-                   f"from {client_ip}")
-        
-        # 检查速率限制
-        if not rate_limiter.is_allowed(client_ip):
-            logger.warning(f"Rate limit exceeded for {client_ip}")
-            return JSONResponse(
-                status_code=429,
-                content={
-                    "success": False,
-                    "message": "Too many requests. Please try again later.",
-                    "data": None
-                }
-            )
-        
-        try:
-            # 处理请求
-            response = await call_next(request)
-            
-            # 计算处理时间
-            process_time = time.time() - start_time
-            
-            # 记录响应信息
-            logger.info(f"Request completed: {request.method} {request.url.path} "
-                       f"from {client_ip} - Status: {response.status_code} "
-                       f"- Time: {process_time:.2f}s")
-            
-            # 添加处理时间到响应头
-            response.headers["X-Process-Time"] = str(process_time)
-            
-            return response
-            
-        except Exception as e:
-            # 记录错误信息
-            logger.error(f"Request failed: {request.method} {request.url.path} "
-                        f"from {client_ip} - Error: {str(e)}")
-            logger.error("Stack trace:", exc_info=True)
-            
-            # 返回500错误
-            return JSONResponse(
-                status_code=500,
-                content={
-                    "success": False,
-                    "message": "Internal server error",
-                    "data": None
-                }
-            )
-
-# 添加中间件
-app.add_middleware(RequestLoggingMiddleware)
-
-# 创建缓存实例
-page_cache = TTLCache(
-    maxsize=settings.cache_maxsize,
-    ttl=settings.cache_ttl
-)
-blocks_cache = TTLCache(
-    maxsize=settings.cache_maxsize,
-    ttl=settings.cache_ttl
-)
-
-# 添加缓存装饰器
-def cache_response(cache: TTLCache):
-    def decorator(func):
-        async def wrapper(*args, **kwargs):
-            # 构建缓存键
-            cache_key = f"{func.__name__}:{args}:{kwargs}"
-            
-            # 尝试从缓存获取
-            cached_result = cache.get(cache_key)
-            if cached_result is not None:
-                logger.debug(f"Cache hit for {cache_key}")
-                return cached_result
-            
-            # 执行原函数
-            result = await func(*args, **kwargs)
-            
-            # 存入缓存
-            cache[cache_key] = result
-            logger.debug(f"Cached result for {cache_key}")
-            
-            return result
-        return wrapper
-    return decorator
 
 async def init_pages():
     """初始化时加载所有页面的数据"""
@@ -331,39 +160,10 @@ async def init_pages():
         logger.error(f"Stack trace:", exc_info=True)
         raise
 
-# 添加启动时间记录
-startup_time = time.time()
-
 @app.on_event("startup")
 async def startup_event():
     """应用启动时的初始化函数"""
-    global startup_time
-    startup_time = time.time()
-    
-    logger.info("Starting application...")
-    
-    # 验证数据库访问
-    if not await verify_database_access():
-        logger.error("Database access verification failed")
-        raise SystemExit(1)
-    
-    # 初始化页面数据
-    try:
-        await init_pages()
-    except Exception as e:
-        logger.error(f"Failed to initialize pages: {str(e)}")
-        raise SystemExit(1)
-    
-    logger.info(f"Application started successfully on {settings.host}:{settings.port}")
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """应用关闭时的清理函数"""
-    logger.info("Shutting down application...")
-    # 清理资源
-    pages_data.clear()
-    suffix_pages.clear()
-    logger.info("Application shutdown complete")
+    await init_pages()
 
 @app.get("/")
 async def root():
@@ -790,67 +590,47 @@ async def read_suffix_pages(suffix: str):
         logger.error(f"Current suffix_pages state: {suffix_pages}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-@app.get("/api/pages", response_model=APIResponse)
+@app.get("/api/pages")
 async def get_pages(suffix: Optional[str] = None):
-    """
-    获取页面列表
-    
-    参数:
-        suffix: 可选的后缀过滤器
-        
-    返回:
-        - 如果指定了suffix，返回具有该后缀的页面列表
-        - 否则返回所有页面列表
-    """
     try:
         if suffix:
             logger.info(f"Getting pages with suffix: {suffix}")
             pages = suffix_pages.get(suffix, [])
             logger.info(f"Found {len(pages)} pages with suffix {suffix}")
-            return APIResponse(
-                success=True,
-                message=f"Found {len(pages)} pages with suffix '{suffix}'",
-                data={"pages": pages}
-            )
-        return APIResponse(
-            success=True,
-            message=f"Retrieved all pages",
-            data={"pages": list(pages_data.values())}
-        )
+            return {"pages": pages}
+        return {"pages": list(pages_data.values())}
     except Exception as e:
         logger.error(f"Error getting pages: {str(e)}")
-        logger.error("Stack trace:", exc_info=True)
-        raise HTTPException(status_code=500, detail="Failed to retrieve pages")
+        raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/page/{page_id}", response_model=APIResponse)
-@cache_response(page_cache)
+@app.get("/api/page/{page_id}")
 async def get_page(page_id: str):
-    """
-    获取单个页面的详细信息
-    
-    参数:
-        page_id: Notion页面ID
-        
-    返回:
-        包含页面详细信息的响应
-    """
     try:
+        # 使用 notion_client 获取页面数据
         page_data = notion.pages.retrieve(page_id=page_id)
+        logger.info(f"\nProcessing API request for page {page_id}")
+        logger.info(f"Raw page data: {page_data}")
+        
+        # 提取页面属性
         properties = page_data.get('properties', {})
+        logger.info(f"All properties: {properties}")
         
         # 获取标题
         title = ''
         title_obj = properties.get('title', properties.get('Name', {}))
         if title_obj and title_obj.get('title'):
             title = title_obj['title'][0].get('plain_text', 'Untitled')
+        logger.info(f"Title: {title}")
         
         # 获取 suffix
         suffix = ''
         suffix_obj = properties.get('suffix', {})
+        logger.info(f"Raw suffix object: {suffix_obj}")
         
         # 处理文本类型的 suffix
         if suffix_obj:
             prop_type = suffix_obj.get('type', '')
+            logger.info(f"Suffix property type: {prop_type}")
             
             if prop_type == 'rich_text':
                 rich_text = suffix_obj.get('rich_text', [])
@@ -858,10 +638,13 @@ async def get_page(page_id: str):
                     suffix = rich_text[0].get('plain_text', '')
             elif prop_type == 'text':
                 text_content = suffix_obj.get('text', {})
+                logger.info(f"Text content: {text_content}")
                 if isinstance(text_content, str):
                     suffix = text_content
                 elif isinstance(text_content, dict):
                     suffix = text_content.get('content', '')
+        
+        logger.info(f"Final extracted suffix: {suffix}")
         
         # 更新页面数据
         page = Page(
@@ -874,188 +657,42 @@ async def get_page(page_id: str):
             show_back=True,
             suffix=suffix
         )
-        
-        # 更新 pages_data
         pages_data[page_id] = page.dict()
+        logger.info(f"Updated pages_data with: {page.dict()}")
         
-        # 更新 suffix_pages
-        # 1. 先从所有suffix列表中移除这个页面
-        for s in list(suffix_pages.keys()):
-            suffix_pages[s] = [p for p in suffix_pages[s] if p['id'] != page_id]
-            # 如果某个suffix没有页面了，删除这个suffix
-            if not suffix_pages[s]:
-                del suffix_pages[s]
-        
-        # 2. 将页面添加到新的suffix下
+        # 更新 suffix 索引
         if suffix:
+            logger.info(f"Adding page {page_id} with suffix: {suffix}")
             if suffix not in suffix_pages:
                 suffix_pages[suffix] = []
-            suffix_pages[suffix].append(page.dict())
-            logger.info(f"Updated page {page_id} with suffix: {suffix}")
+            # 检查是否已存在
+            existing_page = next((p for p in suffix_pages[suffix] if p['id'] == page_id), None)
+            if not existing_page:
+                suffix_pages[suffix].append(page.dict())
+                logger.info(f"Added to suffix_pages[{suffix}]")
         
-        return APIResponse(
-            success=True,
-            message="Page retrieved successfully",
-            data={"page": page_data}
-        )
+        return page_data
     except Exception as e:
         logger.error(f"Error getting page {page_id}: {str(e)}")
-        logger.error("Stack trace:", exc_info=True)
-        raise HTTPException(status_code=500, detail="Failed to retrieve page data")
+        raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/blocks/{page_id}", response_model=APIResponse)
-@cache_response(blocks_cache)
+# 添加获取页面块内容的端点
+@app.get("/api/blocks/{page_id}")
 async def get_blocks(page_id: str):
-    """
-    获取页面的块内容
-    
-    参数:
-        page_id: Notion页面ID
-        
-    返回:
-        包含页面块内容的响应
-    """
     try:
         headers = {
-            "Authorization": f"Bearer {settings.notion_token}",
-            "Notion-Version": settings.notion_api_version
+            "Authorization": f"Bearer {os.getenv('NOTION_TOKEN')}",
+            "Notion-Version": "2022-06-28"
         }
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 f"https://api.notion.com/v1/blocks/{page_id}/children",
                 headers=headers
             )
-            response.raise_for_status()
-            blocks_data = response.json()
-            return APIResponse(
-                success=True,
-                message="Blocks retrieved successfully",
-                data={"blocks": blocks_data}
-            )
+            return response.json()
     except Exception as e:
-        logger.error(f"Error getting blocks for page {page_id}: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve blocks")
-
-async def verify_database_access():
-    """验证数据库访问权限"""
-    try:
-        logger.info("Verifying database access...")
-        response = notion.databases.retrieve(database_id=DATABASE_ID)
-        logger.info(f"Successfully connected to database: {response.get('title', [{}])[0].get('plain_text', 'Untitled')}")
-        return True
-    except Exception as e:
-        logger.error(f"Failed to access database: {str(e)}")
-        return False
-
-# 更新错误处理
-@app.exception_handler(HTTPException)
-async def http_exception_handler(request: Request, exc: HTTPException):
-    logger.warning(f"HTTP error occurred: {exc.status_code} - {exc.detail}")
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={
-            "success": False,
-            "message": exc.detail,
-            "data": None
-        }
-    )
-
-@app.exception_handler(Exception)
-async def general_exception_handler(request: Request, exc: Exception):
-    logger.error(f"Unhandled error occurred: {str(exc)}")
-    logger.error("Stack trace:", exc_info=True)
-    return JSONResponse(
-        status_code=500,
-        content={
-            "success": False,
-            "message": "Internal server error",
-            "data": None
-        }
-    )
-
-# 添加健康检查端点
-@app.get("/health")
-async def health_check():
-    """
-    健康检查端点
-    
-    返回:
-        应用状态信息，包括:
-        - 系统信息
-        - 内存使用
-        - 缓存状态
-        - 数据库连接状态
-    """
-    try:
-        # 获取系统信息
-        system_info = {
-            "platform": platform.platform(),
-            "python_version": platform.python_version(),
-            "cpu_percent": psutil.cpu_percent(),
-            "memory_percent": psutil.virtual_memory().percent
-        }
-        
-        # 获取缓存状态
-        cache_info = {
-            "page_cache_size": len(page_cache),
-            "page_cache_maxsize": page_cache.maxsize,
-            "blocks_cache_size": len(blocks_cache),
-            "blocks_cache_maxsize": blocks_cache.maxsize
-        }
-        
-        # 检查数据库连接
-        db_status = await verify_database_access()
-        
-        return APIResponse(
-            success=True,
-            message="Service is healthy",
-            data={
-                "status": "healthy",
-                "system_info": system_info,
-                "cache_info": cache_info,
-                "database_status": "connected" if db_status else "disconnected",
-                "uptime": time.time() - startup_time
-            }
-        )
-    except Exception as e:
-        logger.error(f"Health check failed: {str(e)}")
-        return APIResponse(
-            success=False,
-            message="Service is unhealthy",
-            data={
-                "status": "unhealthy",
-                "error": str(e)
-            }
-        )
-
-@app.get("/api/notion/page/{page_id}")
-async def get_raw_notion_page(page_id: str):
-    """
-    获取Notion API返回的原始页面数据
-    
-    参数:
-        page_id: Notion页面ID
-        
-    返回:
-        Notion API的原始响应数据
-    """
-    try:
-        # 直接使用notion-client获取页面数据
-        page_data = notion.pages.retrieve(page_id=page_id)
-        
-        # 获取页面的blocks
-        blocks_response = notion.blocks.children.list(block_id=page_id)
-        
-        # 返回完整的原始数据
-        return {
-            "page": page_data,
-            "blocks": blocks_response
-        }
-    except Exception as e:
-        logger.error(f"Error getting raw page data for {page_id}: {str(e)}")
-        logger.error("Stack trace:", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host=settings.host, port=settings.port) 
+    uvicorn.run(app, host="0.0.0.0", port=8000) 
