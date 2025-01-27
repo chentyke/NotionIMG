@@ -756,12 +756,15 @@
                     tableHtml += '</table>';
                     return tableHtml;
                 case 'to_do':
+                    const todoText = block.to_do.rich_text.map(text => text.plain_text).join('');
                     return `
                         <div class="todo-item">
-                            <input type="checkbox" ${block.checked ? 'checked' : ''} disabled 
+                            <input type="checkbox" ${block.to_do.checked ? 'checked' : ''} disabled 
                                 class="todo-checkbox">
-                            <span class="todo-text ${block.checked ? 'completed' : ''}" ${block.color && block.color !== 'default' ? `style="color: ${block.color === 'gray' ? '#9CA3AF' : block.color};"` : ''}>
-                                ${block.text}
+                            <span class="todo-text ${block.to_do.checked ? 'completed' : ''}" 
+                                ${block.to_do.color && block.to_do.color !== 'default' ? 
+                                    `style="color: ${block.to_do.color === 'gray' ? '#9CA3AF' : block.to_do.color};"` : ''}>
+                                ${todoText}
                             </span>
                         </div>`;
                 case 'child_page':
