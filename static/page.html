@@ -141,19 +141,31 @@
         }
 
         .prose table {
-            border-color: var(--border-color);
+            border-collapse: collapse;
+            width: 100%;
+            margin: 1.5rem 0;
+            border: 1px solid var(--border-color);
         }
 
         .prose th, .prose td {
-            border-color: var(--border-color);
+            border: 1px solid var(--border-color);
+            padding: 0.75rem 1rem;
+            text-align: left;
         }
 
         .prose th {
             background-color: var(--code-bg);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .prose tr {
+            transition: background-color 0.2s ease;
         }
 
         .prose tr:hover {
             background-color: var(--hover-bg);
+            color: var(--text-primary);
         }
 
         .shadow-sm {
@@ -485,19 +497,37 @@
             border-collapse: collapse;
             width: 100%;
             margin: 1.5rem 0;
-            border: 1px solid #E5E7EB;
+            border: 1px solid var(--border-color);
         }
         .prose th, .prose td {
-            border: 1px solid #E5E7EB;
+            border: 1px solid var(--border-color);
             padding: 0.75rem 1rem;
             text-align: left;
         }
         .prose th {
-            background-color: #F9FAFB;
+            background-color: var(--code-bg);
             font-weight: 600;
+            color: var(--text-primary);
+        }
+        .prose tr {
+            transition: background-color 0.2s ease;
         }
         .prose tr:hover {
-            background-color: #F9FAFB;
+            background-color: var(--hover-bg);
+            color: var(--text-primary);
+        }
+        @media (prefers-color-scheme: dark) {
+            .prose tr:hover {
+                background-color: var(--hover-bg);
+                color: var(--text-primary);
+            }
+            .prose th {
+                background-color: var(--code-bg);
+                color: var(--text-primary);
+            }
+            .prose td {
+                color: var(--text-primary);
+            }
         }
         /* Add loading progress bar styles */
         .loading-progress {
@@ -1097,24 +1127,24 @@
 
                 // 先加载缩略图
                 const thumbnailUrl = await compressImage(img.dataset.src, 20);
-                img.src = thumbnailUrl;
+                    img.src = thumbnailUrl;
                 img.style.filter = 'blur(10px)';
-                img.style.transform = 'scale(1.1)';
-
+                    img.style.transform = 'scale(1.1)';
+                        
                 // 加载高清图
                 const fullQualityUrl = await compressImage(img.dataset.src, 80);
-                const fullImg = new Image();
+                        const fullImg = new Image();
                 fullImg.src = fullQualityUrl;
-                
-                fullImg.onload = () => {
+                        
+                        fullImg.onload = () => {
                     img.src = fullQualityUrl;
-                    img.style.filter = '';
-                    img.style.transform = '';
-                    img.classList.add('loaded');
-                    if (placeholder) {
-                        placeholder.remove();
-                    }
-                };
+                            img.style.filter = '';
+                            img.style.transform = '';
+                            img.classList.add('loaded');
+                            if (placeholder) {
+                                placeholder.remove();
+                            }
+                        };
             } catch (error) {
                 console.error('Error loading image:', error);
                 img.src = img.dataset.src;
