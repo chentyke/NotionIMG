@@ -509,19 +509,32 @@ async def get_page(page_id: str):
                 headers=headers
             )
             page_data = response.json()
+            logger.info(f"Raw page data: {page_data}")  # 添加调试日志
             
             # 提取页面属性
             properties = page_data.get('properties', {})
+            logger.info(f"Page properties: {properties}")  # 添加调试日志
             
             # 获取标题
+            title = ''
             title_obj = properties.get('title', properties.get('Name', {}))
-            title = title_obj.get('title', [{}])[0].get('plain_text', 'Untitled')
+            if title_obj and title_obj.get('title'):
+                title = title_obj['title'][0].get('plain_text', 'Untitled')
             
             # 获取 suffix
-            suffix_obj = properties.get('suffix', {})
             suffix = ''
-            if suffix_obj.get('type') == 'rich_text' and suffix_obj.get('rich_text'):
-                suffix = suffix_obj['rich_text'][0].get('plain_text', '')
+            suffix_obj = properties.get('suffix', {})
+            logger.info(f"Suffix object: {suffix_obj}")  # 添加调试日志
+            
+            if suffix_obj:
+                if suffix_obj.get('type') == 'rich_text' and suffix_obj.get('rich_text'):
+                    suffix = suffix_obj['rich_text'][0].get('plain_text', '')
+                elif suffix_obj.get('type') == 'text' and suffix_obj.get('text'):
+                    suffix = suffix_obj['text'].get('content', '')
+                elif isinstance(suffix_obj, list) and suffix_obj:
+                    suffix = suffix_obj[0].get('plain_text', '')
+            
+            logger.info(f"Extracted suffix: {suffix}")  # 添加调试日志
             
             # 获取其他属性
             last_edited_time = page_data.get('last_edited_time', '')
