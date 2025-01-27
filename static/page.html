@@ -756,17 +756,32 @@
                     tableHtml += '</table>';
                     return tableHtml;
                 case 'to_do':
-                    const todoText = block.to_do.rich_text.map(text => text.plain_text).join('');
-                    return `
-                        <div class="todo-item">
-                            <input type="checkbox" ${block.to_do.checked ? 'checked' : ''} disabled 
-                                class="todo-checkbox">
-                            <span class="todo-text ${block.to_do.checked ? 'completed' : ''}" 
-                                ${block.to_do.color && block.to_do.color !== 'default' ? 
-                                    `style="color: ${block.to_do.color === 'gray' ? '#9CA3AF' : block.to_do.color};"` : ''}>
-                                ${todoText}
-                            </span>
-                        </div>`;
+                    console.log('Todo block:', block); // 添加调试日志
+                    if (!block || !block.to_do) {
+                        console.error('Invalid todo block structure:', block);
+                        return '<div class="text-red-500">Error: Invalid todo item</div>';
+                    }
+                    try {
+                        const todoText = block.to_do.rich_text ? 
+                            block.to_do.rich_text.map(text => text.plain_text).join('') :
+                            'Untitled todo item';
+                        const isChecked = block.to_do.checked || false;
+                        const color = block.to_do.color || 'default';
+                        
+                        return `
+                            <div class="todo-item">
+                                <input type="checkbox" ${isChecked ? 'checked' : ''} disabled 
+                                    class="todo-checkbox">
+                                <span class="todo-text ${isChecked ? 'completed' : ''}" 
+                                    ${color !== 'default' ? 
+                                        `style="color: ${color === 'gray' ? '#9CA3AF' : color};"` : ''}>
+                                    ${todoText}
+                                </span>
+                            </div>`;
+                    } catch (error) {
+                        console.error('Error rendering todo item:', error);
+                        return '<div class="text-red-500">Error rendering todo item</div>';
+                    }
                 case 'child_page':
                     return `<div class="border rounded-lg p-4 my-4 hover:bg-gray-50" 
                         onclick="loadChildPage('${block.page_id}', '${block.title}')"
