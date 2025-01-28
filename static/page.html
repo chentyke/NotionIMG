@@ -1046,7 +1046,7 @@
     <div id="loadingProgress" class="loading-progress">
         <div id="loadingProgressBar" class="loading-progress-bar"></div>
     </div>
-    <div class="container mx-auto px-4 py-8 max-w-4xl">
+    <div class="container mx-auto px-4 py-8 max-w-4xl" style="overflow-x: hidden;">
         <div class="bg-white rounded-xl shadow-sm overflow-hidden">
             <div class="p-6">
                 <div class="page-header">
@@ -1089,6 +1089,23 @@
         let totalBlocks = 0;
         let loadedBlocks = 0;
         let parentPageId = null;  // Add variable to store parent page ID
+        
+        // 添加触摸事件处理，禁止左右滑动
+        document.addEventListener('touchstart', function(e) {
+            if (e.touches.length > 1) {
+                e.preventDefault(); // 阻止多点触控
+            }
+        }, { passive: false });
+
+        document.addEventListener('touchmove', function(e) {
+            if (e.touches.length > 1) {
+                e.preventDefault(); // 阻止多点触控导致的滑动
+            }
+        }, { passive: false });
+        
+        // 阻止默认的左右滑动行为
+        document.body.style.overflowX = 'hidden';
+        document.documentElement.style.overflowX = 'hidden';
         
         function updateLoadingProgress(progress) {
             const progressBar = document.getElementById('loadingProgressBar');
