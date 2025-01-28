@@ -1174,10 +1174,10 @@
         }
 
         .floating-header .content-wrapper {
-            max-width: 65ch;  /* 与页面内容区域宽度一致 */
+            max-width: calc(896px + 2rem);  /* 页面内容宽度 + 两侧小边距 */
             width: 100%;
             margin: 0 auto;
-            padding: 0 0.5rem;  /* 添加最小的左右内边距 */
+            padding: 0 1rem;  /* 添加较小的左右内边距 */
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -1230,7 +1230,7 @@
             }
             
             .floating-header .content-wrapper {
-                padding: 0 1rem;  /* 移动端保持较大的左右内边距 */
+                padding: 0 1.25rem;  /* 保持移动端的左右边距 */
             }
             
             .floating-header h1 {
@@ -1299,6 +1299,19 @@
                 display: inline;
                 opacity: 1;
                 max-width: none;
+            }
+        }
+
+        /* 调整主容器的内边距 */
+        .container.mx-auto {
+            padding-left: 1rem;  /* 减小左边距 */
+            padding-right: 1rem;  /* 减小右边距 */
+        }
+
+        @media (max-width: 640px) {
+            .container.mx-auto {
+                padding-left: 1.25rem;  /* 移动端保持较大边距 */
+                padding-right: 1.25rem;
             }
         }
 
@@ -1442,13 +1455,6 @@
         .prose ul + ol,
         .prose ol + ul {
             margin-top: 0.25rem;  /* 减少相邻列表之间的间距 */
-        }
-
-        /* 调整容器宽度 */
-        .container {
-            max-width: 65ch !important;  /* 覆盖 Tailwind 的 max-w-4xl */
-            padding-left: 1rem !important;
-            padding-right: 1rem !important;
         }
     </style>
 </head>
