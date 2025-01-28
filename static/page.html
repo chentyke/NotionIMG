@@ -260,6 +260,51 @@
             text-align: left;
             line-height: 1.4;
         }
+
+        @media (prefers-color-scheme: dark) {
+            .prose pre {
+                background-color: #1e1e1e;
+                border: 1px solid #2d2d2d;
+            }
+
+            .prose pre code {
+                color: #e4e4e4;
+            }
+
+            .language-label {
+                color: #9ca3af;
+            }
+
+            .copy-button {
+                background-color: #2d2d2d;
+                border-color: #404040;
+                color: #e4e4e4;
+            }
+
+            .copy-button:hover {
+                background-color: #404040;
+                border-color: #4a4a4a;
+            }
+
+            .copy-button.copied {
+                background-color: #059669;
+                color: #ffffff;
+                border-color: #047857;
+            }
+
+            /* 代码高亮颜色 */
+            .prose pre .keyword { color: #569cd6; }
+            .prose pre .string { color: #ce9178; }
+            .prose pre .number { color: #b5cea8; }
+            .prose pre .comment { color: #6a9955; }
+            .prose pre .function { color: #dcdcaa; }
+            .prose pre .class { color: #4ec9b0; }
+            .prose pre .operator { color: #d4d4d4; }
+            .prose pre .punctuation { color: #d4d4d4; }
+            .prose pre .variable { color: #9cdcfe; }
+            .prose pre .property { color: #9cdcfe; }
+            .prose pre .constant { color: #4fc1ff; }
+        }
         .language-label {
             position: absolute;
             top: 0.5rem;
