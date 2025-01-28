@@ -1750,21 +1750,28 @@
                             <iframe src="${block.url}" class="w-full h-96 rounded-lg"></iframe>
                         </div>`;
                 case 'table':
-                    let tableHtml = `<table>`;
-                    if (block.children) {
-                        block.children.forEach((row, rowIndex) => {
-                            const isHeader = (block.has_column_header && rowIndex === 0) || 
-                                          (block.has_row_header && row.cells && row.cells[0]);
-                            tableHtml += '<tr>';
-                            row.cells.forEach((cell, cellIndex) => {
-                                const isRowHeader = block.has_row_header && cellIndex === 0;
-                                const tag = isHeader || isRowHeader ? 'th' : 'td';
-                                tableHtml += `<${tag}>${cell}</${tag}>`;
-                            });
-                            tableHtml += '</tr>';
+                    let tableHtml = `<div class="overflow-x-auto my-4"><table class="min-w-full">`;
+                    
+                    // Get table rows from the processed data
+                    const rows = block.rows || [];
+                    const hasColumnHeader = block.has_column_header;
+                    const hasRowHeader = block.has_row_header;
+                    
+                    rows.forEach((row, rowIndex) => {
+                        const cells = row.cells || [];
+                        const isHeaderRow = hasColumnHeader && rowIndex === 0;
+                        
+                        tableHtml += '<tr>';
+                        cells.forEach((cell, cellIndex) => {
+                            const isHeaderCell = isHeaderRow || (hasRowHeader && cellIndex === 0);
+                            const tag = isHeaderCell ? 'th' : 'td';
+                            const cellContent = processRichText(cell);
+                            tableHtml += `<${tag} class="whitespace-pre-wrap">${cellContent}</${tag}>`;
                         });
-                    }
-                    tableHtml += '</table>';
+                        tableHtml += '</tr>';
+                    });
+                    
+                    tableHtml += '</table></div>';
                     return tableHtml;
                 case 'to_do':
                     console.log('Todo block:', block); // 调试日志

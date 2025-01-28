@@ -403,6 +403,21 @@ def process_block_content(block: dict) -> dict:
         elif block_type == "table":
             result["has_column_header"] = block_content.get("has_column_header", False)
             result["has_row_header"] = block_content.get("has_row_header", False)
+            
+            # Process table rows if present
+            if block.get("has_children", False):
+                try:
+                    table_rows = notion.blocks.children.list(block_id=block["id"])["results"]
+                    rows = []
+                    for row_block in table_rows:
+                        if row_block["type"] == "table_row":
+                            row_content = process_block_content(row_block)
+                            if row_content:
+                                rows.append(row_content)
+                    if rows:
+                        result["rows"] = rows
+                except Exception as e:
+                    logger.error(f"Error processing table rows for {block['id']}: {e}")
         elif block_type == "table_row":
             cells = []
             for cell in block_content.get("cells", []):
