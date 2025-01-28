@@ -8,7 +8,6 @@ import logging
 from typing import List, Dict, Optional
 import httpx
 from pydantic import BaseModel
-from urllib.parse import urlparse, parse_qs, urlencode
 
 # Configure logging
 logging.basicConfig(
@@ -455,10 +454,26 @@ async def get_pages():
         response = notion.databases.query(
             database_id=DATABASE_ID,
             filter={
-                "property": "type",
-                "select": {
-                    "equals": "page"
-                }
+                "and": [
+                    {
+                        "property": "type",
+                        "select": {
+                            "equals": "page"
+                        }
+                    },
+                    {
+                        "property": "type",
+                        "select": {
+                            "does_not_equal": "file"
+                        }
+                    },
+                    {
+                        "property": "type",
+                        "select": {
+                            "does_not_equal": "image"
+                        }
+                    }
+                ]
             }
         )
         
@@ -788,65 +803,6 @@ async def query_notion_database(
         return response
     except Exception as e:
         logger.error(f"Error querying database: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-# Add image compression API endpoint
-@app.get("/api/compress-image")
-async def compress_image(
-    url: str,
-    width: Optional[int] = None,
-    quality: Optional[int] = 80,
-    is_thumbnail: Optional[bool] = False
-):
-    """
-    Compress image URL based on source and parameters.
-    Returns optimized image URL.
-    """
-    try:
-        if not url or not url.startswith('http'):
-            raise HTTPException(status_code=400, detail="Invalid image URL")
-
-        # Parse URL
-        parsed_url = urlparse(url)
-        query_params = parse_qs(parsed_url.query)
-        
-        # Convert query params to dict with single values
-        params = {k: v[0] for k, v in query_params.items()}
-
-        # Calculate target width based on device and thumbnail status
-        if not width:
-            width = 100 if is_thumbnail else 800
-
-        # Handle different image sources
-        if 'secure.notion-static.com' in url or 'prod-files-secure.s3' in url:
-            # Notion images
-            params['width'] = str(width)
-            if is_thumbnail:
-                params['quality'] = '10'
-            else:
-                params['quality'] = str(quality)
-            
-            # Reconstruct URL with new parameters
-            parsed_url = parsed_url._replace(query=urlencode(params))
-            return {"url": parsed_url.geturl()}
-            
-        elif 'images.unsplash.com' in url:
-            # Unsplash images
-            params['w'] = str(width)
-            params['q'] = str(quality if not is_thumbnail else 10)
-            params['fm'] = 'jpg'
-            params['fit'] = 'max'
-            
-            # Reconstruct URL with new parameters
-            parsed_url = parsed_url._replace(query=urlencode(params))
-            return {"url": parsed_url.geturl()}
-            
-        else:
-            # For other images, return original URL
-            return {"url": url}
-
-    except Exception as e:
-        logger.error(f"Error compressing image URL: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
