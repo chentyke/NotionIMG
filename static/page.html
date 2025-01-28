@@ -1039,9 +1039,72 @@
         .animate-pulse {
             animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
+
+        /* 添加毛玻璃标题栏样式 */
+        .floating-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 1rem;
+            transform: translateY(-100%);
+            transition: transform 0.3s ease;
+            border-bottom: 1px solid rgba(229, 231, 235, 0.5);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .floating-header.visible {
+            transform: translateY(0);
+        }
+
+        .floating-header h1 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 80%;
+        }
+
+        .floating-header .copy-link-button {
+            padding: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        @media (max-width: 640px) {
+            .floating-header {
+                padding: 0.75rem 1rem;
+            }
+            .floating-header h1 {
+                font-size: 1rem;
+            }
+        }
+
+        /* 适配深色模式 */
+        @media (prefers-color-scheme: dark) {
+            .floating-header {
+                background: rgba(17, 24, 39, 0.8);
+                border-bottom-color: rgba(55, 65, 81, 0.5);
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
+    <!-- 添加毛玻璃标题栏 -->
+    <div id="floatingHeader" class="floating-header">
+        <h1 id="floatingTitle"></h1>
+        <button class="copy-link-button" onclick="copyPageLink()" title="复制页面链接">
+            <i class="fas fa-link"></i>
+        </button>
+    </div>
     <!-- Add loading progress bar -->
     <div id="loadingProgress" class="loading-progress">
         <div id="loadingProgressBar" class="loading-progress-bar"></div>
@@ -1832,6 +1895,40 @@
                 }, 2000);
             });
         }
+
+        // 添加滚动监听逻辑
+        let lastScrollTop = 0;
+        const floatingHeader = document.getElementById('floatingHeader');
+        const mainHeader = document.querySelector('.page-header');
+        const floatingTitle = document.getElementById('floatingTitle');
+
+        window.addEventListener('scroll', () => {
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const headerRect = mainHeader.getBoundingClientRect();
+            
+            // 当主标题完全离开视口时才考虑显示浮动标题
+            if (headerRect.bottom < 0) {
+                // 向上滚动时显示浮动标题
+                if (scrollTop < lastScrollTop) {
+                    floatingHeader.classList.add('visible');
+                } else {
+                    // 向下滚动时隐藏浮动标题
+                    floatingHeader.classList.remove('visible');
+                }
+            } else {
+                // 当主标题在视口内时，始终隐藏浮动标题
+                floatingHeader.classList.remove('visible');
+            }
+            
+            lastScrollTop = scrollTop;
+        });
+
+        // 更新页面标题时同时更新浮动标题
+        const updatePageTitle = (title) => {
+            document.title = title;
+            document.getElementById('pageTitle').textContent = title;
+            floatingTitle.textContent = title;
+        };
     </script>
 </body>
 </html> 
