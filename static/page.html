@@ -229,7 +229,8 @@
         .prose {
             max-width: 65ch;
             margin: 0 auto;
-            line-height: 1.6;
+            line-height: 1.75;
+            font-size: 1.125rem;
         }
         .prose img {
             border-radius: 0.5rem;
@@ -313,9 +314,8 @@
             line-height: 1.5;
         }
         .prose h1 {
-            font-size: 2.25rem;
-            font-weight: 700;
-            margin: 1.5rem 0 0.5rem;
+            font-size: 2.5rem;
+            margin: 2rem 0 1rem;
             line-height: 1.3;
         }
         .page-header {
@@ -333,32 +333,27 @@
             flex: 1;
         }
         .page-title {
-            font-size: 2.25rem;
-            font-weight: 700;
-            color: #111827;
-            margin-bottom: 0.5rem;
+            font-size: 2.5rem;
+            line-height: 1.3;
+            margin-bottom: 0.75rem;
         }
         .edit-date {
-            color: #6B7280;
-            font-size: 0.875rem;
-            font-style: italic;
-            margin-bottom: 0.5rem;
+            font-size: 1rem;
+            margin-bottom: 1rem;
         }
         .prose h2 {
-            font-size: 1.875rem;
-            font-weight: 700;
-            margin: 1.25rem 0 0.5rem;
+            font-size: 2rem;
+            margin: 1.75rem 0 0.875rem;
             line-height: 1.3;
         }
         .prose h3 {
             font-size: 1.5rem;
-            font-weight: 700;
-            margin: 1rem 0 0.5rem;
+            margin: 1.5rem 0 0.75rem;
             line-height: 1.3;
         }
         .prose p {
-            margin: 0.625rem 0;
-            line-height: 1.6;
+            margin: 1rem 0;
+            line-height: 1.75;
         }
         .prose ul, .prose ol {
             margin: 0.5rem 0;
@@ -758,7 +753,7 @@
             }
             
             .page-title {
-                font-size: 1.75rem;
+                font-size: 2rem;
                 line-height: 1.2;
                 margin-bottom: 0.25rem;
             }
@@ -1074,7 +1069,7 @@
         }
 
         .floating-header h1 {
-            font-size: 1.125rem;
+            font-size: 1.25rem;
             font-weight: 600;
             color: var(--text-primary);
             margin: 0;
@@ -1124,7 +1119,7 @@
             }
             
             .floating-header h1 {
-                font-size: 1rem;
+                font-size: 1.125rem;
             }
             
             .floating-header .copy-link-button {
@@ -1144,7 +1139,7 @@
             }
             
             .page-title {
-                font-size: 1.75rem;
+                font-size: 2rem;
                 line-height: 1.2;
                 margin-bottom: 0.25rem;
             }
@@ -2017,9 +2012,9 @@
         const floatingHeader = document.getElementById('floatingHeader');
         const mainHeader = document.querySelector('.page-header');
         const floatingTitle = document.getElementById('floatingTitle');
-        const showThreshold = 20; // 显示的滚动阈值，降低以提高灵敏度
-        const hideThreshold = 100; // 隐藏的滚动阈值，提高以降低灵敏度
-        const hideDelay = 300; // 隐藏延迟时间（毫秒）
+        const showThreshold = 10; // 降低显示阈值，提高灵敏度
+        const hideThreshold = 30; // 降低隐藏阈值，提高灵敏度
+        const hideDelay = 150; // 减少隐藏延迟时间
 
         window.addEventListener('scroll', () => {
             const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
