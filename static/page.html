@@ -1470,7 +1470,9 @@
             
             let content = '';
             const blockColor = block.color && block.color !== 'default' 
-                ? `text-${block.color}` 
+                ? block.color.endsWith('_background') 
+                    ? `bg-${block.color}` 
+                    : `text-${block.color}`
                 : '';
 
             switch (block.type) {

@@ -324,8 +324,8 @@ def process_block_content(block: dict) -> dict:
         block_type = block["type"]
         block_content = block[block_type]
         
-        # Get color if present
-        color = block.get("color", "default")
+        # Get color from block content instead of block
+        color = block_content.get("color", "default")
         
         # Process rich text content
         if "rich_text" in block_content:
@@ -340,22 +340,28 @@ def process_block_content(block: dict) -> dict:
             "color": color
         }
 
-        # Process children if present
-        if block.get("has_children", False):
-            try:
-                child_blocks = notion.blocks.children.list(block_id=block["id"])["results"]
-                children = []
-                for child_block in child_blocks:
-                    child_content = process_block_content(child_block)
-                    if child_content:
-                        children.append(child_content)
-                if children:
-                    result["children"] = children
-            except Exception as e:
-                logger.error(f"Error processing child blocks for {block['id']}: {e}")
-
-        # Handle specific block types
-        if block_type == "image":
+        # Add block content specific data
+        if block_type == "paragraph":
+            result["paragraph"] = {
+                "rich_text": block_content["rich_text"],
+                "color": color
+            }
+        elif block_type == "heading_1":
+            result["heading_1"] = {
+                "rich_text": block_content["rich_text"],
+                "color": color
+            }
+        elif block_type == "heading_2":
+            result["heading_2"] = {
+                "rich_text": block_content["rich_text"],
+                "color": color
+            }
+        elif block_type == "heading_3":
+            result["heading_3"] = {
+                "rich_text": block_content["rich_text"],
+                "color": color
+            }
+        elif block_type == "image":
             result["image_url"] = block_content.get("file", {}).get("url") or block_content.get("external", {}).get("url")
             if "caption" in block_content and block_content["caption"]:
                 result["caption"] = process_rich_text(block_content["caption"])
