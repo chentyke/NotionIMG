@@ -440,25 +440,27 @@
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
         }
         /* Text colors */
-        .text-gray { color: #6B7280; }
-        .text-brown { color: #92400E; }
-        .text-orange { color: #EA580C; }
-        .text-yellow { color: #CA8A04; }
-        .text-green { color: #16A34A; }
-        .text-blue { color: #2563EB; }
-        .text-purple { color: #7C3AED; }
-        .text-pink { color: #DB2777; }
-        .text-red { color: #DC2626; }
+        .text-default { color: inherit; }
+        .text-gray { color: rgb(120, 119, 116); }
+        .text-brown { color: rgb(159, 107, 83); }
+        .text-orange { color: rgb(217, 115, 13); }
+        .text-yellow { color: rgb(203, 145, 47); }
+        .text-green { color: rgb(68, 131, 97); }
+        .text-blue { color: rgb(51, 126, 169); }
+        .text-purple { color: rgb(144, 101, 176); }
+        .text-pink { color: rgb(193, 76, 138); }
+        .text-red { color: rgb(212, 76, 71); }
         /* Background colors */
-        .bg-gray { background-color: #F3F4F6; }
-        .bg-brown { background-color: #FEF3C7; }
-        .bg-orange { background-color: #FFF7ED; }
-        .bg-yellow { background-color: #FEF9C3; }
-        .bg-green { background-color: #DCFCE7; }
-        .bg-blue { background-color: #DBEAFE; }
-        .bg-purple { background-color: #F3E8FF; }
-        .bg-pink { background-color: #FCE7F3; }
-        .bg-red { background-color: #FEE2E2; }
+        .bg-default { background-color: transparent; }
+        .bg-gray-background { background-color: rgb(241, 241, 239); }
+        .bg-brown-background { background-color: rgb(244, 238, 238); }
+        .bg-orange-background { background-color: rgb(251, 236, 221); }
+        .bg-yellow-background { background-color: rgb(251, 243, 219); }
+        .bg-green-background { background-color: rgb(237, 243, 236); }
+        .bg-blue-background { background-color: rgb(231, 243, 248); }
+        .bg-purple-background { background-color: rgb(244, 240, 247); }
+        .bg-pink-background { background-color: rgb(249, 238, 243); }
+        .bg-red-background { background-color: rgb(253, 235, 236); }
         /* Link styles */
         .prose a {
             color: #2563EB;
@@ -1194,6 +1196,10 @@
                 border-bottom-color: rgba(55, 65, 81, 0.5);
             }
         }
+
+        .prose .rich-text-wrapper {
+            display: inline;
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -1463,19 +1469,31 @@
             updateLoadingProgress((loadedBlocks / totalBlocks) * 100);
             
             let content = '';
-            const colorStyle = block.color && block.color !== 'default' 
-                ? `style="color: ${block.color === 'gray' ? '#9CA3AF' : block.color};"` 
+            const blockColor = block.color && block.color !== 'default' 
+                ? `text-${block.color}` 
                 : '';
 
             switch (block.type) {
                 case 'paragraph':
-                    return `<p ${colorStyle}>${block.text || ''}</p>`;
+                    const paragraphText = block.paragraph?.rich_text 
+                        ? processRichText(block.paragraph.rich_text)
+                        : '';
+                    return `<p class="${blockColor}">${paragraphText}</p>`;
                 case 'heading_1':
-                    return `<h1 ${colorStyle}>${block.text}</h1>`;
+                    const h1Text = block.heading_1?.rich_text 
+                        ? processRichText(block.heading_1.rich_text)
+                        : '';
+                    return `<h1 class="${blockColor}">${h1Text}</h1>`;
                 case 'heading_2':
-                    return `<h2 ${colorStyle}>${block.text}</h2>`;
+                    const h2Text = block.heading_2?.rich_text 
+                        ? processRichText(block.heading_2.rich_text)
+                        : '';
+                    return `<h2 class="${blockColor}">${h2Text}</h2>`;
                 case 'heading_3':
-                    return `<h3 ${colorStyle}>${block.text}</h3>`;
+                    const h3Text = block.heading_3?.rich_text 
+                        ? processRichText(block.heading_3.rich_text)
+                        : '';
+                    return `<h3 class="${blockColor}">${h3Text}</h3>`;
                 case 'bulleted_list_item':
                 case 'numbered_list_item':
                     let listContent = block.text || '';
@@ -1492,7 +1510,7 @@
                         listContent += nestedContent.join('');
                     }
                     
-                    return `<li ${colorStyle}>${listContent}</li>`;
+                    return `<li class="${blockColor}">${listContent}</li>`;
                 case 'code':
                     return `<pre><div class="language-label">${block.language || 'text'}</div><button class="copy-button" onclick="copyCode(this)">Copy</button><code class="language-${block.language || 'text'}">${block.text.trim()}</code></pre>`;
                 case 'image':
@@ -1507,9 +1525,9 @@
                 case 'divider':
                     return `<hr class="my-6">`;
                 case 'quote':
-                    return `<blockquote ${colorStyle}>${block.text}</blockquote>`;
+                    return `<blockquote class="${blockColor}">${block.text}</blockquote>`;
                 case 'callout':
-                    return `<div class="bg-gray-50 p-4 rounded-lg my-4 flex items-start" ${colorStyle}>
+                    return `<div class="bg-gray-50 p-4 rounded-lg my-4 flex items-start" class="${blockColor}">
                         <div class="mr-4">${block.icon?.emoji || '💡'}</div>
                         <div>${block.text}</div>
                     </div>`;
@@ -1724,7 +1742,7 @@
 
                     return `
                         <div class="toggle-block" id="${toggleId}">
-                            <div class="toggle-header" onclick="toggleBlock('${toggleId}')" ${colorStyle}>
+                            <div class="toggle-header" onclick="toggleBlock('${toggleId}')" class="${blockColor}">
                                 <svg class="toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5l7 7-7 7"></path>
                                 </svg>
@@ -2063,6 +2081,64 @@
             document.getElementById('pageTitle').textContent = title;
             floatingTitle.textContent = title;
         };
+
+        // 处理富文本内容
+        function processRichText(richTextArray) {
+            if (!richTextArray || !Array.isArray(richTextArray)) {
+                return '';
+            }
+
+            return richTextArray.map(textObj => {
+                if (!textObj || !textObj.text) {
+                    return '';
+                }
+
+                const { text, annotations = {}, type } = textObj;
+                const content = text.content || '';
+                const link = text.link;
+
+                // 处理注释样式
+                let classes = [];
+                let styles = [];
+
+                // 处理颜色
+                if (annotations.color && annotations.color !== 'default') {
+                    if (annotations.color.endsWith('_background')) {
+                        classes.push(`bg-${annotations.color}`);
+                    } else {
+                        classes.push(`text-${annotations.color}`);
+                    }
+                }
+
+                // 处理其他注释
+                if (annotations.bold) classes.push('font-bold');
+                if (annotations.italic) classes.push('italic');
+                if (annotations.strikethrough) classes.push('line-through');
+                if (annotations.underline) classes.push('underline');
+                if (annotations.code) classes.push('font-mono bg-gray-100 px-1 rounded');
+
+                // 构建HTML
+                let html = `<span class="rich-text-wrapper ${classes.join(' ')}"`;
+                if (styles.length > 0) {
+                    html += ` style="${styles.join('; ')}"`;
+                }
+                html += '>';
+
+                // 处理链接
+                if (link) {
+                    html += `<a href="${link.url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">`;
+                }
+
+                html += content;
+
+                if (link) {
+                    html += '</a>';
+                }
+
+                html += '</span>';
+                return html;
+            }).join('');
+        }
     </script>
 </body>
 </html> 
