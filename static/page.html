@@ -401,9 +401,51 @@
             line-height: 1.75;
         }
         .prose ul, .prose ol {
-            margin: 0.5rem 0;
-            padding-left: 1.5rem;
             list-style-position: outside;
+            padding-left: 1.5rem;
+            margin: 1rem 0;
+        }
+
+        .prose ul {
+            list-style-type: disc;
+        }
+
+        .prose ol {
+            list-style-type: decimal;
+        }
+
+        .prose li {
+            margin: 0.5rem 0;
+            padding-left: 0.5rem;
+        }
+
+        .prose li.list-item {
+            position: relative;
+        }
+
+        .prose li.list-item::marker {
+            color: var(--text-tertiary);
+        }
+
+        .prose .list-item-content {
+            display: inline-block;
+            vertical-align: top;
+        }
+
+        .prose .nested-content {
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .prose .nested-list {
+            margin: 0.25rem 0 0.25rem 1.5rem;
+        }
+
+        /* Dark mode adjustments */
+        @media (prefers-color-scheme: dark) {
+            .prose li.list-item::marker {
+                color: var(--text-secondary);
+            }
         }
         .prose ul ul, .prose ol ol,
         .prose ul ol, .prose ol ul {
@@ -412,7 +454,6 @@
         .prose li {
             margin: 0.25rem 0;
             padding-left: 0.25rem;
-            line-height: 1.6;
         }
         .prose li::marker {
             color: #6B7280;
@@ -1283,34 +1324,51 @@
         }
 
         /* List styles */
+        .prose ul,
+        .prose ol {
+            list-style-position: outside;
+            padding-left: 1.5rem;
+            margin: 1rem 0;
+        }
+
         .prose ul {
             list-style-type: disc;
-            padding-left: 1.5rem;
-            margin: 0.75rem 0;
         }
 
         .prose ol {
             list-style-type: decimal;
-            padding-left: 1.5rem;
-            margin: 0.75rem 0;
         }
 
         .prose li {
-            margin: 0.375rem 0;
-            padding-left: 0.25rem;
+            margin: 0.5rem 0;
+            padding-left: 0.5rem;
         }
 
-        .prose li > ul,
-        .prose li > ol {
-            margin: 0.375rem 0;
+        .prose li.list-item {
+            position: relative;
         }
 
-        .prose li::marker {
+        .prose li.list-item::marker {
             color: var(--text-tertiary);
         }
 
+        .prose .list-item-content {
+            display: inline-block;
+            vertical-align: top;
+        }
+
+        .prose .nested-content {
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .prose .nested-list {
+            margin: 0.25rem 0 0.25rem 1.5rem;
+        }
+
+        /* Dark mode adjustments */
         @media (prefers-color-scheme: dark) {
-            .prose li::marker {
+            .prose li.list-item::marker {
                 color: var(--text-secondary);
             }
         }
@@ -1612,20 +1670,30 @@
                     return `<h3 class="${blockColor}">${h3Text}</h3>`;
                 case 'bulleted_list_item':
                 case 'numbered_list_item':
-                    const listType = block.type;
-                    const listContent = block[listType]?.rich_text 
-                        ? processRichText(block[listType].rich_text)
-                        : '';
+                    console.log('Processing list item:', block); // 调试日志
                     
-                    let listItemHtml = `<li class="${blockColor}">${listContent}`;
+                    // 获取列表项内容
+                    const listContent = block.content?.rich_text 
+                        ? processRichText(block.content.rich_text)
+                        : block.text || '';
                     
-                    // Handle nested content
+                    let listItemHtml = `<li class="list-item ${blockColor}">`;
+                    listItemHtml += `<div class="list-item-content">${listContent}</div>`;
+                    
+                    // 处理嵌套内容
                     if (block.children && block.children.length > 0) {
-                        const nestedListType = block.children[0].type === 'bulleted_list_item' ? 'ul' : 'ol';
                         const nestedContent = await Promise.all(block.children.map(async child => {
-                            return await renderBlock(child);
+                            // 根据子项类型决定使用哪种列表标签
+                            const isNested = child.type === 'bulleted_list_item' || child.type === 'numbered_list_item';
+                            const listTag = child.type === 'bulleted_list_item' ? 'ul' : 'ol';
+                            
+                            const renderedChild = await renderBlock(child);
+                            return isNested ? `<${listTag} class="nested-list">${renderedChild}</${listTag}>` : renderedChild;
                         }));
-                        listItemHtml += `<${nestedListType} class="ml-6 my-2">${nestedContent.join('')}</${nestedListType}>`;
+                        
+                        if (nestedContent.length > 0) {
+                            listItemHtml += `<div class="nested-content">${nestedContent.join('')}</div>`;
+                        }
                     }
                     
                     listItemHtml += '</li>';

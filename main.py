@@ -451,12 +451,18 @@ def process_block_content(block: dict) -> dict:
                 "caption": process_rich_text(block_content.get("caption", [])) if block_content.get("caption") else ""
             }
         elif block_type == "bulleted_list_item" or block_type == "numbered_list_item":
-            result[block_type] = {
-                "rich_text": block_content["rich_text"],
-                "color": color
+            # 处理列表项的富文本内容
+            result = {
+                "type": block_type,
+                "text": text,
+                "color": color,
+                "content": {
+                    "rich_text": block_content["rich_text"],
+                    "color": color
+                }
             }
             
-            # Process children if present
+            # 处理嵌套内容
             if block.get("has_children", False):
                 try:
                     child_blocks = notion.blocks.children.list(block_id=block["id"])["results"]
@@ -469,6 +475,7 @@ def process_block_content(block: dict) -> dict:
                         result["children"] = children
                 except Exception as e:
                     logger.error(f"Error processing list item children for {block['id']}: {e}")
+                    logger.error(f"List item content: {block_content}")
         return result
     except Exception as e:
         logger.warning(f"Error processing block content: {e}")
