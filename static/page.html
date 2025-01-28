@@ -1869,7 +1869,8 @@
                         cells.forEach((cell, cellIndex) => {
                             const isHeaderCell = isHeaderRow || (hasRowHeader && cellIndex === 0);
                             const tag = isHeaderCell ? 'th' : 'td';
-                            const cellContent = processRichText(cell);
+                            // 处理富文本数组
+                            const cellContent = Array.isArray(cell) ? processRichText(cell) : cell;
                             tableHtml += `<${tag} class="whitespace-pre-wrap">${cellContent}</${tag}>`;
                         });
                         tableHtml += '</tr>';

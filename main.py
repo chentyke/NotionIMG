@@ -420,9 +420,9 @@ def process_block_content(block: dict) -> dict:
                     logger.error(f"Error processing table rows for {block['id']}: {e}")
         elif block_type == "table_row":
             cells = []
-            for cell in block_content.get("cells", []):
-                cell_text = process_rich_text(cell)
-                cells.append(cell_text)
+            for cell_array in block_content.get("cells", []):
+                # 每个单元格是一个富文本数组
+                cells.append(cell_array)  # 保持原始富文本数组格式
             result["cells"] = cells
         elif block_type == "file":
             # 处理文件块
