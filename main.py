@@ -61,8 +61,32 @@ async def init_pages():
         pages_data.clear()
         suffix_pages.clear()
         
-        # 查询数据库中的所有页面
-        response = notion.databases.query(database_id=DATABASE_ID)
+        # 查询数据库中的所有页面，排除file和image类型
+        response = notion.databases.query(
+            database_id=DATABASE_ID,
+            filter={
+                "and": [
+                    {
+                        "property": "type",
+                        "select": {
+                            "equals": "page"
+                        }
+                    },
+                    {
+                        "property": "type",
+                        "select": {
+                            "does_not_equal": "file"
+                        }
+                    },
+                    {
+                        "property": "type",
+                        "select": {
+                            "does_not_equal": "image"
+                        }
+                    }
+                ]
+            }
+        )
         pages = response['results']
         
         logger.info(f"Found total {len(pages)} pages in database")
