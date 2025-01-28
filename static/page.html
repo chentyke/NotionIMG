@@ -1052,11 +1052,12 @@
             -webkit-backdrop-filter: blur(10px);
             padding: 1rem;
             transform: translateY(-100%);
-            transition: transform 0.3s ease;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             border-bottom: 1px solid rgba(229, 231, 235, 0.5);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
 
         .floating-header.visible {
@@ -1071,12 +1072,27 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            max-width: 80%;
+            max-width: calc(100% - 120px);
         }
 
         .floating-header .copy-link-button {
+            width: 36px;
+            min-width: 36px;
+            margin: 0;
             padding: 0.5rem;
-            font-size: 0.875rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .floating-header .copy-link-button span {
+            display: none;
+        }
+
+        .floating-header .copy-link-button:hover {
+            width: 36px;
+        }
+
+        .floating-header .copy-link-button.copied {
+            width: 36px;
         }
 
         @media (max-width: 640px) {
@@ -1085,6 +1101,14 @@
             }
             .floating-header h1 {
                 font-size: 1rem;
+            }
+            .floating-header .copy-link-button {
+                width: 32px;
+                min-width: 32px;
+                padding: 0.375rem;
+            }
+            .floating-header .copy-link-button:hover {
+                width: 32px;
             }
         }
 
@@ -1662,6 +1686,7 @@
                 // Update page title and date
                 document.title = data.page.title;
                 document.getElementById('pageTitle').textContent = data.page.title;
+                document.getElementById('floatingTitle').textContent = data.page.title;
                 
                 // Add edit date if available
                 const dateElement = document.getElementById('editDate');
@@ -1896,18 +1921,26 @@
             });
         }
 
-        // 添加滚动监听逻辑
+        // 修改滚动监听逻辑
         let lastScrollTop = 0;
+        let scrollTimeout = null;
         const floatingHeader = document.getElementById('floatingHeader');
         const mainHeader = document.querySelector('.page-header');
         const floatingTitle = document.getElementById('floatingTitle');
+        const scrollThreshold = 50; // 添加滚动阈值
 
         window.addEventListener('scroll', () => {
             const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
             const headerRect = mainHeader.getBoundingClientRect();
+            const scrollDelta = Math.abs(scrollTop - lastScrollTop);
             
-            // 当主标题完全离开视口时才考虑显示浮动标题
-            if (headerRect.bottom < 0) {
+            // 清除之前的定时器
+            if (scrollTimeout) {
+                clearTimeout(scrollTimeout);
+            }
+            
+            // 当主标题完全离开视口，且滚动距离超过阈值时才触发
+            if (headerRect.bottom < 0 && scrollDelta > scrollThreshold) {
                 // 向上滚动时显示浮动标题
                 if (scrollTop < lastScrollTop) {
                     floatingHeader.classList.add('visible');
@@ -1915,12 +1948,15 @@
                     // 向下滚动时隐藏浮动标题
                     floatingHeader.classList.remove('visible');
                 }
-            } else {
+            } else if (headerRect.bottom > 0) {
                 // 当主标题在视口内时，始终隐藏浮动标题
                 floatingHeader.classList.remove('visible');
             }
             
-            lastScrollTop = scrollTop;
+            // 设置新的定时器，在滚动停止后更新状态
+            scrollTimeout = setTimeout(() => {
+                lastScrollTop = scrollTop;
+            }, 100);
         });
 
         // 更新页面标题时同时更新浮动标题
