@@ -1200,6 +1200,42 @@
         .prose .rich-text-wrapper {
             display: inline;
         }
+
+        /* Add bookmark block styles */
+        .bookmark-block {
+            transition: all 0.2s ease;
+        }
+
+        .bookmark-block:hover {
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .bookmark-block a {
+            text-decoration: none !important;
+        }
+
+        .bookmark-block a:hover {
+            text-decoration: none !important;
+        }
+
+        .bookmark-block .fa-link {
+            font-size: 1.125rem;
+        }
+
+        .bookmark-block .fa-external-link-alt {
+            font-size: 0.875rem;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .bookmark-block {
+                background-color: var(--bg-secondary);
+                border-color: var(--border-color);
+            }
+            
+            .bookmark-block:hover {
+                background-color: var(--hover-bg);
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -1534,12 +1570,24 @@
                         <div>${block.text}</div>
                     </div>`;
                 case 'bookmark':
+                    const bookmarkData = block.bookmark;
+                    if (!bookmarkData || !bookmarkData.url) return '';
+                    
                     return `
-                        <div class="border rounded-lg p-4 my-4 hover:bg-gray-50">
-                            <a href="${block.url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">
-                                ${block.url}
+                        <div class="bookmark-block border rounded-lg overflow-hidden my-4 hover:bg-gray-50 transition-colors">
+                            <a href="${bookmarkData.url}" target="_blank" rel="noopener noreferrer" 
+                               class="block p-4 text-blue-600 hover:text-blue-700">
+                                <div class="flex items-center gap-3">
+                                    <i class="fas fa-link text-gray-400"></i>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="text-base font-medium truncate">${bookmarkData.url}</div>
+                                        ${bookmarkData.caption ? 
+                                            `<div class="text-sm text-gray-500 mt-1 truncate">${bookmarkData.caption}</div>` 
+                                            : ''}
+                                    </div>
+                                    <i class="fas fa-external-link-alt text-gray-400"></i>
+                                </div>
                             </a>
-                            ${block.caption ? `<div class="text-sm text-gray-500 mt-2">${block.caption}</div>` : ''}
                         </div>`;
                 case 'equation':
                     return `<div class="my-4 p-2 bg-gray-50 rounded overflow-x-auto">

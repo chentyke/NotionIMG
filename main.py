@@ -424,6 +424,11 @@ def process_block_content(block: dict) -> dict:
                 "color": block_content.get("color", "default")
             })
             logger.info(f"Processed to_do block result: {result}")
+        elif block_type == "bookmark":
+            result["bookmark"] = {
+                "url": block_content.get("url", ""),
+                "caption": process_rich_text(block_content.get("caption", [])) if block_content.get("caption") else ""
+            }
 
         return result
     except Exception as e:
