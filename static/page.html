@@ -2012,30 +2012,30 @@
         const floatingHeader = document.getElementById('floatingHeader');
         const mainHeader = document.querySelector('.page-header');
         const floatingTitle = document.getElementById('floatingTitle');
-        const showThreshold = 10; // 降低显示阈值，提高灵敏度
-        const hideThreshold = 30; // 降低隐藏阈值，提高灵敏度
-        const hideDelay = 150; // 减少隐藏延迟时间
+        const showThreshold = 10; // 显示阈值
+        const hideThreshold = 30; // 隐藏阈值
+        const hideDelay = 150; // 隐藏延迟
 
         window.addEventListener('scroll', () => {
             const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
             const headerRect = mainHeader.getBoundingClientRect();
             const scrollDelta = Math.abs(scrollTop - lastScrollTop);
+            const scrollDirection = scrollTop > lastScrollTop ? 'down' : 'up';
             
             // 清除之前的定时器
             if (scrollTimeout) {
                 clearTimeout(scrollTimeout);
+                scrollTimeout = null;
             }
             
             // 当主标题完全离开视口时才考虑显示/隐藏
             if (headerRect.bottom < 0) {
-                if (scrollTop < lastScrollTop && scrollDelta > showThreshold) {
+                if (scrollDirection === 'up' && scrollDelta > showThreshold) {
                     // 向上滚动且超过显示阈值时，立即显示
                     floatingHeader.classList.add('visible');
-                } else if (scrollTop > lastScrollTop && scrollDelta > hideThreshold) {
-                    // 向下滚动且超过隐藏阈值时，延迟隐藏
-                    scrollTimeout = setTimeout(() => {
-                        floatingHeader.classList.remove('visible');
-                    }, hideDelay);
+                } else if (scrollDirection === 'down' && scrollDelta > hideThreshold) {
+                    // 向下滚动且超过隐藏阈值时，立即隐藏
+                    floatingHeader.classList.remove('visible');
                 }
             } else {
                 // 当主标题在视口内时，立即隐藏
@@ -2044,6 +2044,17 @@
             
             // 更新滚动位置
             lastScrollTop = scrollTop;
+        });
+
+        // 添加页面加载时的初始检查
+        window.addEventListener('load', () => {
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const headerRect = mainHeader.getBoundingClientRect();
+            
+            // 如果页面加载时主标题已经不在视口内，且滚动位置不在顶部，则显示浮动标题
+            if (headerRect.bottom < 0 && scrollTop > 0) {
+                floatingHeader.classList.add('visible');
+            }
         });
 
         // 更新页面标题时同时更新浮动标题
