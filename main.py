@@ -105,6 +105,12 @@ async def init_pages():
                 logger.info(f"Raw properties data:")
                 logger.info(properties)
                 
+                # 检查 Hidden 属性
+                hidden = properties.get("Hidden", {}).get("select", {}).get("name") == "True"
+                if hidden:
+                    logger.info(f"Skipping hidden page {page_id}")
+                    continue
+                
                 # 获取标题
                 title = ''
                 title_obj = properties.get('title', properties.get('Name', {}))
@@ -722,6 +728,12 @@ async def get_page(page_id: str):
         # 提取页面属性
         properties = page_data.get('properties', {})
         logger.info(f"All properties: {properties}")
+        
+        # 检查 Hidden 属性
+        hidden = properties.get("Hidden", {}).get("select", {}).get("name") == "True"
+        if hidden:
+            logger.info(f"Page {page_id} is hidden")
+            raise HTTPException(status_code=404, detail="Page not found")
         
         # 获取标题
         title = ''
