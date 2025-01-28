@@ -1328,7 +1328,7 @@
         .prose ol {
             list-style-position: outside;
             padding-left: 1.5rem;
-            margin: 1rem 0;
+            margin: 0.5rem 0;  /* 减少列表整体的上下间距 */
         }
 
         .prose ul {
@@ -1340,16 +1340,13 @@
         }
 
         .prose li {
-            margin: 0.5rem 0;
-            padding-left: 0.5rem;
+            margin: 0.25rem 0;  /* 减少列表项之间的间距 */
+            padding-left: 0.25rem;
+            line-height: 1.5;  /* 减少行高 */
         }
 
         .prose li.list-item {
             position: relative;
-        }
-
-        .prose li.list-item::marker {
-            color: var(--text-tertiary);
         }
 
         .prose .list-item-content {
@@ -1358,19 +1355,37 @@
         }
 
         .prose .nested-content {
-            margin-top: 0.5rem;
-            margin-bottom: 0.5rem;
+            margin-top: 0.25rem;  /* 减少嵌套内容的间距 */
+            margin-bottom: 0.25rem;
         }
 
         .prose .nested-list {
-            margin: 0.25rem 0 0.25rem 1.5rem;
+            margin: 0.25rem 0 0.25rem 1.25rem;  /* 减少嵌套列表的缩进和间距 */
         }
 
-        /* Dark mode adjustments */
-        @media (prefers-color-scheme: dark) {
-            .prose li.list-item::marker {
-                color: var(--text-secondary);
-            }
+        /* 调整段落和其他块级元素的间距 */
+        .prose p {
+            margin: 0.75rem 0;  /* 减少段落间距 */
+            line-height: 1.6;
+        }
+
+        .prose h1, .prose h2, .prose h3 {
+            margin-top: 1.5rem;  /* 标题上方间距保持较大 */
+            margin-bottom: 0.75rem;  /* 减少标题下方间距 */
+        }
+
+        /* 调整列表内部的块级元素间距 */
+        .prose li > * {
+            margin-top: 0.25rem;
+            margin-bottom: 0.25rem;
+        }
+
+        /* 调整相邻列表的间距 */
+        .prose ul + ul,
+        .prose ol + ol,
+        .prose ul + ol,
+        .prose ol + ul {
+            margin-top: 0.25rem;  /* 减少相邻列表之间的间距 */
         }
     </style>
 </head>
