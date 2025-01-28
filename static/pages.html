@@ -42,6 +42,45 @@
         .search-input:focus {
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
         }
+
+        /* 移动端适配 */
+        @media (max-width: 640px) {
+            .container {
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+            
+            header .flex {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 1rem;
+            }
+            
+            h1.text-3xl {
+                font-size: 1.5rem;
+                text-align: center;
+            }
+            
+            .search-input {
+                width: 100% !important;
+            }
+            
+            header .flex .flex {
+                flex-direction: row;
+            }
+            
+            header .space-x-4 {
+                width: 100%;
+            }
+            
+            header .flex .flex {
+                justify-content: space-between;
+            }
+            
+            button {
+                white-space: nowrap;
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -49,7 +88,7 @@
         <header class="bg-white shadow-sm">
             <div class="container mx-auto px-4 py-6 max-w-6xl">
                 <div class="flex justify-between items-center">
-                    <h1 class="text-3xl font-bold text-gray-900">页面列表</h1>
+                    <h1 class="text-3xl font-bold text-gray-900 whitespace-nowrap">页面列表</h1>
                     <div class="flex items-center space-x-4">
                         <div class="relative">
                             <input 
@@ -66,7 +105,7 @@
                         </div>
                         <button 
                             @click="refreshPages" 
-                            class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition duration-200 flex items-center space-x-2"
+                            class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition duration-200 flex items-center space-x-2 whitespace-nowrap"
                             :disabled="isLoading"
                         >
                             <span v-if="isLoading" class="loading-spinner mr-2"></span>
