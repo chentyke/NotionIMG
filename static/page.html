@@ -1972,26 +1972,42 @@
             navigator.clipboard.writeText(currentUrl).then(() => {
                 buttons.forEach(button => {
                     button.classList.add('copied');
+                    // 保存原始内容
+                    const originalContent = button.innerHTML;
                     button.innerHTML = '<i class="fas fa-check"></i>';
-                });
-                
-                setTimeout(() => {
-                    buttons.forEach(button => {
+                    if (!button.classList.contains('floating-header')) {
+                        button.innerHTML += '<span>复制成功</span>';
+                    }
+                    
+                    setTimeout(() => {
                         button.classList.remove('copied');
-                        button.innerHTML = '<i class="fas fa-link"></i>';
-                    });
-                }, 2000);
+                        // 根据按钮位置恢复不同的内容
+                        if (button.closest('.floating-header')) {
+                            button.innerHTML = '<i class="fas fa-link"></i>';
+                        } else {
+                            button.innerHTML = '<i class="fas fa-link"></i><span>复制链接</span>';
+                        }
+                    }, 2000);
+                });
             }).catch(err => {
                 console.error('Failed to copy link:', err);
                 buttons.forEach(button => {
+                    // 保存原始内容
+                    const originalContent = button.innerHTML;
                     button.innerHTML = '<i class="fas fa-times"></i>';
+                    if (!button.classList.contains('floating-header')) {
+                        button.innerHTML += '<span>复制失败</span>';
+                    }
+                    
+                    setTimeout(() => {
+                        // 根据按钮位置恢复不同的内容
+                        if (button.closest('.floating-header')) {
+                            button.innerHTML = '<i class="fas fa-link"></i>';
+                        } else {
+                            button.innerHTML = '<i class="fas fa-link"></i><span>复制链接</span>';
+                        }
+                    }, 2000);
                 });
-                
-                setTimeout(() => {
-                    buttons.forEach(button => {
-                        button.innerHTML = '<i class="fas fa-link"></i>';
-                    });
-                }, 2000);
             });
         }
 
