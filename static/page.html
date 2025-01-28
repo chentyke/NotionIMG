@@ -1281,6 +1281,39 @@
                 background-color: var(--hover-bg);
             }
         }
+
+        /* List styles */
+        .prose ul {
+            list-style-type: disc;
+            padding-left: 1.5rem;
+            margin: 0.75rem 0;
+        }
+
+        .prose ol {
+            list-style-type: decimal;
+            padding-left: 1.5rem;
+            margin: 0.75rem 0;
+        }
+
+        .prose li {
+            margin: 0.375rem 0;
+            padding-left: 0.25rem;
+        }
+
+        .prose li > ul,
+        .prose li > ol {
+            margin: 0.375rem 0;
+        }
+
+        .prose li::marker {
+            color: var(--text-tertiary);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .prose li::marker {
+                color: var(--text-secondary);
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -1579,21 +1612,24 @@
                     return `<h3 class="${blockColor}">${h3Text}</h3>`;
                 case 'bulleted_list_item':
                 case 'numbered_list_item':
-                    let listContent = block.text || '';
+                    const listType = block.type;
+                    const listContent = block[listType]?.rich_text 
+                        ? processRichText(block[listType].rich_text)
+                        : '';
+                    
+                    let listItemHtml = `<li class="${blockColor}">${listContent}`;
                     
                     // Handle nested content
                     if (block.children && block.children.length > 0) {
+                        const nestedListType = block.children[0].type === 'bulleted_list_item' ? 'ul' : 'ol';
                         const nestedContent = await Promise.all(block.children.map(async child => {
-                            if (child.type === 'bulleted_list_item' || child.type === 'numbered_list_item') {
-                                const listType = child.type === 'bulleted_list_item' ? 'ul' : 'ol';
-                                return `<${listType}>${await renderBlock(child)}</${listType}>`;
-                            }
                             return await renderBlock(child);
                         }));
-                        listContent += nestedContent.join('');
+                        listItemHtml += `<${nestedListType} class="ml-6 my-2">${nestedContent.join('')}</${nestedListType}>`;
                     }
                     
-                    return `<li class="${blockColor}">${listContent}</li>`;
+                    listItemHtml += '</li>';
+                    return listItemHtml;
                 case 'code':
                     return `<pre><div class="language-label">${block.language || 'text'}</div><button class="copy-button" onclick="copyCode(this)">Copy</button><code class="language-${block.language || 'text'}">${block.text.trim()}</code></pre>`;
                 case 'image':
