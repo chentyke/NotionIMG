@@ -1458,6 +1458,79 @@
         .prose ol + ul {
             margin-top: 0.25rem;  /* 减少相邻列表之间的间距 */
         }
+
+        /* 页面头部布局 */
+        .page-header {
+            position: relative;
+            border-bottom: 1px solid #E5E7EB;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            animation: slideDown 0.5s ease-out;
+        }
+
+        .page-title-container {
+            width: 100%;
+            padding-right: 120px;  /* 为按钮预留空间 */
+        }
+
+        /* 复制链接按钮样式 */
+        .page-header .copy-link-button {
+            position: absolute;
+            top: 0;
+            right: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            color: var(--text-tertiary);
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            width: auto;
+            min-width: 120px;
+        }
+
+        .page-header .copy-link-button i {
+            font-size: 0.875rem;
+        }
+
+        .page-header .copy-link-button span {
+            font-size: 0.875rem;
+        }
+
+        .page-header .copy-link-button:hover {
+            background-color: var(--hover-bg);
+        }
+
+        .page-header .copy-link-button.copied {
+            background-color: var(--success-color);
+            border-color: var(--success-border);
+            color: var(--bg-secondary);
+        }
+
+        @media (max-width: 640px) {
+            .page-header {
+                padding-top: 3rem;  /* 为按钮留出空间 */
+            }
+
+            .page-title-container {
+                padding-right: 0;  /* 移动端不需要预留空间 */
+            }
+
+            .page-header .copy-link-button {
+                top: 0;
+                right: 0;
+                padding: 0.375rem 0.75rem;
+                font-size: 0.75rem;
+            }
+
+            .page-header .copy-link-button i {
+                font-size: 0.75rem;
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
