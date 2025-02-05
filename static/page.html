@@ -72,7 +72,7 @@
                 --link-hover-color: #93c5fd;
                 --success-color: #059669;
                 --success-border: #10B981;
-                --code-bg: #1e1e1e;
+                --code-bg: #1f2937;
                 --hover-bg: #374151;
                 --shadow-color: rgba(0, 0, 0, 0.3);
             }
@@ -508,8 +508,6 @@
             z-index: 1000;
             cursor: zoom-out;
             transition: background-color 0.3s ease-out;
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
         }
         .image-modal.visible {
             background-color: rgba(0, 0, 0, 0.9);
@@ -522,7 +520,7 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%) scale(0.95);
-            border-radius: 0.75rem;
+            border-radius: 0.5rem;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
             opacity: 0;
             transition: all 0.3s ease-out;
@@ -533,26 +531,23 @@
         }
         .close-button {
             position: absolute;
-            top: 1.5rem;
-            right: 1.5rem;
+            top: 1rem;
+            right: 1rem;
             color: white;
             font-size: 2rem;
             cursor: pointer;
             z-index: 1001;
-            width: 3rem;
-            height: 3rem;
+            width: 2.5rem;
+            height: 2.5rem;
             display: flex;
             align-items: center;
             justify-content: center;
             background-color: rgba(0, 0, 0, 0.5);
             border-radius: 9999px;
-            transition: all 0.2s ease;
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
+            transition: background-color 0.2s;
         }
         .close-button:hover {
             background-color: rgba(0, 0, 0, 0.7);
-            transform: scale(1.1);
         }
         .prose code.inline-code {
             background-color: #f3f4f6;
@@ -807,11 +802,12 @@
         }
         .copy-link-button {
             flex-shrink: 0;
-            padding: 0.5rem;
-            background-color: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 0.5rem;
-            color: var(--text-tertiary);
+            margin-top: 0.5rem;
+            padding: 0.5rem 0;
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.375rem;
+            color: #6B7280;
             cursor: pointer;
             transition: all 0.3s ease;
             display: flex;
@@ -833,11 +829,9 @@
             position: absolute;
             left: 50%;
             transform: translateX(-50%);
-            transition: all 0.3s ease;
         }
         .copy-link-button:hover {
             width: 120px;
-            background-color: var(--hover-bg);
         }
         .copy-link-button:hover i {
             position: static;
@@ -854,9 +848,9 @@
             max-width: 100px;
         }
         .copy-link-button.copied {
-            background-color: var(--success-color);
+            background-color: #10B981;
             color: white;
-            border-color: var(--success-border);
+            border-color: #059669;
             width: 36px;
         }
         .copy-link-button.copied span {
@@ -1167,9 +1161,9 @@
             right: 0;
             z-index: 1000;
             background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            padding: 0.75rem 0;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 0.75rem 0;  /* 移除左右内边距 */
             transform: translateY(-100%);
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             border-bottom: 1px solid rgba(229, 231, 235, 0.5);
@@ -1181,10 +1175,10 @@
         }
 
         .floating-header .content-wrapper {
-            max-width: calc(896px + 2rem);
+            max-width: calc(896px + 2rem);  /* 页面内容宽度 + 两侧小边距 */
             width: 100%;
             margin: 0 auto;
-            padding: 0 1rem;
+            padding: 0 1rem;  /* 添加较小的左右内边距 */
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -1192,7 +1186,7 @@
 
         .floating-header h1 {
             font-size: 1.25rem;
-            font-weight: 600;
+            font-weight: 700;  /* 修改浮动标题加粗程度 */
             color: var(--text-primary);
             margin: 0;
             white-space: nowrap;
@@ -1233,11 +1227,11 @@
 
         @media (max-width: 640px) {
             .floating-header {
-                padding: 0.625rem 0;
+                padding: 0.625rem 0;  /* 移除左右内边距 */
             }
             
             .floating-header .content-wrapper {
-                padding: 0 1rem;
+                padding: 0 1.25rem;  /* 保持移动端的左右边距 */
             }
             
             .floating-header h1 {
@@ -1311,18 +1305,14 @@
 
         /* 调整主容器的内边距 */
         .container.mx-auto {
-            padding-left: 1.5rem;
-            padding-right: 1.5rem;
-            padding-top: 2rem;
-            padding-bottom: 2rem;
+            padding-left: 1rem;  /* 减小左边距 */
+            padding-right: 1rem;  /* 减小右边距 */
         }
 
         @media (max-width: 640px) {
             .container.mx-auto {
-                padding-left: 1rem;
-                padding-right: 1rem;
-                padding-top: 1.5rem;
-                padding-bottom: 1.5rem;
+                padding-left: 1.25rem;  /* 移动端保持较大边距 */
+                padding-right: 1.25rem;
             }
         }
 
@@ -1467,225 +1457,6 @@
         .prose ol + ul {
             margin-top: 0.25rem;  /* 减少相邻列表之间的间距 */
         }
-
-        .prose pre {
-            background-color: var(--code-bg);
-            padding: 1.25rem;
-            border-radius: 0.75rem;
-            margin: 1.5rem 0;
-            overflow-x: auto;
-            position: relative;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 2px 4px var(--shadow-color);
-        }
-
-        .prose pre code {
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-            font-size: 0.9em;
-            line-height: 1.6;
-            color: var(--text-primary);
-            tab-size: 4;
-        }
-
-        .language-label {
-            position: absolute;
-            top: 0.75rem;
-            left: 1rem;
-            font-size: 0.75rem;
-            color: var(--text-tertiary);
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-            text-transform: lowercase;
-            letter-spacing: 0.025em;
-        }
-
-        .copy-button {
-            position: absolute;
-            top: 0.75rem;
-            right: 0.75rem;
-            padding: 0.5rem 0.75rem;
-            background-color: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 0.5rem;
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-            cursor: pointer;
-            transition: all 0.2s;
-            opacity: 0;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-        }
-
-        .copy-button i {
-            font-size: 0.875rem;
-        }
-
-        .prose pre:hover .copy-button {
-            opacity: 1;
-        }
-
-        .copy-button:hover {
-            background-color: var(--hover-bg);
-            border-color: var(--border-color);
-            color: var(--text-primary);
-            transform: translateY(-1px);
-        }
-
-        .copy-button.copied {
-            background-color: var(--success-color);
-            color: white;
-            border-color: var(--success-border);
-        }
-
-        .prose p {
-            margin: 1.25rem 0;
-            line-height: 1.8;
-            color: var(--text-secondary);
-            font-size: 1.125rem;
-        }
-
-        .prose a {
-            color: var(--link-color);
-            text-decoration: none;
-            transition: all 0.2s;
-            border-bottom: 1px solid transparent;
-        }
-
-        .prose a:hover {
-            color: var(--link-hover-color);
-            border-bottom-color: var(--link-hover-color);
-        }
-
-        .prose strong {
-            color: var(--text-primary);
-            font-weight: 600;
-        }
-
-        .prose em {
-            font-style: italic;
-            color: var(--text-primary);
-        }
-
-        .prose code.inline-code {
-            background-color: var(--code-bg);
-            padding: 0.2em 0.4em;
-            border-radius: 0.25rem;
-            font-size: 0.875em;
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
-        }
-
-        .prose ul, .prose ol {
-            margin: 1.25rem 0;
-            padding-left: 1.5rem;
-            color: var(--text-secondary);
-        }
-
-        .prose li {
-            margin: 0.5rem 0;
-            padding-left: 0.5rem;
-            line-height: 1.7;
-        }
-
-        .prose li::marker {
-            color: var(--text-tertiary);
-        }
-
-        .prose blockquote {
-            border-left: 4px solid var(--border-color);
-            padding: 1rem 1.5rem;
-            margin: 1.5rem 0;
-            font-style: italic;
-            color: var(--text-secondary);
-            background-color: var(--bg-primary);
-            border-radius: 0.5rem;
-        }
-
-        .prose blockquote p {
-            margin: 0;
-        }
-
-        .prose img {
-            border-radius: 0.75rem;
-            margin: 2rem 0;
-            box-shadow: 0 4px 6px var(--shadow-color);
-            transition: all 0.3s ease;
-            max-width: 100%;
-            height: auto;
-        }
-
-        .prose img:hover {
-            transform: scale(1.02);
-            box-shadow: 0 8px 12px var(--shadow-color);
-        }
-
-        .prose table {
-            width: 100%;
-            margin: 1.5rem 0;
-            border-collapse: separate;
-            border-spacing: 0;
-            border-radius: 0.5rem;
-            overflow: hidden;
-            box-shadow: 0 2px 4px var(--shadow-color);
-        }
-
-        .prose th {
-            background-color: var(--bg-primary);
-            color: var(--text-primary);
-            font-weight: 600;
-            text-align: left;
-            padding: 0.75rem 1rem;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .prose td {
-            padding: 0.75rem 1rem;
-            color: var(--text-secondary);
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .prose tr:last-child td {
-            border-bottom: none;
-        }
-
-        .prose tr:hover td {
-            background-color: var(--hover-bg);
-        }
-
-        @media (max-width: 640px) {
-            .prose {
-                font-size: 1rem;
-            }
-
-            .prose pre {
-                padding: 1rem;
-                border-radius: 0.5rem;
-            }
-
-            .prose pre code {
-                font-size: 0.875em;
-            }
-
-            .prose p {
-                font-size: 1rem;
-                line-height: 1.7;
-            }
-
-            .prose table {
-                display: block;
-                overflow-x: auto;
-                -webkit-overflow-scrolling: touch;
-            }
-
-            .prose th,
-            .prose td {
-                padding: 0.625rem 0.875rem;
-                min-width: 120px;
-            }
-        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -1698,15 +1469,13 @@
             </button>
         </div>
     </div>
-
     <!-- Add loading progress bar -->
     <div id="loadingProgress" class="loading-progress">
         <div id="loadingProgressBar" class="loading-progress-bar"></div>
     </div>
-
-    <div class="container mx-auto max-w-4xl" style="overflow-x: hidden;">
+    <div class="container mx-auto px-4 py-8 max-w-4xl" style="overflow-x: hidden;">
         <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-            <div class="p-6 sm:p-8">
+            <div class="p-6">
                 <div class="page-header">
                     <div class="page-title-container">
                         <h1 id="pageTitle" class="page-title"></h1>
@@ -1728,7 +1497,7 @@
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                             </svg>
-                            返回页面列表
+                            Back to Pages
                         </a>
                     </div>
                 </div>
