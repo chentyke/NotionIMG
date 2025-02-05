@@ -62,40 +62,42 @@ async def init_pages():
         pages_data.clear()
         suffix_pages.clear()
         
-        # 查询数据库中的所有页面，排除file和image类型
+        # 查询数据库中的所有页面
         logger.info("Querying Notion database with pagination...")
         pages = []
         cursor = None
         while True:
-            if cursor:
-                response = notion.databases.query(
-                    database_id=DATABASE_ID,
-                    filter={
-                        "and": [
-                            { "property": "type", "select": { "equals": "page" } },
-                            { "property": "type", "select": { "does_not_equal": "file" } },
-                            { "property": "type", "select": { "does_not_equal": "image" } }
-                        ]
-                    },
-                    start_cursor=cursor
-                )
-            else:
-                response = notion.databases.query(
-                    database_id=DATABASE_ID,
-                    filter={
-                        "and": [
-                            { "property": "type", "select": { "equals": "page" } },
-                            { "property": "type", "select": { "does_not_equal": "file" } },
-                            { "property": "type", "select": { "does_not_equal": "image" } }
-                        ]
+            query_params = {
+                "database_id": DATABASE_ID,
+                "filter": {
+                    "property": "type",
+                    "select": {
+                        "equals": "page"
                     }
-                )
+                },
+                "page_size": 100  # 增加每页数量
+            }
+            
+            if cursor:
+                query_params["start_cursor"] = cursor
+                
+            response = notion.databases.query(**query_params)
+            
+            # 记录原始响应数据用于调试
+            logger.info(f"\nRaw response data:")
+            logger.info(f"Has more: {response.get('has_more')}")
+            logger.info(f"Next cursor: {response.get('next_cursor')}")
+            logger.info(f"Results count: {len(response.get('results', []))}")
+            
             fetched = response.get('results', [])
             pages.extend(fetched)
+            
             logger.info(f"Fetched {len(fetched)} pages, total so far: {len(pages)}")
+            
             if not response.get('has_more', False):
                 break
             cursor = response.get('next_cursor')
+            
         logger.info(f"Found {len(pages)} total pages in database")
         
         if not pages:
@@ -110,6 +112,7 @@ async def init_pages():
                 
                 # 获取页面属性
                 properties = page.get('properties', {})
+                logger.info(f"Page properties: {properties}")
                 
                 # 检查 Hidden 属性
                 hidden = properties.get("Hidden", {}).get("select", {}).get("name") == "True"
@@ -119,23 +122,22 @@ async def init_pages():
                 
                 # 获取标题
                 title = ''
-                title_obj = properties.get('title', properties.get('Name', {}))
-                if title_obj and title_obj.get('title'):
-                    title = title_obj['title'][0].get('plain_text', 'Untitled')
+                title_obj = properties.get('Name', properties.get('title', {}))
+                if title_obj:
+                    if title_obj.get('type') == 'title':
+                        title_array = title_obj.get('title', [])
+                        if title_array and len(title_array) > 0:
+                            title = title_array[0].get('plain_text', 'Untitled')
                 logger.info(f"Title: {title}")
                 
                 # 获取 suffix
                 suffix = ''
                 suffix_obj = properties.get('suffix', {})
-                logger.info(f"Processing suffix property: {suffix_obj}")
-                
                 if suffix_obj:
                     prop_type = suffix_obj.get('type', '')
-                    logger.info(f"Suffix property type: {prop_type}")
-                    
                     if prop_type == 'rich_text':
                         rich_text = suffix_obj.get('rich_text', [])
-                        if rich_text:
+                        if rich_text and len(rich_text) > 0:
                             suffix = rich_text[0].get('plain_text', '')
                     elif prop_type == 'text':
                         text_content = suffix_obj.get('text', {})
@@ -166,7 +168,6 @@ async def init_pages():
                 if suffix:
                     if suffix not in suffix_pages:
                         suffix_pages[suffix] = []
-                    # 检查是否已存在
                     if not any(p['id'] == page_id for p in suffix_pages[suffix]):
                         suffix_pages[suffix].append(page_obj.dict())
                         logger.info(f"Added page to suffix_pages[{suffix}]")
@@ -179,11 +180,9 @@ async def init_pages():
         logger.info("\nInitialization complete:")
         logger.info(f"Total pages in pages_data: {len(pages_data)}")
         logger.info(f"Total unique suffixes: {len(suffix_pages)}")
-        logger.info("Suffix pages mapping:")
-        for suffix, pages in suffix_pages.items():
-            logger.info(f"Suffix '{suffix}': {len(pages)} pages")
-            for page in pages:
-                logger.info(f"  - {page['title']} ({page['id']})")
+        logger.info("Pages data:")
+        for page_id, page in pages_data.items():
+            logger.info(f"  - {page['title']} ({page_id})")
         
     except Exception as e:
         logger.error(f"Error initializing pages: {str(e)}")
@@ -841,6 +840,36 @@ async def query_notion_database(
         return response
     except Exception as e:
         logger.error(f"Error querying database: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/debug/database")
+async def get_database_raw():
+    """获取数据库原始数据，用于调试"""
+    try:
+        logger.info("Getting raw database data for debugging...")
+        response = notion.databases.query(
+            database_id=DATABASE_ID,
+            page_size=100  # 设置较大的页面大小以获取更多数据
+        )
+        
+        # 记录原始数据
+        logger.info("Database raw response:")
+        logger.info(response)
+        
+        # 记录每个页面的关键属性
+        for page in response.get('results', []):
+            logger.info("\nPage details:")
+            logger.info(f"ID: {page.get('id')}")
+            logger.info(f"Properties: {page.get('properties')}")
+            
+        return {
+            "total_results": len(response.get('results', [])),
+            "has_more": response.get('has_more', False),
+            "results": response.get('results', [])
+        }
+    except Exception as e:
+        logger.error(f"Error getting raw database: {str(e)}")
+        logger.error("Stack trace:", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
