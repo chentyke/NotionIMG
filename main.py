@@ -70,12 +70,27 @@ async def init_pages():
             query_params = {
                 "database_id": DATABASE_ID,
                 "filter": {
-                    "property": "type",
-                    "select": {
-                        "equals": "page"
-                    }
+                    "and": [
+                        {
+                            "property": "Hidden",
+                            "select": {
+                                "does_not_equal": "True"
+                            }
+                        },
+                        {
+                            "archived": {
+                                "equals": false
+                            }
+                        },
+                        {
+                            "property": "type",
+                            "select": {
+                                "equals": "page"
+                            }
+                        }
+                    ]
                 },
-                "page_size": 100  # 增加每页数量
+                "page_size": 100
             }
             
             if cursor:
@@ -90,8 +105,11 @@ async def init_pages():
             logger.info(f"Results count: {len(response.get('results', []))}")
             
             fetched = response.get('results', [])
+            if not fetched:
+                logger.warning("No results returned from this query")
+                break
+                
             pages.extend(fetched)
-            
             logger.info(f"Fetched {len(fetched)} pages, total so far: {len(pages)}")
             
             if not response.get('has_more', False):
@@ -113,12 +131,6 @@ async def init_pages():
                 # 获取页面属性
                 properties = page.get('properties', {})
                 logger.info(f"Page properties: {properties}")
-                
-                # 检查 Hidden 属性
-                hidden = properties.get("Hidden", {}).get("select", {}).get("name") == "True"
-                if hidden:
-                    logger.info(f"Skipping hidden page {page_id}")
-                    continue
                 
                 # 获取标题
                 title = ''
