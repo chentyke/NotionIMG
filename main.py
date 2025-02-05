@@ -63,35 +63,41 @@ async def init_pages():
         suffix_pages.clear()
         
         # 查询数据库中的所有页面，排除file和image类型
-        logger.info("Querying Notion database...")
-        response = notion.databases.query(
-            database_id=DATABASE_ID,
-            filter={
-                "and": [
-                    {
-                        "property": "type",
-                        "select": {
-                            "equals": "page"
-                        }
+        logger.info("Querying Notion database with pagination...")
+        pages = []
+        cursor = None
+        while True:
+            if cursor:
+                response = notion.databases.query(
+                    database_id=DATABASE_ID,
+                    filter={
+                        "and": [
+                            { "property": "type", "select": { "equals": "page" } },
+                            { "property": "type", "select": { "does_not_equal": "file" } },
+                            { "property": "type", "select": { "does_not_equal": "image" } }
+                        ]
                     },
-                    {
-                        "property": "type",
-                        "select": {
-                            "does_not_equal": "file"
-                        }
-                    },
-                    {
-                        "property": "type",
-                        "select": {
-                            "does_not_equal": "image"
-                        }
+                    start_cursor=cursor
+                )
+            else:
+                response = notion.databases.query(
+                    database_id=DATABASE_ID,
+                    filter={
+                        "and": [
+                            { "property": "type", "select": { "equals": "page" } },
+                            { "property": "type", "select": { "does_not_equal": "file" } },
+                            { "property": "type", "select": { "does_not_equal": "image" } }
+                        ]
                     }
-                ]
-            }
-        )
-        pages = response['results']
+                )
+            fetched = response.get('results', [])
+            pages.extend(fetched)
+            logger.info(f"Fetched {len(fetched)} pages, total so far: {len(pages)}")
+            if not response.get('has_more', False):
+                break
+            cursor = response.get('next_cursor')
+        logger.info(f"Found {len(pages)} total pages in database")
         
-        logger.info(f"Found {len(pages)} pages in database")
         if not pages:
             logger.warning("No pages found in database")
             return
