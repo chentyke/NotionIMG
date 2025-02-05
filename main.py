@@ -736,22 +736,99 @@ async def read_suffix_pages(suffix: str):
 async def get_pages(suffix: Optional[str] = None):
     """获取页面列表，支持通过 suffix 筛选"""
     try:
-        # 确保数据是最新的
-        await init_pages()
+        # 直接查询 Notion 数据库
+        response = notion.databases.query(
+            database_id=DATABASE_ID,
+            filter={
+                "and": [
+                    {
+                        "property": "type",
+                        "select": {
+                            "equals": "page"
+                        }
+                    },
+                    {
+                        "property": "type",
+                        "select": {
+                            "does_not_equal": "file"
+                        }
+                    },
+                    {
+                        "property": "type",
+                        "select": {
+                            "does_not_equal": "image"
+                        }
+                    }
+                ]
+            }
+        )
         
-        if suffix:
-            logger.info(f"\nGetting pages with suffix: '{suffix}'")
-            logger.info(f"Available suffixes: {list(suffix_pages.keys())}")
-            pages = suffix_pages.get(suffix, [])
-            logger.info(f"Found {len(pages)} pages with suffix '{suffix}'")
-            for page in pages:
-                logger.info(f"  - {page['title']} ({page['id']})")
-            return {"pages": pages}
-            
-        # 如果没有指定 suffix，返回所有页面
-        all_pages = list(pages_data.values())
-        logger.info(f"\nReturning all pages: {len(all_pages)} pages")
-        return {"pages": all_pages}
+        # 处理页面数据
+        pages = []
+        for page in response["results"]:
+            try:
+                page_id = page['id']
+                logger.info(f"Processing page {page_id}")
+                
+                # 获取页面属性
+                properties = page.get('properties', {})
+                
+                # 检查 Hidden 属性
+                hidden = properties.get("Hidden", {}).get("select", {}).get("name") == "True"
+                if hidden:
+                    logger.info(f"Skipping hidden page {page_id}")
+                    continue
+                
+                # 获取标题
+                title = ''
+                title_obj = properties.get('title', properties.get('Name', {}))
+                if title_obj and title_obj.get('title'):
+                    title = title_obj['title'][0].get('plain_text', 'Untitled')
+                
+                # 获取 suffix
+                page_suffix = ''
+                suffix_obj = properties.get('suffix', {})
+                
+                # 处理文本类型的 suffix
+                if suffix_obj:
+                    prop_type = suffix_obj.get('type', '')
+                    if prop_type == 'rich_text':
+                        rich_text = suffix_obj.get('rich_text', [])
+                        if rich_text:
+                            page_suffix = rich_text[0].get('plain_text', '')
+                    elif prop_type == 'text':
+                        text_content = suffix_obj.get('text', {})
+                        if isinstance(text_content, str):
+                            page_suffix = text_content
+                        elif isinstance(text_content, dict):
+                            page_suffix = text_content.get('content', '')
+                
+                # 如果指定了 suffix 且不匹配，则跳过
+                if suffix and page_suffix != suffix:
+                    continue
+                
+                # 创建页面对象
+                page_obj = {
+                    "id": page_id,
+                    "title": title,
+                    "created_time": page.get('created_time', ''),
+                    "last_edited_time": page.get('last_edited_time', ''),
+                    "parent_id": page.get('parent', {}).get('database_id'),
+                    "edit_date": page.get('last_edited_time', ''),
+                    "show_back": True,
+                    "suffix": page_suffix
+                }
+                
+                pages.append(page_obj)
+                
+            except Exception as e:
+                logger.error(f"Error processing page {page.get('id', 'unknown')}: {str(e)}")
+                logger.error(f"Stack trace:", exc_info=True)
+                continue
+        
+        logger.info(f"Returning {len(pages)} pages")
+        return {"pages": pages}
+        
     except Exception as e:
         logger.error(f"Error getting pages: {str(e)}")
         logger.error("Stack trace:", exc_info=True)
