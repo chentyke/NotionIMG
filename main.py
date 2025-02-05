@@ -72,14 +72,15 @@ async def init_pages():
                 "filter": {
                     "and": [
                         {
-                            "property": "Hidden",
+                            "property": "type",
                             "select": {
-                                "does_not_equal": "True"
+                                "equals": "page"
                             }
                         },
                         {
-                            "archived": {
-                                "equals": False
+                            "property": "Hidden",
+                            "select": {
+                                "equals": "False"
                             }
                         }
                     ]
@@ -99,11 +100,8 @@ async def init_pages():
             logger.info(f"Results count: {len(response.get('results', []))}")
             
             fetched = response.get('results', [])
-            if not fetched:
-                logger.warning("No results returned from this query")
-                break
-                
             pages.extend(fetched)
+            
             logger.info(f"Fetched {len(fetched)} pages, total so far: {len(pages)}")
             
             if not response.get('has_more', False):
@@ -128,11 +126,12 @@ async def init_pages():
                 
                 # 获取标题
                 title = ''
-                title_obj = properties.get('Name', {})
-                if title_obj and title_obj.get('type') == 'title':
-                    title_array = title_obj.get('title', [])
-                    if title_array and len(title_array) > 0:
-                        title = title_array[0].get('plain_text', 'Untitled')
+                title_obj = properties.get('Name', properties.get('title', {}))
+                if title_obj:
+                    if title_obj.get('type') == 'title':
+                        title_array = title_obj.get('title', [])
+                        if title_array and len(title_array) > 0:
+                            title = title_array[0].get('plain_text', 'Untitled')
                 logger.info(f"Title: {title}")
                 
                 # 获取 suffix
@@ -144,6 +143,12 @@ async def init_pages():
                         rich_text = suffix_obj.get('rich_text', [])
                         if rich_text and len(rich_text) > 0:
                             suffix = rich_text[0].get('plain_text', '')
+                    elif prop_type == 'text':
+                        text_content = suffix_obj.get('text', {})
+                        if isinstance(text_content, str):
+                            suffix = text_content
+                        elif isinstance(text_content, dict):
+                            suffix = text_content.get('content', '')
                 
                 logger.info(f"Final suffix: '{suffix}'")
                 
