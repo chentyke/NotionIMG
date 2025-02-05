@@ -8,6 +8,7 @@ import logging
 from typing import List, Dict, Optional
 import httpx
 from pydantic import BaseModel
+import time
 
 # Configure logging
 logging.basicConfig(
@@ -42,6 +43,18 @@ DATABASE_ID = os.environ.get("NOTION_DATABASE_ID")
 # 存储页面数据的字典
 pages_data = {}
 suffix_pages = {}
+
+last_pages_update = 0
+PAGE_CACHE_TTL = 60  # 缓存有效时间, 单位秒
+
+# 缓存块内容的有效时间, 单位秒
+blocks_cache = {}
+BLOCKS_CACHE_TTL = 60  # 缓存块内容的有效时间, 单位秒
+
+images_cache = {"data": None, "timestamp": 0}
+files_cache = {"data": None, "timestamp": 0}
+IMAGES_CACHE_TTL = 60
+FILES_CACHE_TTL = 60
 
 class Page(BaseModel):
     id: str
@@ -197,6 +210,8 @@ async def init_pages():
             logger.info(f"Suffix '{suffix}': {len(pages)} pages")
             for page in pages:
                 logger.info(f"  - {page['title']} ({page['id']})")
+        global last_pages_update
+        last_pages_update = time.time()
         
     except Exception as e:
         logger.error(f"Error initializing pages: {str(e)}")
@@ -736,8 +751,9 @@ async def read_suffix_pages(suffix: str):
 async def get_pages(suffix: Optional[str] = None):
     """获取页面列表，支持通过 suffix 筛选"""
     try:
-        # 确保数据是最新的
-        await init_pages()
+        # 确保缓存中有数据，如果没有则初始化
+        if not pages_data or time.time() - last_pages_update >= PAGE_CACHE_TTL:
+            await init_pages()
         
         if suffix:
             logger.info(f"\nGetting pages with suffix: '{suffix}'")
