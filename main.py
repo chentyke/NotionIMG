@@ -79,13 +79,7 @@ async def init_pages():
                         },
                         {
                             "archived": {
-                                "equals": false
-                            }
-                        },
-                        {
-                            "property": "type",
-                            "select": {
-                                "equals": "page"
+                                "equals": False
                             }
                         }
                     ]
@@ -134,12 +128,11 @@ async def init_pages():
                 
                 # 获取标题
                 title = ''
-                title_obj = properties.get('Name', properties.get('title', {}))
-                if title_obj:
-                    if title_obj.get('type') == 'title':
-                        title_array = title_obj.get('title', [])
-                        if title_array and len(title_array) > 0:
-                            title = title_array[0].get('plain_text', 'Untitled')
+                title_obj = properties.get('Name', {})
+                if title_obj and title_obj.get('type') == 'title':
+                    title_array = title_obj.get('title', [])
+                    if title_array and len(title_array) > 0:
+                        title = title_array[0].get('plain_text', 'Untitled')
                 logger.info(f"Title: {title}")
                 
                 # 获取 suffix
@@ -151,12 +144,6 @@ async def init_pages():
                         rich_text = suffix_obj.get('rich_text', [])
                         if rich_text and len(rich_text) > 0:
                             suffix = rich_text[0].get('plain_text', '')
-                    elif prop_type == 'text':
-                        text_content = suffix_obj.get('text', {})
-                        if isinstance(text_content, str):
-                            suffix = text_content
-                        elif isinstance(text_content, dict):
-                            suffix = text_content.get('content', '')
                 
                 logger.info(f"Final suffix: '{suffix}'")
                 
