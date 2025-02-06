@@ -1457,6 +1457,38 @@
         .prose ol + ul {
             margin-top: 0.25rem;  /* 减少相邻列表之间的间距 */
         }
+
+        /* Add column layout styles */
+        .column-list {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            margin: 1rem 0;
+        }
+        
+        @media (min-width: 768px) {
+            .column-list {
+                grid-template-columns: repeat(var(--columns, 2), 1fr);
+            }
+        }
+        
+        .column {
+            min-width: 0;  /* 确保列内容不会溢出 */
+        }
+        
+        /* Ensure proper spacing between blocks inside columns */
+        .column > * {
+            margin-top: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        .column > *:first-child {
+            margin-top: 0;
+        }
+        
+        .column > *:last-child {
+            margin-bottom: 0;
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -2047,16 +2079,22 @@
                             </div>
                         </div>`;
                 case 'column_list':
-                    return `
-                        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 my-4">
-                            <template v-for="column in block.columns" :key="column.id">
-                                <div class="md:col-span-6">
-                                    <template v-for="childBlock in column.children" :key="childBlock.id">
-                                        <block-renderer :block="childBlock" />
-                                    </template>
-                                </div>
-                            </template>
-                        </div>`;
+                    let columnListHtml = `<div class="column-list" style="--columns: ${block.columns?.length || 2}">`;
+                    
+                    if (block.columns && Array.isArray(block.columns)) {
+                        for (const column of block.columns) {
+                            columnListHtml += `<div class="column">`;
+                            if (column.children && Array.isArray(column.children)) {
+                                for (const childBlock of column.children) {
+                                    columnListHtml += await renderBlock(childBlock);
+                                }
+                            }
+                            columnListHtml += `</div>`;
+                        }
+                    }
+                    
+                    columnListHtml += `</div>`;
+                    return columnListHtml;
                 default:
                     return '';
             }
