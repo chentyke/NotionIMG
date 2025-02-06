@@ -2046,6 +2046,17 @@
                                 </div>
                             </div>
                         </div>`;
+                case 'column_list':
+                    return `
+                        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 my-4">
+                            <template v-for="column in block.columns" :key="column.id">
+                                <div class="md:col-span-6">
+                                    <template v-for="childBlock in column.children" :key="childBlock.id">
+                                        <block-renderer :block="childBlock" />
+                                    </template>
+                                </div>
+                            </template>
+                        </div>`;
                 default:
                     return '';
             }

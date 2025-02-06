@@ -337,7 +337,42 @@ def process_block_content(block: dict) -> dict:
         }
 
         # Add block content specific data
-        if block_type == "paragraph":
+        if block_type == "column_list":
+            # 处理列表容器
+            logger.info(f"Processing column_list block: {block['id']}")
+            if block.get("has_children", False):
+                try:
+                    columns = notion.blocks.children.list(block_id=block["id"])["results"]
+                    processed_columns = []
+                    for column in columns:
+                        if column["type"] == "column":
+                            column_content = process_block_content(column)
+                            if column_content:
+                                processed_columns.append(column_content)
+                    result["columns"] = processed_columns
+                    logger.info(f"Processed {len(processed_columns)} columns in column_list")
+                except Exception as e:
+                    logger.error(f"Error processing column_list children: {e}")
+                    logger.error(f"Column list content: {block_content}")
+
+        elif block_type == "column":
+            # 处理单个列
+            logger.info(f"Processing column block: {block['id']}")
+            if block.get("has_children", False):
+                try:
+                    column_blocks = notion.blocks.children.list(block_id=block["id"])["results"]
+                    processed_blocks = []
+                    for child_block in column_blocks:
+                        child_content = process_block_content(child_block)
+                        if child_content:
+                            processed_blocks.append(child_content)
+                    result["children"] = processed_blocks
+                    logger.info(f"Processed {len(processed_blocks)} blocks in column")
+                except Exception as e:
+                    logger.error(f"Error processing column children: {e}")
+                    logger.error(f"Column content: {block_content}")
+
+        elif block_type == "paragraph":
             result["paragraph"] = {
                 "rich_text": block_content["rich_text"],
                 "color": color
