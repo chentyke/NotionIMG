@@ -264,14 +264,12 @@ def get_page_info(page: dict) -> dict:
         return {
             "id": page["id"],
             "title": title,
-            "created_time": page["created_time"],
-            "last_edited_time": page["last_edited_time"],
-            "parent_id": page.get("parent", {}).get("page_id"),
-            "edit_date": page["last_edited_time"],  # Use last_edited_time as edit_date
-            "show_back": show_back,  # Add show_back to response
-            "cover": cover  # Add cover URL to response
+            "created_time": page.get("created_time"),
+            "last_edited_time": page.get("last_edited_time"),
+            "show_back": show_back,
+            "cover": cover
         }
-    except (KeyError, IndexError) as e:
+    except Exception as e:
         logger.warning(f"Error extracting page info: {e}")
         return None
 

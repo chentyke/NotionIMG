@@ -377,27 +377,24 @@
 
         .page-cover {
             width: 100%;
-            height: 30vh;
-            min-height: 200px;
-            max-height: 400px;
-            position: relative;
+            height: 300px;
             margin-bottom: 2rem;
-            border-radius: 0.5rem;
+            border-radius: 0.75rem;
             overflow: hidden;
-            background-color: var(--bg-secondary);
+            position: relative;
+            background-color: #f3f4f6;
         }
-
+        
         .page-cover img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transition: opacity 0.3s ease;
+            transition: opacity 0.5s ease-out;
         }
-
+        
         @media (max-width: 640px) {
             .page-cover {
-                height: 25vh;
-                min-height: 150px;
+                height: 200px;
                 margin-bottom: 1.5rem;
             }
         }
