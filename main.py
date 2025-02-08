@@ -252,6 +252,15 @@ def get_page_info(page: dict) -> dict:
                 title = page.get("title", "Untitled")
             show_back = True
             
+        # Get cover image URL
+        cover = None
+        if page.get("cover"):
+            cover_obj = page["cover"]
+            if cover_obj["type"] == "external":
+                cover = cover_obj["external"]["url"]
+            elif cover_obj["type"] == "file":
+                cover = cover_obj["file"]["url"]
+            
         return {
             "id": page["id"],
             "title": title,
@@ -259,7 +268,8 @@ def get_page_info(page: dict) -> dict:
             "last_edited_time": page["last_edited_time"],
             "parent_id": page.get("parent", {}).get("page_id"),
             "edit_date": page["last_edited_time"],  # Use last_edited_time as edit_date
-            "show_back": show_back  # Add show_back to response
+            "show_back": show_back,  # Add show_back to response
+            "cover": cover  # Add cover URL to response
         }
     except (KeyError, IndexError) as e:
         logger.warning(f"Error extracting page info: {e}")
