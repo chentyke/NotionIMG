@@ -2156,14 +2156,25 @@
                 const coverImg = pageCover.querySelector('img');
                 
                 if (data.page.cover) {
-                    coverImg.src = data.page.cover;
-                    coverImg.onload = () => {
-                        coverImg.classList.remove('opacity-0');
-                        pageCover.style.display = 'block';
-                    };
-                    coverImg.onerror = () => {
+                    let coverUrl = '';
+                    if (data.page.cover.type === 'external' && data.page.cover.external) {
+                        coverUrl = data.page.cover.external.url;
+                    } else if (data.page.cover.type === 'file' && data.page.cover.file) {
+                        coverUrl = data.page.cover.file.url;
+                    }
+                    
+                    if (coverUrl) {
+                        coverImg.src = coverUrl;
+                        coverImg.onload = () => {
+                            coverImg.classList.remove('opacity-0');
+                            pageCover.style.display = 'block';
+                        };
+                        coverImg.onerror = () => {
+                            pageCover.style.display = 'none';
+                        };
+                    } else {
                         pageCover.style.display = 'none';
-                    };
+                    }
                 } else {
                     pageCover.style.display = 'none';
                 }
