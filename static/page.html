@@ -26,22 +26,6 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        /* Add critical loading progress bar styles */
-        .loading-progress {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 3px;
-            background: #e5e7eb;
-            z-index: 1000;
-        }
-        .loading-progress-bar {
-            height: 100%;
-            background: #3b82f6;
-            width: 0;
-            transition: width 0.3s ease;
-        }
         :root {
             /* Light mode colors */
             --bg-primary: #f9fafb;
@@ -681,26 +665,6 @@
             .prose td {
                 color: var(--text-primary);
             }
-        }
-        /* Add loading progress bar styles */
-        .loading-progress {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 3px;
-            background: var(--border-color);
-            z-index: 1000;
-        }
-        .loading-progress-bar {
-            height: 100%;
-            background: var(--link-color);
-            width: 0;
-            transition: width 0.3s ease;
-        }
-        .loading-progress.complete {
-            opacity: 0;
-            transition: opacity 0.3s ease 0.3s;
         }
         /* Add toggle block styles */
         .toggle-block {
@@ -1615,7 +1579,6 @@
             background-color: var(--bg-primary);
             z-index: 2000;
             display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
             opacity: 1;
@@ -1629,7 +1592,6 @@
         .loading-overlay .loading-spinner {
             width: 40px;
             height: 40px;
-            margin-bottom: 1rem;
         }
 
         /* Hide page content during loading */
@@ -1763,6 +1725,9 @@
     <!-- Update loading overlay -->
     <div id="loadingOverlay" class="loading-overlay">
         <div class="loading-spinner"></div>
+        <div class="loading-progress">
+            <div id="loadingProgressBar" class="loading-progress-bar"></div>
+        </div>
         <div class="loading-text">正在加载页面内容...</div>
     </div>
     <!-- 添加毛玻璃标题栏 -->
@@ -1842,7 +1807,18 @@
         document.body.style.overflowX = 'hidden';
         document.documentElement.style.overflowX = 'hidden';
         
-        // Remove updateLoadingProgress function
+        function updateLoadingProgress(progress) {
+            const progressBar = document.getElementById('loadingProgressBar');
+            progressBar.style.width = `${progress}%`;
+            
+            if (progress >= 100) {
+                setTimeout(() => {
+                    document.getElementById('loadingProgress').classList.add('complete');
+                }, 300);
+            }
+        }
+
+        // Optimize image loading with IntersectionObserver
         const imageObserver = new IntersectionObserver((entries, observer) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
@@ -2397,10 +2373,12 @@
                 pageCover.querySelector('img').src = '';
                 
                 // Start loading data
+                updateLoadingProgress(10);
                 loadingText.textContent = '正在获取页面数据...';
                 const response = await fetch(`/page/${targetPageId}`);
                 const data = await response.json();
                 
+                updateLoadingProgress(30);
                 loadingText.textContent = '正在处理页面内容...';
                 
                 // Update page title and date
@@ -2440,20 +2418,21 @@
                     }
                 }
                 
-                // Update back button based on parent page
+                // Update back button based on parent page and show_back property
+                const backButtonContainer = document.querySelector('.mt-8');
                 if (data.page.show_back === false) {
-                    backButton.style.display = 'none';
+                    backButtonContainer.style.display = 'none';
                 } else {
-                    backButton.style.display = 'block';
-                    const backButtonLink = backButton.querySelector('.back-button');
+                    backButtonContainer.style.display = 'block';
+                    const backButton = document.querySelector('.back-button');
                     if (data.page.parent_id) {
                         parentPageId = data.page.parent_id;
                         try {
                             const parentResponse = await fetch(`/page/${parentPageId}`);
                             const parentData = await parentResponse.json();
                             const parentTitle = parentData.page.title;
-                            backButtonLink.href = `/static/page.html?id=${parentPageId}`;
-                            backButtonLink.innerHTML = `
+                            backButton.href = `/static/page.html?id=${parentPageId}`;
+                            backButton.innerHTML = `
                                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                                 </svg>
@@ -2461,8 +2440,8 @@
                             `;
                         } catch (error) {
                             console.error('Error fetching parent page:', error);
-                            backButtonLink.href = `/static/page.html?id=${parentPageId}`;
-                            backButtonLink.innerHTML = `
+                            backButton.href = `/static/page.html?id=${parentPageId}`;
+                            backButton.innerHTML = `
                                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                                 </svg>
@@ -2471,19 +2450,21 @@
                         }
                     } else {
                         parentPageId = null;
-                        backButtonLink.href = "/static/pages.html";
-                        backButtonLink.innerHTML = `
+                        backButton.href = "/static/pages.html";
+                        backButton.innerHTML = `
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                             </svg>
                             返回页面列表
                         `;
                     }
+                    // Show back button with animation after content is loaded
                     setTimeout(() => {
-                        backButton.classList.add('visible');
+                        backButtonContainer.classList.add('visible');
                     }, 300);
                 }
                 
+                updateLoadingProgress(50);
                 loadingText.textContent = '正在渲染页面内容...';
                 
                 // Initialize block counting
@@ -2528,10 +2509,12 @@
                 });
                 
                 // Show container with animation when everything is loaded
+                updateLoadingProgress(90);
                 loadingText.textContent = '即将完成...';
                 
                 setTimeout(() => {
                     container.classList.add('loaded');
+                    updateLoadingProgress(100);
                     
                     // Hide loading overlay
                     const loadingOverlay = document.getElementById('loadingOverlay');
@@ -2549,9 +2532,10 @@
                         <p>Error loading page content.</p>
                         <p class="text-sm mt-2">${error.message}</p>
                     </div>`;
-                
+                // Update loading state
                 const loadingText = document.querySelector('.loading-text');
                 loadingText.textContent = '加载失败，请重试...';
+                updateLoadingProgress(100);
                 
                 // Hide loading overlay
                 setTimeout(() => {
