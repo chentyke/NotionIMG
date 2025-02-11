@@ -252,14 +252,10 @@ def get_page_info(page: dict) -> dict:
                 title = page.get("title", "Untitled")
             show_back = True
             
-        # Get cover image URL
+        # Get cover object
         cover = None
         if page.get("cover"):
-            cover_obj = page["cover"]
-            if cover_obj["type"] == "external":
-                cover = cover_obj["external"]["url"]
-            elif cover_obj["type"] == "file":
-                cover = cover_obj["file"]["url"]
+            cover = page["cover"]  # Return the entire cover object
             
         return {
             "id": page["id"],
@@ -571,24 +567,26 @@ async def get_page_content(page_id: str):
             block = notion.blocks.retrieve(block_id=page_id)
             logger.info(f"Retrieved block type: {block['type']}")
             if block["type"] == "child_page":
-                # If it's a child page, use the title from the block
-                # Try to get the full page to check for Back property
+                # If it's a child page, get the full page to get all properties including cover
                 try:
                     page = notion.pages.retrieve(page_id=page_id)
+                    page_info = get_page_info(page)  # This will handle the cover properly
+                    if page_info:
+                        page_info["parent_id"] = block["parent"]["page_id"] if block["parent"]["type"] == "page_id" else None
+                    logger.info(f"Found child page: {page_info['title'] if page_info else 'None'}")
+                except Exception as e:
+                    logger.warning(f"Error getting full page for child page, falling back to basic info: {e}")
                     back_property = page.get("properties", {}).get("Back", {}).get("select", {}).get("name")
                     show_back = True if back_property is None else back_property != "False"
-                except:
-                    show_back = True  # Default to True if can't get the property
-                
-                page_info = {
-                    "id": block["id"],
-                    "title": block["child_page"]["title"],
-                    "created_time": block["created_time"],
-                    "last_edited_time": block["last_edited_time"],
-                    "parent_id": block["parent"]["page_id"] if block["parent"]["type"] == "page_id" else None,
-                    "show_back": show_back
-                }
-                logger.info(f"Found child page: {page_info['title']}")
+                    page_info = {
+                        "id": block["id"],
+                        "title": block["child_page"]["title"],
+                        "created_time": block["created_time"],
+                        "last_edited_time": block["last_edited_time"],
+                        "parent_id": block["parent"]["page_id"] if block["parent"]["type"] == "page_id" else None,
+                        "show_back": show_back,
+                        "cover": None  # No cover in fallback case
+                    }
             else:
                 # If it's not a child page, get page metadata normally
                 page = notion.pages.retrieve(page_id=page_id)
