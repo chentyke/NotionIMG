@@ -31,27 +31,16 @@
             position: fixed;
             top: 0;
             left: 0;
-            right: 0;
-            width: 100vw;
-            height: 2px;
-            background-color: var(--border-color);
-            z-index: 2001;
-            overflow: hidden;
-            pointer-events: none;
+            width: 100%;
+            height: 3px;
+            background: #e5e7eb;
+            z-index: 1000;
         }
         .loading-progress-bar {
             height: 100%;
+            background: #3b82f6;
             width: 0;
-            background-color: var(--link-color);
-            transition: width 0.3s ease-out;
-            transform-origin: left;
-        }
-        .loading-progress.error .loading-progress-bar {
-            background-color: var(--error-color);
-        }
-        .loading-progress.complete {
-            opacity: 0;
-            transition: opacity 0.3s ease-out;
+            transition: width 0.3s ease;
         }
         :root {
             /* Light mode colors */
@@ -73,20 +62,19 @@
         @media (prefers-color-scheme: dark) {
             :root {
                 /* Dark mode colors */
-                --bg-primary: #1a1a1a;
-                --bg-secondary: #2d2d2d;
-                --text-primary: #e4e4e4;
-                --text-secondary: #a3a3a3;
-                --text-tertiary: #737373;
-                --border-color: #404040;
-                --link-color: #3b82f6;
+                --bg-primary: #111827;
+                --bg-secondary: #1f2937;
+                --text-primary: #f9fafb;
+                --text-secondary: #e5e7eb;
+                --text-tertiary: #9ca3af;
+                --border-color: #374151;
+                --link-color: #60a5fa;
                 --link-hover-color: #93c5fd;
                 --success-color: #059669;
                 --success-border: #10B981;
                 --code-bg: #1f2937;
                 --hover-bg: #374151;
                 --shadow-color: rgba(0, 0, 0, 0.3);
-                --error-color: #ef4444;
             }
         }
 
@@ -699,27 +687,20 @@
             position: fixed;
             top: 0;
             left: 0;
-            right: 0;
-            width: 100vw;
-            height: 2px;
-            background-color: var(--border-color);
-            z-index: 2001;
-            overflow: hidden;
-            pointer-events: none;
+            width: 100%;
+            height: 3px;
+            background: var(--border-color);
+            z-index: 1000;
         }
         .loading-progress-bar {
             height: 100%;
+            background: var(--link-color);
             width: 0;
-            background-color: var(--link-color);
-            transition: width 0.3s ease-out;
-            transform-origin: left;
+            transition: width 0.3s ease;
         }
         .loading-progress.complete {
             opacity: 0;
-            transition: opacity 0.3s ease-out;
-        }
-        .loading-progress.error .loading-progress-bar {
-            background-color: var(--error-color);
+            transition: opacity 0.3s ease 0.3s;
         }
         /* Add toggle block styles */
         .toggle-block {
@@ -1771,52 +1752,21 @@
             background-color: var(--link-color);
             transition: width 0.3s ease-out;
         }
-
-        /* Remove duplicate progress bar */
-        <div id="floatingHeader" class="floating-header">
-            <div class="content-wrapper">
-                <h1 id="floatingTitle"></h1>
-                <button class="copy-link-button" onclick="copyPageLink()" title="复制页面链接">
-                    <i class="fas fa-link"></i>
-                </button>
-            </div>
-        </div>
-
-        <!-- Loading progress bar with inline styles -->
-        <div id="loadingProgress" class="fixed top-0 left-0 right-0 w-full overflow-hidden pointer-events-none" style="height: 2px; z-index: 2001; background-color: var(--border-color);">
-            <div id="loadingProgressBar" class="h-full w-0 transition-all duration-300 ease-out transform origin-left" style="background-color: var(--link-color);"></div>
-        </div>
-
-        <style>
-            #loadingProgress {
-                background-color: var(--border-color);
-                pointer-events: none;
-            }
-
-            #loadingProgressBar {
-                background-color: var(--link-color);
-            }
-
-            #loadingProgress.error #loadingProgressBar {
-                background-color: var(--error-color);
-            }
-        </style>
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
-    <!-- Progress bar -->
-    <div id="loadingProgress" class="fixed top-0 left-0 right-0 w-full h-0.5 bg-gray-200 overflow-hidden pointer-events-none" style="z-index: 2001;">
-        <div id="loadingProgressBar" class="h-full w-0 bg-blue-500 transition-all duration-300 ease-out transform origin-left"></div>
-    </div>
-
-    <!-- Page content -->
+    <!-- Add page transition overlay -->
     <div id="pageTransition" class="page-transition"></div>
     
+    <!-- Update loading overlay -->
     <div id="loadingOverlay" class="loading-overlay">
         <div class="loading-spinner"></div>
+        <div class="loading-progress">
+            <div id="loadingProgressBar" class="loading-progress-bar"></div>
+        </div>
         <div class="loading-text">正在加载页面内容...</div>
     </div>
-    
+    <!-- 添加毛玻璃标题栏 -->
     <div id="floatingHeader" class="floating-header">
         <div class="content-wrapper">
             <h1 id="floatingTitle"></h1>
@@ -1825,7 +1775,10 @@
             </button>
         </div>
     </div>
-    
+    <!-- Add loading progress bar -->
+    <div id="loadingProgress" class="loading-progress">
+        <div id="loadingProgressBar" class="loading-progress-bar"></div>
+    </div>
     <div class="container mx-auto px-4 py-8 max-w-4xl" style="overflow-x: hidden;">
         <div class="bg-white rounded-xl shadow-sm overflow-hidden">
             <div class="p-6">
@@ -1894,28 +1847,14 @@
         document.body.style.overflowX = 'hidden';
         document.documentElement.style.overflowX = 'hidden';
         
-        // Update loading progress function
         function updateLoadingProgress(progress) {
             const progressBar = document.getElementById('loadingProgressBar');
-            if (!progressBar) return;
-
-            // Update progress width
             progressBar.style.width = `${progress}%`;
             
-            // Handle completion
             if (progress >= 100) {
                 setTimeout(() => {
-                    // Fade out
-                    progressBar.style.opacity = '0';
-                    // Reset after fade out
-                    setTimeout(() => {
-                        progressBar.style.width = '0';
-                        progressBar.style.opacity = '1';
-                    }, 300);
-                }, 200);
-            } else {
-                // Ensure opacity is set to 1 for non-complete states
-                progressBar.style.opacity = '1';
+                    document.getElementById('loadingProgress').classList.add('complete');
+                }, 300);
             }
         }
 
@@ -2457,56 +2396,116 @@
             }
 
             try {
-                // Reset progress bar state
-                updateLoadingProgress(0);
+                // Reset page state
+                const container = document.querySelector('.container');
+                const pageCover = document.getElementById('pageCover');
+                const backButton = document.querySelector('.mt-8');
+                const loadingText = document.querySelector('.loading-text');
                 
-                // Start loading
+                // Hide container and back button
+                container.classList.remove('loaded');
+                backButton.style.display = 'none';
+                backButton.classList.remove('visible');
+                
+                // Reset cover
+                pageCover.style.display = 'none';
+                pageCover.classList.remove('loaded');
+                pageCover.querySelector('img').src = '';
+                
+                // Start loading data
                 updateLoadingProgress(10);
+                loadingText.textContent = '正在获取页面数据...';
                 const response = await fetch(`/page/${targetPageId}`);
-                
-                updateLoadingProgress(30);
                 const data = await response.json();
                 
-                updateLoadingProgress(50);
-                if (loadingText) loadingText.textContent = '正在处理页面内容...';
+                updateLoadingProgress(30);
+                loadingText.textContent = '正在处理页面内容...';
                 
-                // Update page title
+                // Update page title and date
                 document.title = data.page.title;
                 updatePageTitle(data.page.title);
                 
-                // Handle back button
-                if (backButton && data.page.parent_id) {
-                    const backLink = backButton.querySelector('.back-button');
-                    if (backLink) {
+                // Handle cover image
+                if (data.page.cover) {
+                    loadingText.textContent = '正在加载封面图片...';
+                    const coverImg = pageCover.querySelector('img');
+                    let coverUrl = '';
+                    
+                    if (data.page.cover.type === 'external') {
+                        coverUrl = data.page.cover.external.url;
+                    } else if (data.page.cover.type === 'file') {
+                        coverUrl = data.page.cover.file.url;
+                    }
+                    
+                    if (coverUrl) {
+                        const coverPromise = new Promise((resolve, reject) => {
+                            coverImg.onload = resolve;
+                            coverImg.onerror = reject;
+                            coverImg.src = coverUrl;
+                        });
+                        
                         try {
-                            const parentResponse = await fetch(`/page/${data.page.parent_id}`);
+                            await coverPromise;
+                            pageCover.style.display = 'block';
+                            setTimeout(() => {
+                                pageCover.classList.add('loaded');
+                                coverImg.style.opacity = '1';
+                            }, 50);
+                        } catch (error) {
+                            console.error('Failed to load cover image:', error);
+                            pageCover.style.display = 'none';
+                        }
+                    }
+                }
+                
+                // Update back button based on parent page and show_back property
+                const backButtonContainer = document.querySelector('.mt-8');
+                if (data.page.show_back === false) {
+                    backButtonContainer.style.display = 'none';
+                } else {
+                    backButtonContainer.style.display = 'block';
+                    const backButton = document.querySelector('.back-button');
+                    if (data.page.parent_id) {
+                        parentPageId = data.page.parent_id;
+                        try {
+                            const parentResponse = await fetch(`/page/${parentPageId}`);
                             const parentData = await parentResponse.json();
-                            backLink.href = `/static/page.html?id=${data.page.parent_id}`;
-                            backLink.innerHTML = `
+                            const parentTitle = parentData.page.title;
+                            backButton.href = `/static/page.html?id=${parentPageId}`;
+                            backButton.innerHTML = `
                                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                                 </svg>
-                                返回上级：${parentData.page.title}
+                                返回上级：${parentTitle}
                             `;
                         } catch (error) {
                             console.error('Error fetching parent page:', error);
-                            backLink.href = `/static/page.html?id=${data.page.parent_id}`;
-                            backLink.innerHTML = `
+                            backButton.href = `/static/page.html?id=${parentPageId}`;
+                            backButton.innerHTML = `
                                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                                 </svg>
                                 返回上级页面
                             `;
                         }
-                        backButton.style.display = 'block';
-                        setTimeout(() => {
-                            backButton.classList.add('visible');
-                        }, 300);
+                    } else {
+                        parentPageId = null;
+                        backButton.href = "/static/pages.html";
+                        backButton.innerHTML = `
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                            </svg>
+                            返回页面列表
+                        `;
                     }
+                    // Show back button with animation after content is loaded
+                    setTimeout(() => {
+                        backButtonContainer.classList.add('visible');
+                    }, 300);
                 }
                 
-                updateLoadingProgress(70);
-                if (loadingText) loadingText.textContent = '正在渲染页面内容...';
+                updateLoadingProgress(50);
+                loadingText.textContent = '正在渲染页面内容...';
                 
                 // Initialize block counting
                 totalBlocks = data.blocks.length;
@@ -2549,23 +2548,21 @@
                     imageObserver.observe(img);
                 });
                 
+                // Show container with animation when everything is loaded
                 updateLoadingProgress(90);
-                if (loadingText) loadingText.textContent = '即将完成...';
+                loadingText.textContent = '即将完成...';
                 
                 setTimeout(() => {
-                    updateLoadingProgress(100);
                     container.classList.add('loaded');
+                    updateLoadingProgress(100);
                     
                     // Hide loading overlay
                     const loadingOverlay = document.getElementById('loadingOverlay');
-                    if (loadingOverlay) {
-                        loadingOverlay.classList.add('fade-out');
-                        setTimeout(() => {
-                            loadingOverlay.style.display = 'none';
-                            loadingOverlay.classList.remove('fade-out');
-                            updateLoadingProgress(0);
-                        }, 300);
-                    }
+                    loadingOverlay.classList.add('fade-out');
+                    setTimeout(() => {
+                        loadingOverlay.style.display = 'none';
+                        loadingOverlay.classList.remove('fade-out');
+                    }, 300);
                 }, 300);
                 
             } catch (error) {
@@ -2575,13 +2572,20 @@
                         <p>Error loading page content.</p>
                         <p class="text-sm mt-2">${error.message}</p>
                     </div>`;
+                // Update loading state
+                const loadingText = document.querySelector('.loading-text');
+                loadingText.textContent = '加载失败，请重试...';
+                updateLoadingProgress(100);
                 
-                // Show error state in progress bar
-                const progressBar = document.getElementById('loadingProgressBar');
-                if (progressBar) {
-                    progressBar.style.backgroundColor = 'var(--error-color)';
-                    updateLoadingProgress(100);
-                }
+                // Hide loading overlay
+                setTimeout(() => {
+                    const loadingOverlay = document.getElementById('loadingOverlay');
+                    loadingOverlay.classList.add('fade-out');
+                    setTimeout(() => {
+                        loadingOverlay.style.display = 'none';
+                        loadingOverlay.classList.remove('fade-out');
+                    }, 300);
+                }, 1000);
             }
         }
 
