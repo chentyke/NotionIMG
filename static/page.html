@@ -1601,9 +1601,69 @@
                 max-width: 200px;
             }
         }
+
+        /* Add loading overlay styles */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-primary);
+            z-index: 2000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 1;
+            transition: opacity 0.3s ease-out;
+        }
+
+        .loading-overlay.fade-out {
+            opacity: 0;
+        }
+
+        .loading-overlay .loading-spinner {
+            width: 40px;
+            height: 40px;
+        }
+
+        /* Hide page content during loading */
+        .container {
+            opacity: 0;
+            transition: opacity 0.3s ease-out;
+        }
+
+        .container.loaded {
+            opacity: 1;
+        }
+
+        /* Optimize page cover styles */
+        .page-cover {
+            opacity: 0;
+            transition: opacity 0.3s ease-out;
+        }
+
+        .page-cover.loaded {
+            opacity: 1;
+        }
+
+        /* Hide back button by default */
+        .mt-8 {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease-out;
+        }
+
+        .mt-8.visible {
+            opacity: 1;
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
+    <!-- Add loading overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
     <!-- 添加毛玻璃标题栏 -->
     <div id="floatingHeader" class="floating-header">
         <div class="content-wrapper">
@@ -2234,6 +2294,21 @@
             }
 
             try {
+                // Reset page state
+                const container = document.querySelector('.container');
+                const pageCover = document.getElementById('pageCover');
+                const backButton = document.querySelector('.mt-8');
+                
+                // Hide container and back button
+                container.classList.remove('loaded');
+                backButton.style.display = 'none';
+                backButton.classList.remove('visible');
+                
+                // Reset cover
+                pageCover.style.display = 'none';
+                pageCover.classList.remove('loaded');
+                pageCover.querySelector('img').src = '';
+                
                 updateLoadingProgress(10);
                 const response = await fetch(`/page/${targetPageId}`);
                 const data = await response.json();
@@ -2245,60 +2320,26 @@
                 updatePageTitle(data.page.title);
                 
                 // Handle cover image
-                const pageCover = document.getElementById('pageCover');
-                const coverImg = pageCover.querySelector('img');
-                
                 if (data.page.cover) {
-                    console.log('Cover data:', data.page.cover); // 添加调试日志
+                    const coverImg = pageCover.querySelector('img');
                     let coverUrl = '';
                     
-                    // 根据 Notion API 的 File object 结构处理
                     if (data.page.cover.type === 'external') {
                         coverUrl = data.page.cover.external.url;
-                        console.log('Found external cover URL:', coverUrl);
                     } else if (data.page.cover.type === 'file') {
                         coverUrl = data.page.cover.file.url;
-                        console.log('Found file cover URL:', coverUrl);
-                    } else {
-                        console.log('Unknown cover type:', data.page.cover.type);
                     }
                     
                     if (coverUrl) {
-                        console.log('Setting cover URL:', coverUrl);
-                        coverImg.src = coverUrl;
                         coverImg.onload = () => {
-                            console.log('Cover image loaded successfully');
-                            coverImg.classList.remove('opacity-0');
                             pageCover.style.display = 'block';
+                            setTimeout(() => {
+                                pageCover.classList.add('loaded');
+                            }, 50);
                         };
-                        coverImg.onerror = (e) => {
-                            console.error('Cover image failed to load:', e);
-                            pageCover.style.display = 'none';
-                        };
-                    } else {
-                        console.log('No valid cover URL found');
-                        pageCover.style.display = 'none';
+                        coverImg.src = coverUrl;
                     }
-                } else {
-                    console.log('No cover data found');
-                    pageCover.style.display = 'none';
                 }
-                
-                // 格式化日期
-                const formatDate = (dateString) => {
-                    if (!dateString) return '';
-                    const date = new Date(dateString);
-                    if (isNaN(date.getTime())) return '';
-                    
-                    const year = date.getFullYear();
-                    const month = date.getMonth() + 1;
-                    const day = date.getDate();
-                    const hours = date.getHours().toString().padStart(2, '0');
-                    const minutes = date.getMinutes().toString().padStart(2, '0');
-                    return `最后编辑于 ${year}年${month}月${day}日 ${hours}:${minutes}`;
-                };
-                
-                document.getElementById('editDate').textContent = formatDate(data.page.last_edited_time);
                 
                 // Update back button based on parent page and show_back property
                 const backButtonContainer = document.querySelector('.mt-8');
@@ -2309,7 +2350,6 @@
                     const backButton = document.querySelector('.back-button');
                     if (data.page.parent_id) {
                         parentPageId = data.page.parent_id;
-                        // 获取父页面标题
                         try {
                             const parentResponse = await fetch(`/page/${parentPageId}`);
                             const parentData = await parentResponse.json();
@@ -2341,6 +2381,10 @@
                             返回页面列表
                         `;
                     }
+                    // Show back button with animation after content is loaded
+                    setTimeout(() => {
+                        backButtonContainer.classList.add('visible');
+                    }, 300);
                 }
                 
                 // Initialize block counting
@@ -2384,6 +2428,17 @@
                     imageObserver.observe(img);
                 });
                 
+                // Show container with animation when everything is loaded
+                setTimeout(() => {
+                    container.classList.add('loaded');
+                    // Hide loading overlay
+                    const loadingOverlay = document.getElementById('loadingOverlay');
+                    loadingOverlay.classList.add('fade-out');
+                    setTimeout(() => {
+                        loadingOverlay.style.display = 'none';
+                    }, 300);
+                }, 300);
+                
             } catch (error) {
                 console.error('Error loading page content:', error);
                 document.getElementById('pageContent').innerHTML = `
@@ -2391,6 +2446,12 @@
                         <p>Error loading page content.</p>
                         <p class="text-sm mt-2">${error.message}</p>
                     </div>`;
+                // Hide loading overlay on error
+                const loadingOverlay = document.getElementById('loadingOverlay');
+                loadingOverlay.classList.add('fade-out');
+                setTimeout(() => {
+                    loadingOverlay.style.display = 'none';
+                }, 300);
             }
         }
 
