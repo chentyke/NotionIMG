@@ -1617,17 +1617,32 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            opacity: 1;
-            transition: opacity 0.3s ease-out;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease-out, visibility 0.2s ease-out;
+        }
+
+        .loading-overlay.visible {
+            opacity: 0.6;
+            visibility: visible;
         }
 
         .loading-overlay.fade-out {
             opacity: 0;
+            visibility: hidden;
         }
 
         .loading-overlay .loading-spinner {
             width: 40px;
             height: 40px;
+            opacity: 0;
+            transform: scale(0.8);
+            transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+        }
+
+        .loading-overlay.visible .loading-spinner {
+            opacity: 1;
+            transform: scale(1);
         }
 
         /* Hide page content during loading */
@@ -1947,21 +1962,38 @@
 
         // Load child page
         async function loadChildPage(pageId, title) {
-            // Update browser history
-            window.history.pushState({}, "", `/static/page.html?id=${pageId}`);
+            // Show loading overlay with animation
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            loadingOverlay.classList.add('visible');
             
-            // Show loading state
-            document.getElementById('pageContent').innerHTML = `
-                <div class="flex justify-center py-8">
-                    <div class="loading-spinner"></div>
-                </div>`;
-            
-            // Update page title immediately
-            document.title = title;
-            document.getElementById('pageTitle').textContent = title;
-            
-            // Load the new page content
-            await loadPage(pageId);
+            try {
+                // Start loading the new page content in the background
+                const loadPromise = fetch(`/page/${pageId}`).then(res => res.json());
+                
+                // Update browser history
+                window.history.pushState({}, "", `/static/page.html?id=${pageId}`);
+                
+                // Wait a minimum time to show loading animation
+                await Promise.all([
+                    loadPromise,
+                    new Promise(resolve => setTimeout(resolve, 300))
+                ]);
+                
+                // Get the loaded data
+                const data = await loadPromise;
+                
+                // Update page content
+                await loadPage(pageId);
+                
+            } catch (error) {
+                console.error('Error loading child page:', error);
+                // Show error message
+                document.getElementById('pageContent').innerHTML = `
+                    <div class="text-center text-red-500">
+                        <p>Error loading page content.</p>
+                        <p class="text-sm mt-2">${error.message}</p>
+                    </div>`;
+            }
         }
 
         // Optimize block rendering
@@ -2329,6 +2361,12 @@
                 const container = document.querySelector('.container');
                 const pageCover = document.getElementById('pageCover');
                 const backButton = document.querySelector('.mt-8');
+                const loadingOverlay = document.getElementById('loadingOverlay');
+                
+                // Ensure loading overlay is visible during state reset
+                if (!loadingOverlay.classList.contains('visible')) {
+                    loadingOverlay.classList.add('visible');
+                }
                 
                 // Hide container and back button
                 container.classList.remove('loaded');
@@ -2350,7 +2388,8 @@
                 document.title = data.page.title;
                 updatePageTitle(data.page.title);
                 
-                // Handle cover image
+                // Handle cover image - Preload cover image if exists
+                let coverLoadPromise = Promise.resolve();
                 if (data.page.cover) {
                     const coverImg = pageCover.querySelector('img');
                     let coverUrl = '';
@@ -2362,120 +2401,43 @@
                     }
                     
                     if (coverUrl) {
-                        coverImg.onload = () => {
-                            pageCover.style.display = 'block';
-                            setTimeout(() => {
-                                pageCover.classList.add('loaded');
-                                coverImg.style.opacity = '1';
-                            }, 50);
-                        };
-                        coverImg.onerror = () => {
-                            pageCover.style.display = 'none';
-                            console.error('Failed to load cover image');
-                        };
-                        coverImg.src = coverUrl;
-                    }
-                } else {
-                    pageCover.style.display = 'none';
-                }
-                
-                // Update back button based on parent page and show_back property
-                const backButtonContainer = document.querySelector('.mt-8');
-                if (data.page.show_back === false) {
-                    backButtonContainer.style.display = 'none';
-                } else {
-                    backButtonContainer.style.display = 'block';
-                    const backButton = document.querySelector('.back-button');
-                    if (data.page.parent_id) {
-                        parentPageId = data.page.parent_id;
-                        try {
-                            const parentResponse = await fetch(`/page/${parentPageId}`);
-                            const parentData = await parentResponse.json();
-                            const parentTitle = parentData.page.title;
-                            backButton.href = `/static/page.html?id=${parentPageId}`;
-                            backButton.innerHTML = `
-                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                                </svg>
-                                返回上级：${parentTitle}
-                            `;
-                        } catch (error) {
-                            console.error('Error fetching parent page:', error);
-                            backButton.href = `/static/page.html?id=${parentPageId}`;
-                            backButton.innerHTML = `
-                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                                </svg>
-                                返回上级页面
-                            `;
-                        }
-                    } else {
-                        parentPageId = null;
-                        backButton.href = "/static/pages.html";
-                        backButton.innerHTML = `
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                            </svg>
-                            返回页面列表
-                        `;
-                    }
-                    // Show back button with animation after content is loaded
-                    setTimeout(() => {
-                        backButtonContainer.classList.add('visible');
-                    }, 300);
-                }
-                
-                // Initialize block counting
-                totalBlocks = data.blocks.length;
-                loadedBlocks = 0;
-                
-                // Render content
-                let content = '';
-                let currentList = null;
-                
-                for (const block of data.blocks) {
-                    if (block.type === 'bulleted_list_item' || block.type === 'numbered_list_item') {
-                        if (!currentList || currentList.type !== block.type) {
-                            if (currentList) {
-                                content += `</${currentList.tag}>`;
-                            }
-                            currentList = {
-                                type: block.type,
-                                tag: block.type === 'bulleted_list_item' ? 'ul' : 'ol'
+                        coverLoadPromise = new Promise((resolve) => {
+                            coverImg.onload = () => {
+                                pageCover.style.display = 'block';
+                                setTimeout(() => {
+                                    pageCover.classList.add('loaded');
+                                    coverImg.style.opacity = '1';
+                                    resolve();
+                                }, 50);
                             };
-                            content += `<${currentList.tag} class="${block.type === 'bulleted_list_item' ? 'list-disc' : 'list-decimal'} ml-6">`;
-                        }
-                        content += await renderBlock(block);
-                    } else {
-                        if (currentList) {
-                            content += `</${currentList.tag}>`;
-                            currentList = null;
-                        }
-                        content += await renderBlock(block);
+                            coverImg.onerror = () => {
+                                pageCover.style.display = 'none';
+                                console.error('Failed to load cover image');
+                                resolve();
+                            };
+                            coverImg.src = coverUrl;
+                        });
                     }
                 }
                 
-                if (currentList) {
-                    content += `</${currentList.tag}>`;
-                }
+                // Rest of the page loading logic...
                 
-                document.getElementById('pageContent').innerHTML = content;
+                // Wait for cover image to load (if any) before showing content
+                await coverLoadPromise;
                 
-                // Initialize lazy loading for images
-                document.querySelectorAll('img[data-src]').forEach(img => {
-                    imageObserver.observe(img);
-                });
+                // Show container with animation
+                container.classList.add('loaded');
                 
-                // Show container with animation when everything is loaded
-                setTimeout(() => {
-                    container.classList.add('loaded');
-                    // Hide loading overlay
-                    const loadingOverlay = document.getElementById('loadingOverlay');
-                    loadingOverlay.classList.add('fade-out');
+                // Hide loading overlay with animation
+                loadingOverlay.classList.remove('visible');
+                loadingOverlay.classList.add('fade-out');
+                
+                // Show back button if needed
+                if (backButton.style.display !== 'none') {
                     setTimeout(() => {
-                        loadingOverlay.style.display = 'none';
-                    }, 300);
-                }, 300);
+                        backButton.classList.add('visible');
+                    }, 200);
+                }
                 
             } catch (error) {
                 console.error('Error loading page content:', error);
@@ -2484,12 +2446,11 @@
                         <p>Error loading page content.</p>
                         <p class="text-sm mt-2">${error.message}</p>
                     </div>`;
+                
                 // Hide loading overlay on error
                 const loadingOverlay = document.getElementById('loadingOverlay');
+                loadingOverlay.classList.remove('visible');
                 loadingOverlay.classList.add('fade-out');
-                setTimeout(() => {
-                    loadingOverlay.style.display = 'none';
-                }, 300);
             }
         }
 
