@@ -391,9 +391,22 @@
         
         @media (max-width: 640px) {
             .page-cover {
-                width: calc(100% + 2.5rem); /* 移动端宽度计算 */
+                width: calc(100% + 2rem); /* 调整移动端宽度计算 */
                 height: 100px;
-                margin: -1.5rem -1.25rem 1.5rem -1.25rem; /* 保持移动端边距 */
+                margin: -1rem -1rem 1rem -1rem; /* 调整移动端边距 */
+                border-radius: 0.5rem 0.5rem 0 0; /* 调整移动端圆角 */
+            }
+
+            .container.mx-auto {
+                padding: 1rem; /* 统一移动端内边距 */
+            }
+
+            .bg-white {
+                border-radius: 0.5rem; /* 调整移动端卡片圆角 */
+            }
+
+            .p-6 {
+                padding: 1rem; /* 调整移动端内部内边距 */
             }
         }
 
