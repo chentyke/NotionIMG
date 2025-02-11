@@ -2676,22 +2676,28 @@
                     else if (contentType.includes('gif')) extension = 'gif';
                     else if (contentType.includes('webp')) extension = 'webp';
                     else if (contentType.includes('jpeg') || contentType.includes('jpg')) extension = 'jpg';
+                    else if (contentType.includes('heic')) extension = 'heic';
                 }
                 
-                // 从 URL 中提取原始文件名（如果存在）
+                // 从 URL 中提取原始文件名和扩展名（如果存在）
                 let filename = 'image';
                 try {
                     const urlParts = imageUrl.split('/');
                     const originalFilename = urlParts[urlParts.length - 1].split('?')[0]; // 移除查询参数
-                    if (originalFilename && originalFilename.includes('.')) {
-                        filename = originalFilename.split('.')[0]; // 获取文件名（不含扩展名）
+                    if (originalFilename) {
+                        // 检查 URL 中是否包含 .heic 扩展名
+                        if (originalFilename.toLowerCase().includes('.heic')) {
+                            extension = 'heic';
+                        }
+                        // 获取文件名（不含扩展名）
+                        filename = originalFilename.split('.')[0];
                     }
                 } catch (e) {
                     console.warn('Could not extract filename from URL:', e);
                 }
                 
                 const blob = await response.blob();
-                // 创建正确的 Blob 类型
+                // 保持原始 Content-Type
                 const newBlob = new Blob([blob], { type: contentType || `image/${extension}` });
                 const blobUrl = window.URL.createObjectURL(newBlob);
                 
