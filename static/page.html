@@ -2662,7 +2662,23 @@
                 const originalContent = downloadButton.innerHTML;
                 downloadButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>下载中...</span>';
                 
-                // 获取图片
+                // 检查是否为移动设备
+                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                
+                if (isMobile) {
+                    // 移动端：直接打开新窗口下载
+                    window.open(imageUrl, '_blank');
+                    
+                    // 更新按钮状态
+                    downloadButton.innerHTML = '<i class="fas fa-check"></i><span>已打开下载</span>';
+                    setTimeout(() => {
+                        downloadButton.disabled = false;
+                        downloadButton.innerHTML = originalContent;
+                    }, 2000);
+                    return;
+                }
+                
+                // PC端：使用 Blob 下载
                 const response = await fetch(imageUrl);
                 if (!response.ok) throw new Error('Failed to fetch image');
                 
@@ -2720,7 +2736,11 @@
                 
             } catch (error) {
                 console.error('Download failed:', error);
-                downloadButton.innerHTML = '<i class="fas fa-exclamation-circle"></i><span>下载失败</span>';
+                // 显示更详细的错误信息
+                const errorMessage = error.message || '未知错误';
+                downloadButton.innerHTML = `<i class="fas fa-exclamation-circle"></i><span>下载失败</span>`;
+                console.log('下载错误详情:', errorMessage);
+                
                 setTimeout(() => {
                     downloadButton.disabled = false;
                     downloadButton.innerHTML = originalContent;
