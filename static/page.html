@@ -31,19 +31,27 @@
             position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
+            right: 0;
+            width: 100vw;
             height: 2px;
-            background-color: var(--bg-secondary);
+            background-color: var(--border-color);
             z-index: 2001;
+            overflow: hidden;
+            pointer-events: none;
         }
         .loading-progress-bar {
             height: 100%;
             width: 0;
             background-color: var(--link-color);
-            transition: all 0.3s ease-out;
+            transition: width 0.3s ease-out;
+            transform-origin: left;
         }
         .loading-progress.error .loading-progress-bar {
             background-color: var(--error-color);
+        }
+        .loading-progress.complete {
+            opacity: 0;
+            transition: opacity 0.3s ease-out;
         }
         :root {
             /* Light mode colors */
@@ -691,20 +699,27 @@
             position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 3px;
-            background: var(--border-color);
-            z-index: 1000;
+            right: 0;
+            width: 100vw;
+            height: 2px;
+            background-color: var(--border-color);
+            z-index: 2001;
+            overflow: hidden;
+            pointer-events: none;
         }
         .loading-progress-bar {
             height: 100%;
-            background: var(--link-color);
             width: 0;
-            transition: width 0.3s ease;
+            background-color: var(--link-color);
+            transition: width 0.3s ease-out;
+            transform-origin: left;
         }
         .loading-progress.complete {
             opacity: 0;
-            transition: opacity 0.3s ease 0.3s;
+            transition: opacity 0.3s ease-out;
+        }
+        .loading-progress.error .loading-progress-bar {
+            background-color: var(--error-color);
         }
         /* Add toggle block styles */
         .toggle-block {
@@ -1767,25 +1782,41 @@
             </div>
         </div>
 
-        <!-- Keep only one loading progress bar -->
-        <div id="loadingProgress" class="loading-progress fixed top-0 left-0 w-full h-0.5 bg-gray-200 z-[2001]">
-            <div id="loadingProgressBar" class="h-full bg-blue-500 transition-all duration-300 ease-out"></div>
+        <!-- Loading progress bar with inline styles -->
+        <div id="loadingProgress" class="fixed top-0 left-0 right-0 w-full overflow-hidden pointer-events-none" style="height: 2px; z-index: 2001; background-color: var(--border-color);">
+            <div id="loadingProgressBar" class="h-full w-0 transition-all duration-300 ease-out transform origin-left" style="background-color: var(--link-color);"></div>
         </div>
+
+        <style>
+            #loadingProgress {
+                background-color: var(--border-color);
+                pointer-events: none;
+            }
+
+            #loadingProgressBar {
+                background-color: var(--link-color);
+            }
+
+            #loadingProgress.error #loadingProgressBar {
+                background-color: var(--error-color);
+            }
+        </style>
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
-    <!-- Add page transition overlay -->
+    <!-- Progress bar -->
+    <div id="loadingProgress" class="fixed top-0 left-0 right-0 w-full h-0.5 bg-gray-200 overflow-hidden pointer-events-none" style="z-index: 2001;">
+        <div id="loadingProgressBar" class="h-full w-0 bg-blue-500 transition-all duration-300 ease-out transform origin-left"></div>
+    </div>
+
+    <!-- Page content -->
     <div id="pageTransition" class="page-transition"></div>
     
-    <!-- Update loading overlay -->
     <div id="loadingOverlay" class="loading-overlay">
         <div class="loading-spinner"></div>
-        <div class="loading-progress">
-            <div id="loadingProgressBar" class="loading-progress-bar"></div>
-        </div>
         <div class="loading-text">正在加载页面内容...</div>
     </div>
-    <!-- 添加毛玻璃标题栏 -->
+    
     <div id="floatingHeader" class="floating-header">
         <div class="content-wrapper">
             <h1 id="floatingTitle"></h1>
@@ -1794,10 +1825,7 @@
             </button>
         </div>
     </div>
-    <!-- Add loading progress bar -->
-    <div id="loadingProgress" class="loading-progress fixed top-0 left-0 w-full h-0.5 bg-gray-200 z-[2001]">
-        <div id="loadingProgressBar" class="h-full bg-blue-500 transition-all duration-300 ease-out"></div>
-    </div>
+    
     <div class="container mx-auto px-4 py-8 max-w-4xl" style="overflow-x: hidden;">
         <div class="bg-white rounded-xl shadow-sm overflow-hidden">
             <div class="p-6">
@@ -1866,10 +1894,28 @@
         document.body.style.overflowX = 'hidden';
         document.documentElement.style.overflowX = 'hidden';
         
+        // Update loading progress function
         function updateLoadingProgress(progress) {
             const progressBar = document.getElementById('loadingProgressBar');
-            if (progressBar) {
-                progressBar.style.width = `${progress}%`;
+            if (!progressBar) return;
+
+            // Update progress width
+            progressBar.style.width = `${progress}%`;
+            
+            // Handle completion
+            if (progress >= 100) {
+                setTimeout(() => {
+                    // Fade out
+                    progressBar.style.opacity = '0';
+                    // Reset after fade out
+                    setTimeout(() => {
+                        progressBar.style.width = '0';
+                        progressBar.style.opacity = '1';
+                    }, 300);
+                }, 200);
+            } else {
+                // Ensure opacity is set to 1 for non-complete states
+                progressBar.style.opacity = '1';
             }
         }
 
@@ -2411,41 +2457,17 @@
             }
 
             try {
-                // Reset page state
-                const container = document.querySelector('.container');
-                const pageCover = document.getElementById('pageCover');
-                const backButton = document.querySelector('.mt-8');
-                const loadingText = document.querySelector('.loading-text');
-                
-                // Reset loading state
+                // Reset progress bar state
                 updateLoadingProgress(0);
-                document.querySelector('.loading-progress').classList.remove('error');
                 
-                // Hide container and back button
-                container.classList.remove('loaded');
-                if (backButton) {
-                    backButton.style.display = 'none';
-                    backButton.classList.remove('visible');
-                }
-                
-                // Reset cover
-                if (pageCover) {
-                    pageCover.style.display = 'none';
-                    pageCover.classList.remove('loaded');
-                    const coverImg = pageCover.querySelector('img');
-                    if (coverImg) {
-                        coverImg.src = '';
-                    }
-                }
-                
-                // Start loading data
+                // Start loading
                 updateLoadingProgress(10);
-                if (loadingText) loadingText.textContent = '正在获取页面数据...';
-                
                 const response = await fetch(`/page/${targetPageId}`);
-                const data = await response.json();
                 
                 updateLoadingProgress(30);
+                const data = await response.json();
+                
+                updateLoadingProgress(50);
                 if (loadingText) loadingText.textContent = '正在处理页面内容...';
                 
                 // Update page title
@@ -2483,7 +2505,7 @@
                     }
                 }
                 
-                updateLoadingProgress(50);
+                updateLoadingProgress(70);
                 if (loadingText) loadingText.textContent = '正在渲染页面内容...';
                 
                 // Initialize block counting
@@ -2554,24 +2576,12 @@
                         <p class="text-sm mt-2">${error.message}</p>
                     </div>`;
                 
-                // Update loading state for error
-                document.querySelector('.loading-progress').classList.add('error');
-                updateLoadingProgress(100);
-                if (loadingText) loadingText.textContent = '加载失败，请重试...';
-                
-                // Hide loading overlay
-                setTimeout(() => {
-                    const loadingOverlay = document.getElementById('loadingOverlay');
-                    if (loadingOverlay) {
-                        loadingOverlay.classList.add('fade-out');
-                        setTimeout(() => {
-                            loadingOverlay.style.display = 'none';
-                            loadingOverlay.classList.remove('fade-out');
-                            document.querySelector('.loading-progress').classList.remove('error');
-                            updateLoadingProgress(0);
-                        }, 300);
-                    }
-                }, 1000);
+                // Show error state in progress bar
+                const progressBar = document.getElementById('loadingProgressBar');
+                if (progressBar) {
+                    progressBar.style.backgroundColor = 'var(--error-color)';
+                    updateLoadingProgress(100);
+                }
             }
         }
 
