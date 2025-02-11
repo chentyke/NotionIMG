@@ -2156,12 +2156,17 @@
                 const coverImg = pageCover.querySelector('img');
                 
                 if (data.page.cover) {
+                    console.log('Cover data:', data.page.cover); // 添加调试日志
                     let coverUrl = '';
-                    if (data.page.cover.type === 'external' && data.page.cover.external) {
+                    
+                    // 根据 Notion API 的 File object 结构处理
+                    if (data.page.cover.type === 'external') {
                         coverUrl = data.page.cover.external.url;
-                    } else if (data.page.cover.type === 'file' && data.page.cover.file) {
+                    } else if (data.page.cover.type === 'file') {
                         coverUrl = data.page.cover.file.url;
                     }
+                    
+                    console.log('Extracted cover URL:', coverUrl); // 添加调试日志
                     
                     if (coverUrl) {
                         coverImg.src = coverUrl;
@@ -2169,13 +2174,16 @@
                             coverImg.classList.remove('opacity-0');
                             pageCover.style.display = 'block';
                         };
-                        coverImg.onerror = () => {
+                        coverImg.onerror = (e) => {
+                            console.error('Cover image failed to load:', e); // 添加错误日志
                             pageCover.style.display = 'none';
                         };
                     } else {
+                        console.log('No valid cover URL found'); // 添加调试日志
                         pageCover.style.display = 'none';
                     }
                 } else {
+                    console.log('No cover data found'); // 添加调试日志
                     pageCover.style.display = 'none';
                 }
                 
