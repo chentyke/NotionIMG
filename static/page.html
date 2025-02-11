@@ -1544,10 +1544,18 @@
             z-index: 1002;
             width: 3rem;
             white-space: nowrap;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .image-modal.visible .modal-download-button {
+            opacity: 1;
+            transform: translateY(0);
+            transition-delay: 0.2s;
         }
 
         .modal-download-button:hover {
-            width: auto;
+            width: 8.5rem;
             padding-right: 1.5rem;
             background-color: rgba(0, 0, 0, 0.8);
         }
@@ -1556,6 +1564,7 @@
             font-size: 1.25rem;
             margin-right: 0;
             transition: margin-right 0.3s ease;
+            flex-shrink: 0;
         }
 
         .modal-download-button:hover i {
@@ -1794,6 +1803,8 @@
             modal.classList.remove('visible');
             setTimeout(() => {
                 modal.style.display = "none";
+                // Reset modal image src
+                document.getElementById('modalImage').src = '';
             }, 300);
         }
 
@@ -2635,17 +2646,39 @@
 
         // Add download function
         function downloadModalImage(event) {
+            event.preventDefault(); // 阻止默认行为
             event.stopPropagation(); // 防止触发模态框关闭
+            
             const modalImage = document.getElementById('modalImage');
             const imageUrl = modalImage.src;
             
-            // 创建一个临时的 a 标签来触发下载
-            const link = document.createElement('a');
-            link.href = imageUrl;
-            link.download = 'image.' + imageUrl.split('.').pop().split('?')[0]; // 从 URL 中提取文件扩展名
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            // 使用 fetch 获取图片数据
+            fetch(imageUrl)
+                .then(response => response.blob())
+                .then(blob => {
+                    // 创建 Blob URL
+                    const blobUrl = window.URL.createObjectURL(blob);
+                    
+                    // 创建临时下载链接
+                    const link = document.createElement('a');
+                    link.href = blobUrl;
+                    link.download = 'image.' + imageUrl.split('.').pop().split('?')[0]; // 从 URL 中提取文件扩展名
+                    link.style.display = 'none';
+                    
+                    // 添加到文档并触发点击
+                    document.body.appendChild(link);
+                    link.click();
+                    
+                    // 清理
+                    setTimeout(() => {
+                        document.body.removeChild(link);
+                        window.URL.revokeObjectURL(blobUrl);
+                    }, 100);
+                })
+                .catch(error => {
+                    console.error('Download failed:', error);
+                    alert('下载失败，请稍后重试');
+                });
         }
     </script>
 </body>
