@@ -2662,21 +2662,42 @@
                 const originalContent = downloadButton.innerHTML;
                 downloadButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>下载中...</span>';
                 
-                // 先获取图片元数据
-                const response = await fetch(imageUrl, { method: 'HEAD' });
+                // 获取图片
+                const response = await fetch(imageUrl);
+                if (!response.ok) throw new Error('Failed to fetch image');
+                
+                // 从 Content-Type 获取正确的文件类型
                 const contentType = response.headers.get('content-type');
-                const extension = contentType ? contentType.split('/')[1] : 'jpg';
+                let extension = 'jpg'; // 默认扩展名
                 
-                // 下载图片
-                const imgResponse = await fetch(imageUrl);
-                if (!imgResponse.ok) throw new Error('Failed to fetch image');
+                // 根据 Content-Type 设置正确的扩展名
+                if (contentType) {
+                    if (contentType.includes('png')) extension = 'png';
+                    else if (contentType.includes('gif')) extension = 'gif';
+                    else if (contentType.includes('webp')) extension = 'webp';
+                    else if (contentType.includes('jpeg') || contentType.includes('jpg')) extension = 'jpg';
+                }
                 
-                const blob = await imgResponse.blob();
-                const blobUrl = window.URL.createObjectURL(blob);
+                // 从 URL 中提取原始文件名（如果存在）
+                let filename = 'image';
+                try {
+                    const urlParts = imageUrl.split('/');
+                    const originalFilename = urlParts[urlParts.length - 1].split('?')[0]; // 移除查询参数
+                    if (originalFilename && originalFilename.includes('.')) {
+                        filename = originalFilename.split('.')[0]; // 获取文件名（不含扩展名）
+                    }
+                } catch (e) {
+                    console.warn('Could not extract filename from URL:', e);
+                }
+                
+                const blob = await response.blob();
+                // 创建正确的 Blob 类型
+                const newBlob = new Blob([blob], { type: contentType || `image/${extension}` });
+                const blobUrl = window.URL.createObjectURL(newBlob);
                 
                 const link = document.createElement('a');
                 link.href = blobUrl;
-                link.download = `image.${extension}`;
+                link.download = `${filename}.${extension}`; // 使用提取的文件名和正确的扩展名
                 document.body.appendChild(link);
                 link.click();
                 
@@ -2684,7 +2705,7 @@
                 document.body.removeChild(link);
                 window.URL.revokeObjectURL(blobUrl);
                 
-                // 恢复按钮状态
+                // 显示成功状态
                 downloadButton.innerHTML = '<i class="fas fa-check"></i><span>下载成功</span>';
                 setTimeout(() => {
                     downloadButton.disabled = false;
