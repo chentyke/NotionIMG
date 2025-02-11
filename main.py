@@ -231,25 +231,33 @@ def get_file_info(page: dict) -> dict:
 def get_page_info(page: dict) -> dict:
     """Extract page information."""
     try:
+        title = "Untitled"
         # Try to get title from properties first
-        if "properties" in page and "Name" in page["properties"]:
-            title = page["properties"]["Name"]["title"][0]["text"]["content"]
+        if "properties" in page:
+            if "Name" in page["properties"]:
+                title_array = page["properties"]["Name"]["title"]
+                if title_array and len(title_array) > 0:
+                    title = title_array[0]["text"]["content"]
+            elif "title" in page["properties"]:
+                title_array = page["properties"]["title"]["title"]
+                if title_array and len(title_array) > 0:
+                    title = title_array[0]["text"]["content"]
+                    
             hidden = page["properties"].get("Hidden", {}).get("select", {}).get("name") == "True"
-            
-            # Get Back property if it exists
             back_property = page["properties"].get("Back", {}).get("select", {}).get("name")
             show_back = True if back_property is None else back_property != "False"
             
             if hidden:
                 return None
         else:
-            # For child pages, try to get title from child_page object first
-            child_page = page.get("child_page", {})
-            if child_page:
-                title = child_page.get("title", "Untitled")
-            else:
-                # Try to get title from page object
-                title = page.get("title", "Untitled")
+            # For child pages, try different ways to get the title
+            if "child_page" in page:
+                title = page["child_page"].get("title", title)
+            elif "title" in page:
+                if isinstance(page["title"], list) and len(page["title"]) > 0:
+                    title = page["title"][0].get("text", {}).get("content", title)
+                elif isinstance(page["title"], str):
+                    title = page["title"]
             show_back = True
             
         # Get cover object
@@ -576,11 +584,17 @@ async def get_page_content(page_id: str):
                     logger.info(f"Found child page: {page_info['title'] if page_info else 'None'}")
                 except Exception as e:
                     logger.warning(f"Error getting full page for child page, falling back to basic info: {e}")
+                    # Try to get title from block first
+                    title = block.get("child_page", {}).get("title", "")
+                    if not title:
+                        # Try to get title from page object if available
+                        title = page.get("properties", {}).get("title", {}).get("title", [{}])[0].get("text", {}).get("content", "Untitled")
+                    
                     back_property = page.get("properties", {}).get("Back", {}).get("select", {}).get("name")
                     show_back = True if back_property is None else back_property != "False"
                     page_info = {
                         "id": block["id"],
-                        "title": block["child_page"]["title"],
+                        "title": title,
                         "created_time": block["created_time"],
                         "last_edited_time": block["last_edited_time"],
                         "parent_id": block["parent"]["page_id"] if block["parent"]["type"] == "page_id" else None,
