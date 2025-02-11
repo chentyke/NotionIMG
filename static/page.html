@@ -1617,32 +1617,17 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.2s ease-out, visibility 0.2s ease-out;
-        }
-
-        .loading-overlay.visible {
-            opacity: 0.6;
-            visibility: visible;
+            opacity: 1;
+            transition: opacity 0.3s ease-out;
         }
 
         .loading-overlay.fade-out {
             opacity: 0;
-            visibility: hidden;
         }
 
         .loading-overlay .loading-spinner {
             width: 40px;
             height: 40px;
-            opacity: 0;
-            transform: scale(0.8);
-            transition: opacity 0.2s ease-out, transform 0.2s ease-out;
-        }
-
-        .loading-overlay.visible .loading-spinner {
-            opacity: 1;
-            transform: scale(1);
         }
 
         /* Hide page content during loading */
@@ -1703,12 +1688,83 @@
         .mt-8.visible {
             opacity: 1;
         }
+
+        /* Add page transition styles */
+        .page-transition {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-primary);
+            z-index: 1999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease-out;
+        }
+
+        .page-transition.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Optimize loading overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-primary);
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 1;
+            transition: opacity 0.3s ease-out;
+        }
+
+        .loading-overlay .loading-spinner {
+            width: 40px;
+            height: 40px;
+            margin-bottom: 1rem;
+        }
+
+        .loading-overlay .loading-text {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+            opacity: 0.8;
+        }
+
+        .loading-progress {
+            width: 200px;
+            height: 2px;
+            background-color: var(--border-color);
+            border-radius: 1px;
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+
+        .loading-progress-bar {
+            height: 100%;
+            background-color: var(--link-color);
+            transition: width 0.3s ease-out;
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
-    <!-- Add loading overlay -->
+    <!-- Add page transition overlay -->
+    <div id="pageTransition" class="page-transition"></div>
+    
+    <!-- Update loading overlay -->
     <div id="loadingOverlay" class="loading-overlay">
         <div class="loading-spinner"></div>
+        <div class="loading-progress">
+            <div id="loadingProgressBar" class="loading-progress-bar"></div>
+        </div>
+        <div class="loading-text">正在加载页面内容...</div>
     </div>
     <!-- 添加毛玻璃标题栏 -->
     <div id="floatingHeader" class="floating-header">
@@ -1962,38 +2018,21 @@
 
         // Load child page
         async function loadChildPage(pageId, title) {
-            // Show loading overlay with animation
-            const loadingOverlay = document.getElementById('loadingOverlay');
-            loadingOverlay.classList.add('visible');
+            // Update browser history
+            window.history.pushState({}, "", `/static/page.html?id=${pageId}`);
             
-            try {
-                // Start loading the new page content in the background
-                const loadPromise = fetch(`/page/${pageId}`).then(res => res.json());
-                
-                // Update browser history
-                window.history.pushState({}, "", `/static/page.html?id=${pageId}`);
-                
-                // Wait a minimum time to show loading animation
-                await Promise.all([
-                    loadPromise,
-                    new Promise(resolve => setTimeout(resolve, 300))
-                ]);
-                
-                // Get the loaded data
-                const data = await loadPromise;
-                
-                // Update page content
-                await loadPage(pageId);
-                
-            } catch (error) {
-                console.error('Error loading child page:', error);
-                // Show error message
-                document.getElementById('pageContent').innerHTML = `
-                    <div class="text-center text-red-500">
-                        <p>Error loading page content.</p>
-                        <p class="text-sm mt-2">${error.message}</p>
-                    </div>`;
-            }
+            // Show loading state
+            document.getElementById('pageContent').innerHTML = `
+                <div class="flex justify-center py-8">
+                    <div class="loading-spinner"></div>
+                </div>`;
+            
+            // Update page title immediately
+            document.title = title;
+            document.getElementById('pageTitle').textContent = title;
+            
+            // Load the new page content
+            await loadPage(pageId);
         }
 
         // Optimize block rendering
@@ -2361,12 +2400,7 @@
                 const container = document.querySelector('.container');
                 const pageCover = document.getElementById('pageCover');
                 const backButton = document.querySelector('.mt-8');
-                const loadingOverlay = document.getElementById('loadingOverlay');
-                
-                // Ensure loading overlay is visible during state reset
-                if (!loadingOverlay.classList.contains('visible')) {
-                    loadingOverlay.classList.add('visible');
-                }
+                const loadingText = document.querySelector('.loading-text');
                 
                 // Hide container and back button
                 container.classList.remove('loaded');
@@ -2378,19 +2412,22 @@
                 pageCover.classList.remove('loaded');
                 pageCover.querySelector('img').src = '';
                 
+                // Start loading data
                 updateLoadingProgress(10);
+                loadingText.textContent = '正在获取页面数据...';
                 const response = await fetch(`/page/${targetPageId}`);
                 const data = await response.json();
                 
                 updateLoadingProgress(30);
+                loadingText.textContent = '正在处理页面内容...';
                 
                 // Update page title and date
                 document.title = data.page.title;
                 updatePageTitle(data.page.title);
                 
-                // Handle cover image - Preload cover image if exists
-                let coverLoadPromise = Promise.resolve();
+                // Handle cover image
                 if (data.page.cover) {
+                    loadingText.textContent = '正在加载封面图片...';
                     const coverImg = pageCover.querySelector('img');
                     let coverUrl = '';
                     
@@ -2401,43 +2438,86 @@
                     }
                     
                     if (coverUrl) {
-                        coverLoadPromise = new Promise((resolve) => {
-                            coverImg.onload = () => {
-                                pageCover.style.display = 'block';
-                                setTimeout(() => {
-                                    pageCover.classList.add('loaded');
-                                    coverImg.style.opacity = '1';
-                                    resolve();
-                                }, 50);
-                            };
-                            coverImg.onerror = () => {
-                                pageCover.style.display = 'none';
-                                console.error('Failed to load cover image');
-                                resolve();
-                            };
+                        const coverPromise = new Promise((resolve, reject) => {
+                            coverImg.onload = resolve;
+                            coverImg.onerror = reject;
                             coverImg.src = coverUrl;
                         });
+                        
+                        try {
+                            await coverPromise;
+                            pageCover.style.display = 'block';
+                            setTimeout(() => {
+                                pageCover.classList.add('loaded');
+                                coverImg.style.opacity = '1';
+                            }, 50);
+                        } catch (error) {
+                            console.error('Failed to load cover image:', error);
+                            pageCover.style.display = 'none';
+                        }
                     }
                 }
                 
-                // Rest of the page loading logic...
+                updateLoadingProgress(50);
+                loadingText.textContent = '正在渲染页面内容...';
                 
-                // Wait for cover image to load (if any) before showing content
-                await coverLoadPromise;
+                // Initialize block counting
+                totalBlocks = data.blocks.length;
+                loadedBlocks = 0;
                 
-                // Show container with animation
-                container.classList.add('loaded');
+                // Render content
+                let content = '';
+                let currentList = null;
                 
-                // Hide loading overlay with animation
-                loadingOverlay.classList.remove('visible');
-                loadingOverlay.classList.add('fade-out');
-                
-                // Show back button if needed
-                if (backButton.style.display !== 'none') {
-                    setTimeout(() => {
-                        backButton.classList.add('visible');
-                    }, 200);
+                for (const block of data.blocks) {
+                    if (block.type === 'bulleted_list_item' || block.type === 'numbered_list_item') {
+                        if (!currentList || currentList.type !== block.type) {
+                            if (currentList) {
+                                content += `</${currentList.tag}>`;
+                            }
+                            currentList = {
+                                type: block.type,
+                                tag: block.type === 'bulleted_list_item' ? 'ul' : 'ol'
+                            };
+                            content += `<${currentList.tag} class="${block.type === 'bulleted_list_item' ? 'list-disc' : 'list-decimal'} ml-6">`;
+                        }
+                        content += await renderBlock(block);
+                    } else {
+                        if (currentList) {
+                            content += `</${currentList.tag}>`;
+                            currentList = null;
+                        }
+                        content += await renderBlock(block);
+                    }
                 }
+                
+                if (currentList) {
+                    content += `</${currentList.tag}>`;
+                }
+                
+                document.getElementById('pageContent').innerHTML = content;
+                
+                // Initialize lazy loading for images
+                document.querySelectorAll('img[data-src]').forEach(img => {
+                    imageObserver.observe(img);
+                });
+                
+                // Show container with animation when everything is loaded
+                updateLoadingProgress(90);
+                loadingText.textContent = '即将完成...';
+                
+                setTimeout(() => {
+                    container.classList.add('loaded');
+                    updateLoadingProgress(100);
+                    
+                    // Hide loading overlay
+                    const loadingOverlay = document.getElementById('loadingOverlay');
+                    loadingOverlay.classList.add('fade-out');
+                    setTimeout(() => {
+                        loadingOverlay.style.display = 'none';
+                        loadingOverlay.classList.remove('fade-out');
+                    }, 300);
+                }, 300);
                 
             } catch (error) {
                 console.error('Error loading page content:', error);
@@ -2446,11 +2526,20 @@
                         <p>Error loading page content.</p>
                         <p class="text-sm mt-2">${error.message}</p>
                     </div>`;
+                // Update loading state
+                const loadingText = document.querySelector('.loading-text');
+                loadingText.textContent = '加载失败，请重试...';
+                updateLoadingProgress(100);
                 
-                // Hide loading overlay on error
-                const loadingOverlay = document.getElementById('loadingOverlay');
-                loadingOverlay.classList.remove('visible');
-                loadingOverlay.classList.add('fade-out');
+                // Hide loading overlay
+                setTimeout(() => {
+                    const loadingOverlay = document.getElementById('loadingOverlay');
+                    loadingOverlay.classList.add('fade-out');
+                    setTimeout(() => {
+                        loadingOverlay.style.display = 'none';
+                        loadingOverlay.classList.remove('fade-out');
+                    }, 300);
+                }, 1000);
             }
         }
 
@@ -2806,6 +2895,41 @@
                     downloadButton.innerHTML = originalContent;
                 }, 2000);
             }
+        }
+
+        // Add page transition function
+        async function transitionToPage(pageId, title) {
+            // Show transition overlay
+            const transition = document.getElementById('pageTransition');
+            transition.classList.add('active');
+            
+            // Show loading overlay with initial state
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            const loadingText = loadingOverlay.querySelector('.loading-text');
+            loadingOverlay.style.display = 'flex';
+            loadingOverlay.style.opacity = '1';
+            loadingText.textContent = '正在加载页面内容...';
+            
+            // Update URL without reloading
+            window.history.pushState({}, "", `/static/page.html?id=${pageId}`);
+            
+            try {
+                // Start loading the new page
+                await loadPage(pageId);
+                
+                // Hide transition overlay
+                setTimeout(() => {
+                    transition.classList.remove('active');
+                }, 300);
+            } catch (error) {
+                console.error('Error during page transition:', error);
+                loadingText.textContent = '加载失败，请重试...';
+            }
+        }
+
+        // Update child page loading function
+        function loadChildPage(pageId, title) {
+            transitionToPage(pageId, title);
         }
     </script>
 </body>
