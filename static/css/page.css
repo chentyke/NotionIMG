@@ -1647,7 +1647,7 @@ body {
         opacity: 0.95;
         max-height: none;
         border-right: none;
-        transition: all 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+        transition: none; /* 禁用过渡，完全使用动画控制 */
         z-index: 900; /* Higher on mobile */
         display: flex;
         align-items: center;
@@ -1655,6 +1655,13 @@ body {
         box-shadow: 0 3px 12px rgba(0, 0, 0, 0.15);
         overflow: hidden; /* Ensure content doesn't overflow during animation */
         position: fixed; /* Keep it fixed in collapsed state too */
+        will-change: transform, opacity; /* 优化动画性能 */
+        backface-visibility: hidden; /* 防止3D变换导致的闪烁 */
+        -webkit-backface-visibility: hidden;
+        transform-style: preserve-3d; /* 确保3D变换的平滑性 */
+        -webkit-transform-style: preserve-3d;
+        perspective: 1000; /* 提高3D变换的性能 */
+        -webkit-perspective: 1000;
     }
     
     .toc-container::before {
@@ -1689,29 +1696,28 @@ body {
         border-radius: 12px 0 0 12px;
         min-height: 48px;
         transform: translateX(0); /* Reset position */
-        transition: transform 0.3s ease-out, width 0.3s ease, height 0.3s ease;
-        animation: slideInButtonFromRight 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+        transition: none; /* 禁用过渡，使用动画代替 */
     }
     
-    /* 按钮从右向左滑入动画 */
+    /* 按钮从右向左滑入动画 - 优化版本 */
     @keyframes slideInButtonFromRight {
-        from {
+        0% {
             transform: translateX(100%);
             opacity: 0;
         }
-        to {
+        100% {
             transform: translateX(0);
             opacity: 0.95;
         }
     }
     
-    /* 按钮向左滑出动画 */
+    /* 按钮向左滑出动画 - 优化版本 */
     @keyframes slideOutButtonToLeft {
-        from {
+        0% {
             transform: translateX(0);
             opacity: 0.95;
         }
-        to {
+        100% {
             transform: translateX(-100%);
             opacity: 0;
         }
@@ -1720,6 +1726,14 @@ body {
     /* 按钮点击后向左滑出 */
     .toc-container.button-hiding {
         animation: slideOutButtonToLeft 0.35s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        will-change: transform, opacity; /* 优化动画性能 */
+        pointer-events: none; /* 防止动画过程中的点击 */
+    }
+    
+    /* 按钮重新出现的动画 */
+    .toc-container.button-showing {
+        animation: slideInButtonFromRight 0.35s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        will-change: transform, opacity; /* 优化动画性能 */
     }
     
     /* Button animation when expanding/collapsing */
@@ -1753,15 +1767,18 @@ body {
         padding: 0; /* 移除内边距 */
         overflow: hidden; /* 防止内容溢出 */
         margin: 0; /* 移除外边距 */
+        will-change: transform, opacity; /* 优化动画性能 */
+        backface-visibility: hidden; /* 防止3D变换导致的闪烁 */
+        -webkit-backface-visibility: hidden;
     }
     
     /* Updated slide in animation from bottom */
     @keyframes slideInTocMobile {
-        from {
+        0% {
             transform: translateY(100%);
             opacity: 0.7;
         }
-        to {
+        100% {
             transform: translateY(0);
             opacity: 1;
         }
@@ -1769,11 +1786,11 @@ body {
     
     /* Updated slide out animation to bottom */
     @keyframes slideOutTocMobile {
-        from {
+        0% {
             transform: translateY(0);
             opacity: 1;
         }
-        to {
+        100% {
             transform: translateY(100%);
             opacity: 0;
         }
@@ -1785,7 +1802,7 @@ body {
         flex-direction: column;
         transform: translateY(0);
         animation: slideInTocMobile 0.35s cubic-bezier(0.25, 1, 0.5, 1);
-        will-change: transform; /* Optimize for animation performance */
+        will-change: transform, opacity; /* Optimize for animation performance */
     }
     
     .toc-container.expanded::before {
