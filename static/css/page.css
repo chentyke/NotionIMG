@@ -1804,6 +1804,16 @@ body {
     border-radius: 1px;
 }
 
+/* Position the button differently in collapsed mode */
+.toc-container.collapsed .toc-collapse-btn {
+    display: none; /* Hide the button completely instead of just setting opacity to 0 */
+}
+
+/* Show the button on hover */
+.toc-container.collapsed:hover .toc-collapse-btn {
+    display: none; /* Keep it hidden even on hover */
+}
+
 /* Enhanced style for collapsed TOC */
 .toc-container.collapsed:hover {
     background-color: var(--hover-bg);
@@ -1814,38 +1824,6 @@ body {
 .toc-container.collapsed:hover::after {
     background-color: var(--link-hover-color);
     height: 60px; /* Slightly longer on hover */
-}
-
-/* Position the button differently in collapsed mode */
-.toc-container.collapsed .toc-collapse-btn {
-    position: absolute;
-    top: -12px; /* Position above the container */
-    left: 50%;
-    transform: translateX(-50%);
-    width: 24px;
-    height: 24px;
-    z-index: 10;
-    background-color: var(--bg-secondary);
-    color: var(--text-primary);
-    border: 1px solid var(--border-color);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 0 6px rgba(0, 0, 0, 0.1);
-    opacity: 0;
-    transition: opacity 0.3s ease, transform 0.3s ease;
-}
-
-/* Show the button on hover */
-.toc-container.collapsed:hover .toc-collapse-btn {
-    opacity: 1;
-    transform: translateX(-50%) translateY(-3px);
-}
-
-/* Hide the indicator for collapsed state */
-.toc-collapsed-hint {
-    display: none;
 }
 
 .toc-header {
