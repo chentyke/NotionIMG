@@ -1071,10 +1071,6 @@ const TableOfContents = {
             collapseBtn.setAttribute('aria-label', '收起目录');
             const icon = collapseBtn.querySelector('i');
             if (icon) {
-                icon.className = 'fas fa-chevron-left'; // Point left when collapsed to indicate expand direction
-            }
-        }
-        
                 icon.className = 'fas fa-chevron-right'; // Point right when expanded to indicate collapse direction
             }
         }
@@ -1342,7 +1338,7 @@ const TableOfContents = {
                 collapseBtn.setAttribute('aria-label', '展开目录');
                 const icon = collapseBtn.querySelector('i');
                 if (icon) {
-                    icon.className = 'fas fa-chevron-left'; // Point left when collapsed to indicate expand direction
+                    icon.className = 'fas fa-chevron-left'; // Point left when collapsed to indicate expansion direction
                 }
             }
             
