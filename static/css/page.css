@@ -1620,17 +1620,6 @@ body {
     color: var(--text-tertiary);
 }
 
-.toc-indicator {
-    display: inline-block;
-    width: 4px;
-    height: 4px;
-    border-radius: 50%;
-    background-color: currentColor;
-    margin-right: 6px;
-    vertical-align: middle;
-    opacity: 0.7;
-}
-
 /* Special rule for better positioning of the TOC when floating header is visible */
 @media (min-width: 1201px) {
     .floating-header.visible ~ .container .toc-container {
@@ -1715,9 +1704,10 @@ body {
     /* Slide from bottom animation */
     .toc-container.expanding,
     .toc-container.expanded {
-        width: 100%;
+        width: 100vw; /* 使用视口宽度 */
         height: 50vh;
         right: 0;
+        left: 0; /* 确保左边也对齐 */
         top: auto;
         bottom: 0; /* Position at bottom for slide-up effect */
         border-radius: 12px 12px 0 0; /* Rounded corners only at top */
@@ -1730,6 +1720,9 @@ body {
         -webkit-backdrop-filter: blur(10px);
         display: flex;
         flex-direction: column;
+        padding: 0; /* 移除内边距 */
+        overflow: hidden; /* 防止内容溢出 */
+        margin: 0; /* 移除外边距 */
     }
     
     /* Updated slide in animation from bottom */
@@ -1770,7 +1763,7 @@ body {
     }
     
     .toc-header {
-        padding: 1rem;
+        padding: 1rem 1.5rem; /* 增加左右内边距 */
         border-bottom: 1px solid var(--border-color);
         display: flex;
         align-items: center;
@@ -1780,6 +1773,11 @@ body {
         top: 0;
         z-index: 5;
         border-radius: 12px 12px 0 0;
+        width: 100%; /* 确保宽度100% */
+        margin: 0; /* 移除外边距 */
+        box-sizing: border-box; /* 确保padding不会增加宽度 */
+        left: 0; /* 确保左对齐 */
+        right: 0; /* 确保右对齐 */
     }
     
     .toc-header h3 {
@@ -1821,6 +1819,10 @@ body {
         flex: 1;
         position: relative;
         background-color: var(--bg-secondary);
+        width: 100%; /* 确保宽度100% */
+        margin: 0; /* 移除外边距 */
+        left: 0; /* 确保左对齐 */
+        right: 0; /* 确保右对齐 */
     }
     
     /* Mobile specific scrollbar styling */
@@ -1846,15 +1848,23 @@ body {
     
     .toc-list {
         background-color: var(--bg-secondary);
-        padding: 0.5rem 0;
+        padding: 0;
+        margin: 0; /* 移除默认外边距 */
+        width: 100%; /* 确保宽度100% */
+        list-style: none;
+        left: 0; /* 确保左对齐 */
+        right: 0; /* 确保右对齐 */
     }
     
     .toc-item {
         background-color: transparent;
+        width: 100%; /* 确保宽度100% */
+        margin: 0;
+        padding: 0;
     }
     
     .toc-link {
-        padding: 0.75rem 1rem;
+        padding: 0.75rem 1.5rem; /* 统一左右内边距 */
         font-size: 0.95rem;
         font-weight: 500;
         line-height: 1.4;
@@ -1864,23 +1874,34 @@ body {
         color: var(--text-secondary);
         display: block;
         text-decoration: none;
+        width: 100%; /* 确保宽度100% */
+        box-sizing: border-box; /* 确保padding不会增加宽度 */
+        margin: 0; /* 移除外边距 */
+        left: 0; /* 确保左对齐 */
+        right: 0; /* 确保右对齐 */
     }
     
     .toc-link:hover {
         background-color: var(--hover-bg);
-        padding-left: 1.25rem;
+        padding-left: 1.75rem; /* 调整悬停时的左内边距 */
         color: var(--text-primary);
+        width: 100%; /* 确保宽度100% */
+        margin: 0; /* 移除外边距 */
     }
     
     .toc-link:active {
         background-color: rgba(var(--link-color-rgb), 0.08);
+        width: 100%; /* 确保宽度100% */
+        margin: 0; /* 移除外边距 */
     }
     
     .toc-link.active {
         background-color: rgba(var(--link-color-rgb), 0.08);
         border-left-color: var(--link-color);
-        padding-left: 1.25rem;
+        padding-left: 1.75rem; /* 调整激活时的左内边距 */
         color: var(--link-color);
+        width: 100%; /* 确保宽度100% */
+        margin: 0; /* 移除外边距 */
     }
     
     .toc-level-1 {
@@ -1888,13 +1909,13 @@ body {
     }
     
     .toc-level-2 {
-        padding-left: 1.25rem;
+        padding-left: 2rem; /* 调整二级目录的左内边距 */
         font-size: 0.9rem;
         font-weight: normal;
     }
     
     .toc-level-3 {
-        padding-left: 2rem;
+        padding-left: 2.75rem; /* 调整三级目录的左内边距 */
         font-size: 0.85rem;
         font-weight: normal;
         color: var(--text-tertiary);
@@ -1955,16 +1976,22 @@ body {
     .toc-link {
         color: var(--text-secondary);
         background-color: transparent;
+        width: 100%; /* 确保宽度100% */
+        margin: 0; /* 移除外边距 */
     }
     
     .toc-link:hover {
         background-color: var(--hover-bg);
         color: var(--text-primary);
+        width: 100%; /* 确保宽度100% */
+        margin: 0; /* 移除外边距 */
     }
     
     .toc-link.active {
         background-color: rgba(var(--link-color-rgb), 0.15);
         color: var(--link-color);
+        width: 100%; /* 确保宽度100% */
+        margin: 0; /* 移除外边距 */
     }
     
     .toc-container::after {
