@@ -1772,60 +1772,57 @@ body {
     transform: translateX(0);
 }
 
+/* Improved collapsed style - simple thin bar that sticks to the edge */
 .toc-container.collapsed {
-    width: 42px;
-    transform: translateX(calc(100% - 42px)); /* Move to the right when collapsed */
-    right: max(calc((100% - 896px) / 2 - 42px), 1rem);
+    width: 10px; /* Much thinner width */
+    transform: none; /* Remove transform that was causing positioning issues */
+    right: 0; /* Stick directly to the right edge */
+    border-radius: 4px 0 0 4px; /* Round only the left corners */
     cursor: pointer;
     overflow: visible;
     box-shadow: -2px 0 6px rgba(0, 0, 0, 0.1);
     background-color: var(--link-color);
+    min-height: 120px; /* Ensure a reasonable height */
+    opacity: 0.8; /* Slightly transparent */
+    top: 30vh; /* Position in the middle of the viewport height */
 }
 
 /* Enhanced style for collapsed TOC */
 .toc-container.collapsed:hover {
     background-color: var(--link-hover-color);
-    transform: translateX(calc(100% - 45px)); /* Slight movement on hover */
-    box-shadow: -3px 0 8px rgba(0, 0, 0, 0.15);
+    opacity: 1;
+    width: 12px; /* Slightly wider on hover */
 }
 
-/* Indicator for collapsed TOC */
+/* Hide the indicator for collapsed state - not needed for a thin bar */
 .toc-collapsed-hint {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: white;
-    font-size: 0.85rem;
-    font-weight: 600;
-    letter-spacing: 1px;
-    text-align: center;
-    line-height: 1.3;
-    pointer-events: none; /* Allow clicks to pass through to the container */
-    transition: opacity 0.2s ease;
-    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+    display: none;
 }
 
+/* Position the button differently in collapsed mode */
 .toc-container.collapsed .toc-collapse-btn {
     position: absolute;
-    top: 10px;
-    left: 50%;
-    transform: translateX(-50%);
+    top: calc(50% - 12px); /* Center vertically */
+    left: -15px; /* Position outside the bar */
     width: 24px;
     height: 24px;
     z-index: 10;
-    background-color: rgba(255, 255, 255, 0.15);
+    background-color: var(--link-color);
     color: white;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: none;
+    box-shadow: 0 0 6px rgba(0, 0, 0, 0.2);
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    transform: translateX(0);
 }
 
-.toc-container.collapsed .toc-collapse-btn:hover {
-    background-color: rgba(255, 255, 255, 0.3);
-    transform: translateX(-50%) scale(1.1);
+/* Show the button on hover */
+.toc-container.collapsed:hover .toc-collapse-btn {
+    opacity: 1;
+    transform: translateX(-5px);
 }
 
 .toc-header {
@@ -1995,6 +1992,22 @@ body {
     visibility: hidden;
 }
 
+/* Dark mode adjustments for collapsed TOC */
+@media (prefers-color-scheme: dark) {
+    .toc-container.collapsed {
+        background-color: var(--link-color);
+        box-shadow: -2px 0 8px rgba(0, 0, 0, 0.3);
+    }
+    
+    .toc-container.collapsed:hover {
+        background-color: var(--link-hover-color);
+    }
+    
+    .toc-container.collapsed .toc-collapse-btn {
+        background-color: var(--link-color);
+    }
+}
+
 /* Column layout styles */
 .column-list {
     display: grid;
@@ -2119,21 +2132,4 @@ body {
     opacity: 1;
     max-width: 200px;
     transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1) 0.1s, max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Dark mode adjustments for collapsed TOC */
-@media (prefers-color-scheme: dark) {
-    .toc-container.collapsed {
-        background-color: var(--link-color);
-        box-shadow: -2px 0 8px rgba(0, 0, 0, 0.3);
-    }
-    
-    .toc-container.collapsed:hover {
-        background-color: var(--link-hover-color);
-    }
-    
-    .toc-collapsed-hint {
-        color: var(--bg-primary);
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-    }
 } 

@@ -1315,12 +1315,10 @@ const TableOfContents = {
                 }
             }
             
-            // Add a hint to indicate clickable nature
-            if (!this.container.querySelector('.toc-collapsed-hint')) {
-                const hint = document.createElement('div');
-                hint.className = 'toc-collapsed-hint';
-                hint.innerHTML = '目<br>录';
-                this.container.appendChild(hint);
+            // We're no longer using the hint text for the thin bar design
+            const hint = this.container.querySelector('.toc-collapsed-hint');
+            if (hint) {
+                hint.remove();
             }
             
             console.log('TOC collapsed state applied');
@@ -1336,12 +1334,6 @@ const TableOfContents = {
                 if (icon) {
                     icon.className = 'fas fa-chevron-left';
                 }
-            }
-            
-            // Remove the hint when expanded
-            const hint = this.container.querySelector('.toc-collapsed-hint');
-            if (hint) {
-                hint.remove();
             }
             
             console.log('TOC expanded state applied');
