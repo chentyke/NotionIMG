@@ -2,9 +2,10 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>加载中...</title>
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <!-- Preload critical CSS -->
     <link rel="preload" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"></noscript>
     <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
@@ -13,59 +14,73 @@
     <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/webfonts/fa-solid-900.woff2" as="font" type="font/woff2" crossorigin>
     <!-- Critical CSS -->
     <link rel="stylesheet" href="/static/css/page.css">
+    <!-- Meta tags for better mobile experience -->
+    <meta name="theme-color" content="#F9FAFB" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#111827" media="(prefers-color-scheme: dark)">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <!-- JavaScript -->
     <script src="/static/js/page.js" defer></script>
-    <!-- Content will be loaded dynamically -->
 </head>
 <body class="bg-gray-50 min-h-screen">
-    <!-- Add page transition overlay -->
+    <!-- Page transition overlay -->
     <div id="pageTransition" class="page-transition"></div>
     
-    <!-- Update loading overlay -->
+    <!-- Loading overlay with improved progress indicator -->
     <div id="loadingOverlay" class="loading-overlay">
         <div class="loading-spinner"></div>
-        <div class="loading-progress">
-            <div id="loadingProgressBar" class="loading-progress-bar"></div>
+        <div class="loading-progress" id="loadingProgress">
+            <div id="loadingProgressBar" class="loading-progress-bar" style="width: 0%"></div>
         </div>
         <div class="loading-text">正在加载页面内容...</div>
     </div>
-    <!-- 添加毛玻璃标题栏 -->
+    
+    <!-- Floating header with glass effect -->
     <div id="floatingHeader" class="floating-header">
         <div class="content-wrapper">
             <h1 id="floatingTitle"></h1>
-            <button class="copy-link-button" onclick="copyPageLink()" title="复制页面链接">
+            <button class="copy-link-button" onclick="copyPageLink()" title="复制页面链接" aria-label="复制页面链接">
                 <i class="fas fa-link"></i>
             </button>
         </div>
     </div>
-    <div class="container mx-auto px-4 py-8 max-w-4xl" style="overflow-x: hidden;">
+    
+    <!-- Main container -->
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
         <div class="bg-white rounded-xl shadow-sm overflow-hidden">
             <div class="p-6">
+                <!-- Cover image -->
                 <div id="pageCover" class="page-cover" style="display: none;">
                     <img src="" alt="Page cover" class="opacity-0">
                 </div>
+                
+                <!-- Page header -->
                 <div class="page-header">
                     <div class="page-title-container">
                         <h1 id="pageTitle" class="page-title"></h1>
                         <div id="editDate" class="edit-date"></div>
                     </div>
-                    <button class="copy-link-button" onclick="copyPageLink()" title="复制页面链接">
+                    <button class="copy-link-button" onclick="copyPageLink()" title="复制页面链接" aria-label="复制页面链接">
                         <i class="fas fa-link"></i>
                         <span>复制链接</span>
                     </button>
                 </div>
+                
+                <!-- Page content -->
                 <div id="pageContent" class="prose">
                     <div class="flex justify-center py-8">
                         <div class="loading-spinner"></div>
                     </div>
                 </div>
+                
+                <!-- Back button -->
                 <div class="mt-8 pt-6 border-t border-gray-200" style="display: none;">
                     <div class="flex justify-between items-center">
                         <a href="/static/pages.html" class="back-button text-blue-500 hover:text-blue-600 flex items-center">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                             </svg>
-                            Back to Pages
+                            返回页面列表
                         </a>
                     </div>
                 </div>
@@ -73,11 +88,15 @@
         </div>
     </div>
 
-    <!-- Image Modal -->
+    <!-- Image Modal with enhanced features -->
     <div id="imageModal" class="image-modal" onclick="closeImageModal()">
-        <span class="close-button" onclick="closeImageModal()">×</span>
-        <img id="modalImage" src="" alt="Full size image">
-        <button id="modalDownloadButton" class="modal-download-button" onclick="downloadModalImage(event)">
+        <span class="close-button" onclick="closeImageModal()" aria-label="关闭图片预览">×</span>
+        <img id="modalImage" class="loading" src="" alt="Full size image">
+        <div class="modal-instructions">
+            <div class="instruction desktop-only">双击图片放大 / 滚轮缩放 / 拖动平移</div>
+            <div class="instruction mobile-only">双指缩放 / 拖动平移 / 双击放大</div>
+        </div>
+        <button id="modalDownloadButton" class="modal-download-button" onclick="downloadModalImage(event)" aria-label="下载原图">
             <i class="fas fa-download"></i>
             <span>下载原图</span>
         </button>

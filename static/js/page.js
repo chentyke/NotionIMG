@@ -25,12 +25,77 @@ document.documentElement.style.overflowX = 'hidden';
 
 function updateLoadingProgress(progress) {
     const progressBar = document.getElementById('loadingProgressBar');
-    progressBar.style.width = `${progress}%`;
+    if (!progressBar) return;
     
-    if (progress >= 100) {
+    // Ensure progress is between 0 and 100
+    const safeProgress = Math.max(0, Math.min(100, progress));
+    
+    // Add easing to progress bar updates
+    const currentWidth = parseFloat(progressBar.style.width || '0');
+    const targetWidth = safeProgress;
+    
+    // Animate the progress bar with easing
+    animateProgressBar(currentWidth, targetWidth);
+    
+    // Update loading text based on progress
+    updateLoadingText(safeProgress);
+    
+    if (safeProgress >= 100) {
         setTimeout(() => {
             document.getElementById('loadingProgress')?.classList.add('complete');
+            
+            // Fade out loading overlay
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            if (loadingOverlay) {
+                loadingOverlay.classList.add('fade-out');
+                setTimeout(() => {
+                    loadingOverlay.style.display = 'none';
+                    loadingOverlay.classList.remove('fade-out');
+                }, 500);
+            }
         }, 300);
+    }
+}
+
+function animateProgressBar(current, target) {
+    const progressBar = document.getElementById('loadingProgressBar');
+    if (!progressBar) return;
+    
+    // Use requestAnimationFrame for smoother animation
+    const duration = 300; // ms
+    const startTime = performance.now();
+    const animate = (time) => {
+        const elapsed = time - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // Ease function (ease-out)
+        const easeProgress = 1 - Math.pow(1 - progress, 3);
+        const currentValue = current + (target - current) * easeProgress;
+        
+        progressBar.style.width = `${currentValue}%`;
+        
+        if (progress < 1) {
+            requestAnimationFrame(animate);
+        }
+    };
+    
+    requestAnimationFrame(animate);
+}
+
+function updateLoadingText(progress) {
+    const loadingText = document.querySelector('.loading-text');
+    if (!loadingText) return;
+    
+    if (progress < 20) {
+        loadingText.textContent = '正在初始化页面...';
+    } else if (progress < 50) {
+        loadingText.textContent = '正在获取页面内容...';
+    } else if (progress < 80) {
+        loadingText.textContent = '正在渲染页面元素...';
+    } else if (progress < 95) {
+        loadingText.textContent = '优化页面显示...';
+    } else {
+        loadingText.textContent = '即将完成...';
     }
 }
 
@@ -52,43 +117,61 @@ const imageObserver = new IntersectionObserver((entries, observer) => {
 
 async function loadImage(img) {
     try {
-        // 添加占位符
+        // Create a more sophisticated placeholder with aspect ratio
         const placeholder = document.createElement('div');
-        placeholder.className = 'image-placeholder animate-pulse bg-gray-200 dark:bg-gray-700';
-        placeholder.style.paddingBottom = '56.25%'; // 16:9 aspect ratio
+        placeholder.className = 'image-placeholder animate-pulse';
+        
+        // Try to maintain aspect ratio if available
+        if (img.getAttribute('width') && img.getAttribute('height')) {
+            const ratio = (parseInt(img.getAttribute('height')) / parseInt(img.getAttribute('width'))) * 100;
+            placeholder.style.paddingBottom = `${ratio}%`;
+        } else {
+            placeholder.style.paddingBottom = '56.25%'; // Default 16:9 aspect ratio
+        }
+        
         img.parentNode.insertBefore(placeholder, img);
 
-        // 先加载缩略图
-        const thumbnailUrl = await compressImage(img.dataset.src, 20);
-            img.src = thumbnailUrl;
-        img.style.filter = 'blur(10px)';
-            img.style.transform = 'scale(1.1)';
+        // Preload a tiny thumbnail for instant feedback
+        const thumbnailUrl = await compressImage(img.dataset.src, 5);
+        img.src = thumbnailUrl;
+        img.style.filter = 'blur(15px)';
+        img.style.transform = 'scale(1.05)';
+        img.classList.remove('opacity-0');
+        
+        // Then load a medium quality version for faster display
+        const mediumQualityUrl = await compressImage(img.dataset.src, 40);
+        img.src = mediumQualityUrl;
+        img.style.filter = 'blur(5px)';
+        img.style.transform = 'scale(1.02)';
                 
-        // 加载高清图
-        const fullQualityUrl = await compressImage(img.dataset.src, 80);
-                const fullImg = new Image();
+        // Finally load the high quality version
+        const fullQualityUrl = await compressImage(img.dataset.src, 85);
+        const fullImg = new Image();
         fullImg.src = fullQualityUrl;
                 
-                fullImg.onload = () => {
+        fullImg.onload = () => {
             img.src = fullQualityUrl;
-                    img.style.filter = '';
-                    img.style.transform = '';
-                    img.classList.add('loaded');
-                    if (placeholder) {
-                        placeholder.remove();
-                    }
-                };
+            img.style.filter = '';
+            img.style.transform = '';
+            img.classList.add('loaded');
+            
+            // Animate the placeholder removal
+            if (placeholder) {
+                placeholder.style.opacity = '0';
+                setTimeout(() => placeholder.remove(), 300);
+            }
+        };
     } catch (error) {
         console.error('Error loading image:', error);
         img.src = img.dataset.src;
+        img.classList.remove('opacity-0');
         img.onerror = () => {
             img.onerror = null;
             img.src = '';
             img.alt = 'Image failed to load';
-            img.classList.add('border', 'border-red-300', 'bg-red-50', 'p-4', 'text-red-500');
+            img.classList.add('image-error');
         };
     }
-    img.classList.remove('opacity-0');
 }
 
 // Compress image with quality parameter
@@ -132,21 +215,309 @@ function compressImage(url, quality = 80) {
 function openImageModal(originalUrl) {
     const modal = document.getElementById('imageModal');
     const modalImg = document.getElementById('modalImage');
+    
+    // Show the modal first
     modal.style.display = "block";
-    modalImg.src = originalUrl;
-    // Force reflow
-    modal.offsetHeight;
-    modal.classList.add('visible');
+    
+    // Set loading state
+    modalImg.classList.add('loading');
+    
+    // Preload the image
+    const img = new Image();
+    img.onload = () => {
+        modalImg.src = originalUrl;
+        modalImg.style.maxWidth = `${Math.min(window.innerWidth * 0.9, img.width)}px`;
+        
+        // Calculate optimal height constraint (90% of viewport height)
+        modalImg.style.maxHeight = `${window.innerHeight * 0.9}px`;
+        
+        // Once image is set, show it with animation
+        setTimeout(() => {
+            modalImg.classList.remove('loading');
+            // Force reflow
+            modal.offsetHeight;
+            modal.classList.add('visible');
+        }, 50);
+    };
+    
+    img.onerror = () => {
+        modalImg.src = originalUrl;
+        modalImg.classList.add('error');
+        
+        // Show error state
+        setTimeout(() => {
+            modalImg.classList.remove('loading');
+            // Force reflow
+            modal.offsetHeight;
+            modal.classList.add('visible');
+        }, 50);
+    };
+    
+    // Start loading
+    img.src = originalUrl;
+    
+    // Initialize zoom and pan variables
+    initImageModalControls();
 }
 
 function closeImageModal() {
     const modal = document.getElementById('imageModal');
+    const modalImg = document.getElementById('modalImage');
+    
     modal.classList.remove('visible');
+    
+    // Reset any transforms
+    resetImageTransforms();
+    
     setTimeout(() => {
         modal.style.display = "none";
-        // Reset modal image src
-        document.getElementById('modalImage').src = '';
+        modalImg.classList.remove('loading', 'error');
+        modalImg.src = '';
     }, 300);
+}
+
+// Initialize image modal zoom and pan controls
+function initImageModalControls() {
+    const modal = document.getElementById('imageModal');
+    const img = document.getElementById('modalImage');
+    
+    let scale = 1;
+    let panning = false;
+    let pointX = 0;
+    let pointY = 0;
+    let startX = 0;
+    let startY = 0;
+    
+    // Double-tap/click to zoom
+    let lastTap = 0;
+    
+    function handleDoubleClick(e) {
+        e.preventDefault();
+        const currentTime = new Date().getTime();
+        const tapLength = currentTime - lastTap;
+        
+        if (tapLength < 300 && tapLength > 0) {
+            // Double tap/click detected
+            if (scale === 1) {
+                // Zoom in to point
+                const rect = img.getBoundingClientRect();
+                pointX = (e.clientX - rect.left) / scale;
+                pointY = (e.clientY - rect.top) / scale;
+                
+                scale = 2;
+                updateTransform();
+            } else {
+                // Reset zoom
+                resetImageTransforms();
+            }
+            e.stopPropagation(); // Prevent closing the modal
+        }
+        
+        lastTap = currentTime;
+    }
+    
+    // Reset transforms to default state
+    function resetImageTransforms() {
+        scale = 1;
+        pointX = 0;
+        pointY = 0;
+        updateTransform();
+    }
+    
+    // Update the image transform
+    function updateTransform() {
+        img.style.transform = `translate(${pointX}px, ${pointY}px) scale(${scale})`;
+    }
+    
+    // Mouse wheel zoom
+    function handleWheel(e) {
+        e.preventDefault();
+        
+        const rect = img.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        
+        // Determine zoom direction
+        const delta = Math.sign(e.deltaY) * -0.1;
+        const newScale = Math.max(1, Math.min(4, scale + delta));
+        
+        if (newScale !== scale) {
+            // Adjust points to zoom toward mouse position
+            if (newScale > 1) {
+                pointX = pointX + mouseX * (delta / scale);
+                pointY = pointY + mouseY * (delta / scale);
+            } else {
+                // Reset position if zooming out to 1
+                pointX = 0;
+                pointY = 0;
+            }
+            
+            scale = newScale;
+            updateTransform();
+        }
+    }
+    
+    // Mouse and touch handlers for panning
+    function handleMouseDown(e) {
+        e.preventDefault();
+        
+        if (scale > 1) {
+            panning = true;
+            startX = e.clientX - pointX;
+            startY = e.clientY - pointY;
+            
+            // Prevent image drag behavior
+            img.style.pointerEvents = 'none';
+        }
+    }
+    
+    function handleMouseMove(e) {
+        e.preventDefault();
+        
+        if (panning && scale > 1) {
+            pointX = e.clientX - startX;
+            pointY = e.clientY - startY;
+            updateTransform();
+        }
+    }
+    
+    function handleMouseUp() {
+        panning = false;
+        img.style.pointerEvents = 'auto';
+    }
+    
+    // Attach event listeners
+    img.addEventListener('dblclick', handleDoubleClick);
+    img.addEventListener('wheel', handleWheel);
+    img.addEventListener('mousedown', handleMouseDown);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    
+    // Touch events for mobile
+    let lastTouchDistance = 0;
+    
+    function handleTouchStart(e) {
+        if (e.touches.length === 1) {
+            // Single touch - prepare for panning or double-tap
+            handleMouseDown({ 
+                preventDefault: () => {}, 
+                clientX: e.touches[0].clientX, 
+                clientY: e.touches[0].clientY 
+            });
+            
+            // Handle double-tap detection
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTap;
+            
+            if (tapLength < 300 && tapLength > 0) {
+                // Double tap detected
+                if (scale === 1) {
+                    // Zoom in to point
+                    const rect = img.getBoundingClientRect();
+                    pointX = (e.touches[0].clientX - rect.left) / scale;
+                    pointY = (e.touches[0].clientY - rect.top) / scale;
+                    
+                    scale = 2;
+                    updateTransform();
+                } else {
+                    // Reset zoom
+                    resetImageTransforms();
+                }
+                e.preventDefault();
+            }
+            
+            lastTap = currentTime;
+        } else if (e.touches.length === 2) {
+            // Pinch zoom gesture
+            e.preventDefault();
+            
+            const touch1 = e.touches[0];
+            const touch2 = e.touches[1];
+            lastTouchDistance = Math.hypot(
+                touch2.clientX - touch1.clientX,
+                touch2.clientY - touch1.clientY
+            );
+        }
+    }
+    
+    function handleTouchMove(e) {
+        if (e.touches.length === 1 && scale > 1) {
+            // Single touch panning
+            e.preventDefault();
+            handleMouseMove({ 
+                preventDefault: () => {}, 
+                clientX: e.touches[0].clientX, 
+                clientY: e.touches[0].clientY 
+            });
+        } else if (e.touches.length === 2) {
+            // Pinch zoom
+            e.preventDefault();
+            
+            const touch1 = e.touches[0];
+            const touch2 = e.touches[1];
+            const currentDistance = Math.hypot(
+                touch2.clientX - touch1.clientX,
+                touch2.clientY - touch1.clientY
+            );
+            
+            if (lastTouchDistance > 0) {
+                // Calculate center point between touches
+                const centerX = (touch1.clientX + touch2.clientX) / 2;
+                const centerY = (touch1.clientY + touch2.clientY) / 2;
+                const rect = img.getBoundingClientRect();
+                
+                // Calculate zoom amount
+                const delta = (currentDistance - lastTouchDistance) * 0.01;
+                const newScale = Math.max(1, Math.min(4, scale + delta));
+                
+                if (newScale !== scale) {
+                    // Adjust points to zoom toward pinch center
+                    if (newScale > 1) {
+                        const zoomPointX = centerX - rect.left;
+                        const zoomPointY = centerY - rect.top;
+                        pointX = pointX + zoomPointX * (delta / scale);
+                        pointY = pointY + zoomPointY * (delta / scale);
+                    } else {
+                        // Reset position if zooming out to 1
+                        pointX = 0;
+                        pointY = 0;
+                    }
+                    
+                    scale = newScale;
+                    updateTransform();
+                }
+            }
+            
+            lastTouchDistance = currentDistance;
+        }
+    }
+    
+    function handleTouchEnd() {
+        lastTouchDistance = 0;
+        handleMouseUp();
+    }
+    
+    // Attach touch event listeners
+    img.addEventListener('touchstart', handleTouchStart, { passive: false });
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
+    window.addEventListener('touchend', handleTouchEnd);
+    
+    // Remove event listeners when modal is closed
+    const cleanup = () => {
+        img.removeEventListener('dblclick', handleDoubleClick);
+        img.removeEventListener('wheel', handleWheel);
+        img.removeEventListener('mousedown', handleMouseDown);
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('mouseup', handleMouseUp);
+        img.removeEventListener('touchstart', handleTouchStart);
+        window.removeEventListener('touchmove', handleTouchMove);
+        window.removeEventListener('touchend', handleTouchEnd);
+        
+        // Remove this once-only event listener
+        modal.removeEventListener('transitionend', cleanup);
+    };
+    
+    modal.addEventListener('transitionend', cleanup, { once: true });
 }
 
 // Close modal when pressing Escape
@@ -165,24 +536,106 @@ window.addEventListener('popstate', () => {
     }
 });
 
-// Load child page
+// Add page transition module
+const PageTransition = {
+    isTransitioning: false,
+    
+    // Start a page transition
+    start: function(callback) {
+        if (this.isTransitioning) return;
+        
+        this.isTransitioning = true;
+        const transition = document.getElementById('pageTransition');
+        
+        // Save scroll position
+        sessionStorage.setItem('lastScrollPos', window.scrollY);
+        
+        // Reset UI elements
+        document.querySelector('.container').classList.remove('loaded');
+        const pageCover = document.getElementById('pageCover');
+        if (pageCover) {
+            pageCover.style.opacity = '0';
+        }
+        
+        // Show transition overlay
+        transition.classList.add('active');
+        
+        // Fade out content
+        setTimeout(() => {
+            // Reset content
+            document.getElementById('pageContent').innerHTML = `
+                <div class="flex justify-center py-8">
+                    <div class="loading-spinner"></div>
+                </div>`;
+            
+            // Show loading overlay
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            loadingOverlay.style.display = 'flex';
+            loadingOverlay.style.opacity = '1';
+            
+            // Reset loading progress
+            updateLoadingProgress(10);
+            
+            setTimeout(() => {
+                if (callback && typeof callback === 'function') {
+                    callback();
+                }
+            }, 100);
+        }, 300);
+    },
+    
+    // Complete a page transition
+    complete: function() {
+        const transition = document.getElementById('pageTransition');
+        
+        setTimeout(() => {
+            // Hide transition overlay
+            transition.classList.remove('active');
+            this.isTransitioning = false;
+            
+            // Restore scroll position if needed
+            if (sessionStorage.getItem('lastScrollPos')) {
+                setTimeout(() => {
+                    window.scrollTo(0, parseInt(sessionStorage.getItem('lastScrollPos') || '0'));
+                    sessionStorage.removeItem('lastScrollPos');
+                }, 100);
+            }
+        }, 300);
+    }
+};
+
+// Load child page with improved transitions
 async function loadChildPage(pageId, title) {
-    // Update browser history
-    window.history.pushState({}, "", `/static/page.html?id=${pageId}`);
-    
-    // Show loading state
-    document.getElementById('pageContent').innerHTML = `
-        <div class="flex justify-center py-8">
-            <div class="loading-spinner"></div>
-        </div>`;
-    
-    // Update page title immediately
-    document.title = title;
-    document.getElementById('pageTitle').textContent = title;
-    
-    // Load the new page content
-    await loadPage(pageId);
+    // Start page transition
+    PageTransition.start(async () => {
+        // Update browser history
+        window.history.pushState({}, "", `/static/page.html?id=${pageId}`);
+        
+        // Update page title immediately
+        document.title = title;
+        document.getElementById('pageTitle').textContent = title;
+        
+        // Load the new page content
+        await loadPage(pageId);
+        
+        // Complete transition after page is loaded
+        PageTransition.complete();
+    });
 }
+
+// Enhance popstate listener for browser history
+window.addEventListener('popstate', (event) => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const newPageId = urlParams.get('id');
+    
+    if (newPageId) {
+        // Start transition first
+        PageTransition.start(async () => {
+            await loadPage(newPageId);
+            PageTransition.complete();
+        });
+    }
+});
 
 // Optimize block rendering
 async function renderBlock(block) {
@@ -554,29 +1007,44 @@ async function loadPage(pageId = null) {
         
         // Hide container and back button
         container.classList.remove('loaded');
-        backButton.style.display = 'none';
-        backButton.classList.remove('visible');
+        if (backButton) {
+            backButton.style.display = 'none';
+            backButton.classList.remove('visible');
+        }
         
         // Reset cover
-        pageCover.style.display = 'none';
-        pageCover.classList.remove('loaded');
-        pageCover.querySelector('img').src = '';
+        if (pageCover) {
+            pageCover.style.display = 'none';
+            pageCover.classList.remove('loaded');
+            const coverImg = pageCover.querySelector('img');
+            if (coverImg) {
+                coverImg.src = '';
+            }
+        }
         
         // Start loading data
         updateLoadingProgress(10);
         loadingText.textContent = '正在获取页面数据...';
         const response = await fetch(`/page/${targetPageId}`);
+        
+        // Check for errors
+        if (!response.ok) {
+            throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+        }
+        
         const data = await response.json();
         
         updateLoadingProgress(30);
         loadingText.textContent = '正在处理页面内容...';
         
         // Update page title and date
-        document.title = data.page.title;
-        updatePageTitle(data.page.title);
+        if (data.page && data.page.title) {
+            document.title = data.page.title;
+            updatePageTitle(data.page.title);
+        }
         
         // Handle cover image
-        if (data.page.cover) {
+        if (data.page && data.page.cover && pageCover) {
             loadingText.textContent = '正在加载封面图片...';
             const coverImg = pageCover.querySelector('img');
             let coverUrl = '';
@@ -587,15 +1055,28 @@ async function loadPage(pageId = null) {
                 coverUrl = data.page.cover.file.url;
             }
             
-            if (coverUrl) {
-                const coverPromise = new Promise((resolve, reject) => {
-                    coverImg.onload = resolve;
-                    coverImg.onerror = reject;
-                    coverImg.src = coverUrl;
-                });
-                
+            if (coverUrl && coverImg) {
                 try {
-                    await coverPromise;
+                    await new Promise((resolve, reject) => {
+                        const img = new Image();
+                        img.onload = resolve;
+                        img.onerror = reject;
+                        img.src = coverUrl;
+                        
+                        // Set timeout to avoid hanging
+                        const timeout = setTimeout(() => {
+                            img.src = '';
+                            reject(new Error('Cover image load timeout'));
+                        }, 10000);
+                        
+                        img.onload = () => {
+                            clearTimeout(timeout);
+                            resolve();
+                        };
+                    });
+                    
+                    // Display cover with animation
+                    coverImg.src = coverUrl;
                     pageCover.style.display = 'block';
                     setTimeout(() => {
                         pageCover.classList.add('loaded');
@@ -700,19 +1181,11 @@ async function loadPage(pageId = null) {
         
         // Show container with animation when everything is loaded
         updateLoadingProgress(90);
-        loadingText.textContent = '即将完成...';
+        loadingText.textContent = '优化显示效果...';
         
         setTimeout(() => {
             container.classList.add('loaded');
             updateLoadingProgress(100);
-            
-            // Hide loading overlay
-            const loadingOverlay = document.getElementById('loadingOverlay');
-            loadingOverlay.classList.add('fade-out');
-            setTimeout(() => {
-                loadingOverlay.style.display = 'none';
-                loadingOverlay.classList.remove('fade-out');
-            }, 300);
         }, 300);
         
     } catch (error) {
@@ -721,21 +1194,37 @@ async function loadPage(pageId = null) {
             <div class="text-center text-red-500">
                 <p>Error loading page content.</p>
                 <p class="text-sm mt-2">${error.message}</p>
+                <button onclick="window.location.reload()" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
+                    重新加载
+                </button>
             </div>`;
+        
         // Update loading state
         const loadingText = document.querySelector('.loading-text');
-        loadingText.textContent = '加载失败，请重试...';
+        if (loadingText) {
+            loadingText.textContent = '加载失败，请重试...';
+        }
         updateLoadingProgress(100);
         
         // Hide loading overlay
         setTimeout(() => {
             const loadingOverlay = document.getElementById('loadingOverlay');
-            loadingOverlay.classList.add('fade-out');
-            setTimeout(() => {
-                loadingOverlay.style.display = 'none';
-                loadingOverlay.classList.remove('fade-out');
-            }, 300);
+            if (loadingOverlay) {
+                loadingOverlay.classList.add('fade-out');
+                setTimeout(() => {
+                    loadingOverlay.style.display = 'none';
+                    loadingOverlay.classList.remove('fade-out');
+                }, 500);
+            }
+            
+            // Show container even on error to display error message
+            document.querySelector('.container').classList.add('loaded');
         }, 1000);
+        
+        // Complete page transition if was transitioning
+        if (PageTransition.isTransitioning) {
+            PageTransition.complete();
+        }
     }
 }
 
@@ -749,6 +1238,8 @@ function toggleBlock(id) {
     
     const content = block.querySelector('.toggle-content');
     const contentInner = content.querySelector('.toggle-content-inner');
+    const toggleIcon = block.querySelector('.toggle-icon');
+    
     if (!content || !contentInner) {
         console.error(`Toggle block ${id} is missing required elements`);
         return;
@@ -764,21 +1255,32 @@ function toggleBlock(id) {
         content.style.height = startHeight + 'px';
         // Force reflow
         content.offsetHeight;
-        // Start closing animation
+        
+        // Start closing animation with proper easing
+        block.classList.remove('open');
+        toggleIcon.style.transform = 'rotate(0deg)';
+        
         requestAnimationFrame(() => {
             content.style.height = '0';
             content.style.opacity = '0';
-            block.classList.remove('open');
         });
     } else {
         // Start opening animation
         block.classList.add('open');
+        
+        // Animate the icon rotation with proper easing
+        toggleIcon.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+        toggleIcon.style.transform = 'rotate(90deg)';
+        
         const targetHeight = contentInner.offsetHeight;
         content.style.height = '0';
+        
         // Force reflow
         content.offsetHeight;
-        // Trigger animation
+        
+        // Trigger animation with proper easing
         requestAnimationFrame(() => {
+            content.style.transition = 'height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
             content.style.height = targetHeight + 'px';
             content.style.opacity = '1';
         });
@@ -788,6 +1290,14 @@ function toggleBlock(id) {
             if (e.propertyName === 'height' && block.classList.contains('open')) {
                 content.style.height = 'auto';
                 content.removeEventListener('transitionend', handler);
+                
+                // Check if content needs to be expanded further after render
+                setTimeout(() => {
+                    const newHeight = contentInner.offsetHeight;
+                    if (Math.abs(newHeight - targetHeight) > 5) {
+                        content.style.height = newHeight + 'px';
+                    }
+                }, 100);
             }
         });
     }
