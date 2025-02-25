@@ -1022,24 +1022,42 @@ const TableOfContents = {
     
     // Initialize the TOC module
     init: function() {
+        console.log('Initializing TableOfContents');
         this.container = document.getElementById('tableOfContents');
         this.tocList = document.getElementById('tocList');
-        if (!this.container || !this.tocList) return;
+        if (!this.container || !this.tocList) {
+            console.log('TOC container or list not found');
+            return;
+        }
         
         // Set up collapse button
         const collapseBtn = document.getElementById('tocCollapseBtn');
         if (collapseBtn) {
-            collapseBtn.addEventListener('click', (e) => {
+            console.log('Adding click event to collapse button');
+            
+            // Clear any existing listeners by cloning and replacing the button
+            const newBtn = collapseBtn.cloneNode(true);
+            collapseBtn.parentNode.replaceChild(newBtn, collapseBtn);
+            
+            // Add event listener with proper binding
+            const self = this; // Store reference to TableOfContents
+            document.getElementById('tocCollapseBtn').addEventListener('click', function(e) {
+                console.log('Collapse button clicked');
                 e.stopPropagation(); // Prevent event from bubbling to container
-                this.toggleCollapse();
+                e.preventDefault(); // Prevent default behavior
+                self.toggleCollapse(); // Use the stored reference
             });
+        } else {
+            console.log('Collapse button not found');
         }
         
         // Add click handler to the container itself for expanding when collapsed
-        this.container.addEventListener('click', (e) => {
+        const self = this; // Store reference to TableOfContents
+        this.container.addEventListener('click', function(e) {
             // Only handle clicks on the container itself when collapsed, not on children
-            if (this.isCollapsed && e.target === this.container) {
-                this.toggleCollapse();
+            if (self.isCollapsed && e.target === self.container) {
+                console.log('Collapsed container clicked');
+                self.toggleCollapse();
             }
         });
         
@@ -1279,9 +1297,12 @@ const TableOfContents = {
     
     // Toggle collapse state
     toggleCollapse: function() {
+        console.log('toggleCollapse called, current state:', this.isCollapsed);
         this.isCollapsed = !this.isCollapsed;
+        console.log('New state:', this.isCollapsed);
         
         if (this.isCollapsed) {
+            console.log('Collapsing TOC');
             this.container.classList.add('collapsed');
             // Update button title and icon
             const collapseBtn = document.getElementById('tocCollapseBtn');
@@ -1301,7 +1322,10 @@ const TableOfContents = {
                 hint.innerHTML = '目<br>录';
                 this.container.appendChild(hint);
             }
+            
+            console.log('TOC collapsed state applied');
         } else {
+            console.log('Expanding TOC');
             this.container.classList.remove('collapsed');
             // Update button title and icon
             const collapseBtn = document.getElementById('tocCollapseBtn');
@@ -1319,6 +1343,8 @@ const TableOfContents = {
             if (hint) {
                 hint.remove();
             }
+            
+            console.log('TOC expanded state applied');
         }
         
         // Save preference
@@ -2017,4 +2043,14 @@ async function transitionToPage(pageId, title) {
         console.error('Error during page transition:', error);
         loadingText.textContent = '加载失败，请重试...';
     }
-} 
+}
+
+// Ensure TableOfContents is initialized when window loads
+window.addEventListener('load', () => {
+    console.log('Window loaded - initializing TOC');
+    // Reinitialize TableOfContents after page is fully loaded
+    setTimeout(() => {
+        TableOfContents.init();
+        TableOfContents.build();
+    }, 500);
+}); 
