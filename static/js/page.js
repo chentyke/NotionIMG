@@ -279,6 +279,12 @@ function closeImageModal(event) {
     
     const modal = document.getElementById('imageModal');
     const modalImg = document.getElementById('modalImage');
+    const closeButton = modal.querySelector('.close-button');
+    const downloadButton = document.getElementById('modalDownloadButton');
+    
+    // Immediately hide the buttons to sync with image fading
+    if (closeButton) closeButton.style.opacity = '0';
+    if (downloadButton) downloadButton.style.opacity = '0';
     
     modal.classList.remove('visible');
     
@@ -295,6 +301,9 @@ function closeImageModal(event) {
         modal.style.display = "none";
         modalImg.classList.remove('loading', 'error');
         modalImg.src = '';
+        // Reset opacity for next opening
+        if (closeButton) closeButton.style.opacity = '';
+        if (downloadButton) downloadButton.style.opacity = '';
     }, 300);
 }
 
