@@ -1757,7 +1757,7 @@ body {
     display: flex;
     flex-direction: column;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    z-index: 90;
+    z-index: 90; /* Lower than floating header (1000) */
     opacity: 0;
     transform: translateX(20px);
 }
@@ -1773,6 +1773,7 @@ body {
 
 .toc-container.collapsed {
     width: 42px;
+    transform: translateX(calc(100% - 42px)); /* Move to the right when collapsed */
     right: max(calc((100% - 896px) / 2 - 42px), 1rem);
 }
 
@@ -1807,10 +1808,12 @@ body {
     color: var(--text-tertiary);
     transition: all 0.2s ease;
     padding: 0;
+    border-radius: 50%;
 }
 
 .toc-collapse-btn:hover {
-    color: var(--text-primary);
+    color: var(--link-color);
+    background-color: var(--hover-bg);
     transform: scale(1.1);
 }
 
@@ -1825,6 +1828,9 @@ body {
     background-color: var(--bg-secondary);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     color: var(--link-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .toc-container.collapsed .toc-collapse-btn:hover {
@@ -1918,20 +1924,38 @@ body {
     opacity: 0.7;
 }
 
+/* Special rule for better positioning of the TOC when floating header is visible */
+@media (min-width: 1201px) {
+    .floating-header.visible ~ .container .toc-container {
+        top: 4rem; /* Push TOC down when floating header is visible */
+    }
+}
+
 /* Hide TOC on mobile */
 @media (max-width: 1200px) {
     .toc-container {
-        display: none;
+        display: none !important; /* Ensure it's hidden on mobile */
+    }
+}
+
+/* Additional media query for smaller mobile devices */
+@media (max-width: 768px) {
+    .toc-container {
+        display: none !important;
     }
 }
 
 /* Show expand button when TOC is collapsed */
 .toc-container.collapsed .toc-header h3 {
     display: none;
+    opacity: 0;
+    visibility: hidden;
 }
 
 .toc-container.collapsed .toc-content {
     display: none;
+    opacity: 0;
+    visibility: hidden;
 }
 
 /* Column layout styles */
