@@ -1066,6 +1066,28 @@ const TableOfContents = {
         if (tocCollapsed === 'true') {
             this.isCollapsed = true;
             this.container.classList.add('collapsed');
+            
+            // Update button icon to match collapsed state
+            const collapseBtn = document.getElementById('tocCollapseBtn');
+            if (collapseBtn) {
+                collapseBtn.title = '展开目录';
+                collapseBtn.setAttribute('aria-label', '展开目录');
+                const icon = collapseBtn.querySelector('i');
+                if (icon) {
+                    icon.className = 'fas fa-chevron-right'; // Point right when collapsed
+                }
+            }
+        } else {
+            // Ensure button icon matches expanded state
+            const collapseBtn = document.getElementById('tocCollapseBtn');
+            if (collapseBtn) {
+                collapseBtn.title = '收起目录';
+                collapseBtn.setAttribute('aria-label', '收起目录');
+                const icon = collapseBtn.querySelector('i');
+                if (icon) {
+                    icon.className = 'fas fa-chevron-left'; // Point left when expanded
+                }
+            }
         }
         
         // Check floating header visibility and adjust TOC position accordingly
@@ -1304,18 +1326,18 @@ const TableOfContents = {
         if (this.isCollapsed) {
             console.log('Collapsing TOC');
             this.container.classList.add('collapsed');
-            // Update button title and icon
+            // Update button icon to match collapsed state
             const collapseBtn = document.getElementById('tocCollapseBtn');
             if (collapseBtn) {
                 collapseBtn.title = '展开目录';
                 collapseBtn.setAttribute('aria-label', '展开目录');
                 const icon = collapseBtn.querySelector('i');
                 if (icon) {
-                    icon.className = 'fas fa-chevron-right';
+                    icon.className = 'fas fa-chevron-right'; // Point right when collapsed
                 }
             }
             
-            // We're no longer using the hint text for the thin bar design
+            // We're no longer using the hint text
             const hint = this.container.querySelector('.toc-collapsed-hint');
             if (hint) {
                 hint.remove();
@@ -1325,14 +1347,14 @@ const TableOfContents = {
         } else {
             console.log('Expanding TOC');
             this.container.classList.remove('collapsed');
-            // Update button title and icon
+            // Update button icon to match expanded state
             const collapseBtn = document.getElementById('tocCollapseBtn');
             if (collapseBtn) {
                 collapseBtn.title = '收起目录';
                 collapseBtn.setAttribute('aria-label', '收起目录');
                 const icon = collapseBtn.querySelector('i');
                 if (icon) {
-                    icon.className = 'fas fa-chevron-left';
+                    icon.className = 'fas fa-chevron-left'; // Point left when expanded
                 }
             }
             

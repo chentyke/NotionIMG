@@ -1772,57 +1772,80 @@ body {
     transform: translateX(0);
 }
 
-/* Improved collapsed style - simple thin bar that sticks to the edge */
+/* Improved collapsed style - rounded rectangle with space from the edge */
 .toc-container.collapsed {
-    width: 10px; /* Much thinner width */
-    transform: none; /* Remove transform that was causing positioning issues */
-    right: 0; /* Stick directly to the right edge */
-    border-radius: 4px 0 0 4px; /* Round only the left corners */
+    width: 24px; /* Width of the rounded rectangle */
+    height: 120px; /* Fixed height */
+    transform: none; /* Remove transform */
+    right: 12px; /* Space from the right edge */
+    border-radius: 12px; /* Rounded corners */
     cursor: pointer;
     overflow: visible;
-    box-shadow: -2px 0 6px rgba(0, 0, 0, 0.1);
-    background-color: var(--link-color);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
     min-height: 120px; /* Ensure a reasonable height */
-    opacity: 0.8; /* Slightly transparent */
+    opacity: 0.9; /* Slightly transparent */
     top: 30vh; /* Position in the middle of the viewport height */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+/* Vertical bar in the middle of the collapsed TOC */
+.toc-container.collapsed::after {
+    content: "";
+    display: block;
+    width: 2px;
+    height: 50px; /* Fixed height for the bar */
+    background-color: var(--link-color);
+    position: absolute;
+    border-radius: 1px;
 }
 
 /* Enhanced style for collapsed TOC */
 .toc-container.collapsed:hover {
-    background-color: var(--link-hover-color);
+    background-color: var(--hover-bg);
     opacity: 1;
-    width: 12px; /* Slightly wider on hover */
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
 }
 
-/* Hide the indicator for collapsed state - not needed for a thin bar */
-.toc-collapsed-hint {
-    display: none;
+.toc-container.collapsed:hover::after {
+    background-color: var(--link-hover-color);
+    height: 60px; /* Slightly longer on hover */
 }
 
 /* Position the button differently in collapsed mode */
 .toc-container.collapsed .toc-collapse-btn {
     position: absolute;
-    top: calc(50% - 12px); /* Center vertically */
-    left: -15px; /* Position outside the bar */
+    top: -12px; /* Position above the container */
+    left: 50%;
+    transform: translateX(-50%);
     width: 24px;
     height: 24px;
     z-index: 10;
-    background-color: var(--link-color);
-    color: white;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 0 6px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 0 6px rgba(0, 0, 0, 0.1);
     opacity: 0;
     transition: opacity 0.3s ease, transform 0.3s ease;
-    transform: translateX(0);
 }
 
 /* Show the button on hover */
 .toc-container.collapsed:hover .toc-collapse-btn {
     opacity: 1;
-    transform: translateX(-5px);
+    transform: translateX(-50%) translateY(-3px);
+}
+
+/* Hide the indicator for collapsed state */
+.toc-collapsed-hint {
+    display: none;
 }
 
 .toc-header {
@@ -1995,18 +2018,31 @@ body {
 /* Dark mode adjustments for collapsed TOC */
 @media (prefers-color-scheme: dark) {
     .toc-container.collapsed {
+        background-color: var(--bg-secondary);
+        border-color: var(--border-color);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+    
+    .toc-container.collapsed::after {
         background-color: var(--link-color);
-        box-shadow: -2px 0 8px rgba(0, 0, 0, 0.3);
     }
     
     .toc-container.collapsed:hover {
+        background-color: var(--hover-bg);
+    }
+    
+    .toc-container.collapsed:hover::after {
         background-color: var(--link-hover-color);
     }
     
     .toc-container.collapsed .toc-collapse-btn {
-        background-color: var(--link-color);
+        background-color: var(--bg-secondary);
+        color: var(--text-primary);
+        border-color: var(--border-color);
     }
 }
+
+/* ... existing code ... */
 
 /* Column layout styles */
 .column-list {
