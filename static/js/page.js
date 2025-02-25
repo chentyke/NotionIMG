@@ -1750,8 +1750,18 @@ const TableOfContents = {
                         this.container.classList.add('expanded');
                         this.container.style.animation = 'slideInTocMobile 0.35s cubic-bezier(0.25, 1, 0.5, 1)';
                         
-                        // 确保内容可见
+                        // 确保内容可见 - 重复调用确保生效
                         this.ensureTocContentVisible();
+                        
+                        // 稍后再次确保内容可见，避免动画过程中的问题
+                        setTimeout(() => {
+                            this.ensureTocContentVisible();
+                        }, 50);
+                        
+                        // 动画结束后再次确保内容可见
+                        this.container.addEventListener('animationend', () => {
+                            this.ensureTocContentVisible();
+                        }, { once: true });
                         
                         // 添加触觉反馈
                         if (window.navigator && window.navigator.vibrate) {
@@ -1774,8 +1784,18 @@ const TableOfContents = {
                     this.container.classList.add('expanded');
                     this.container.style.animation = 'slideInTocMobile 0.35s cubic-bezier(0.25, 1, 0.5, 1)';
                     
-                    // 确保内容可见
+                    // 确保内容可见 - 重复调用确保生效
                     this.ensureTocContentVisible();
+                    
+                    // 稍后再次确保内容可见，避免动画过程中的问题
+                    setTimeout(() => {
+                        this.ensureTocContentVisible();
+                    }, 50);
+                    
+                    // 动画结束后再次确保内容可见
+                    this.container.addEventListener('animationend', () => {
+                        this.ensureTocContentVisible();
+                    }, { once: true });
                     
                     // 添加触觉反馈
                     if (window.navigator && window.navigator.vibrate) {
@@ -1832,7 +1852,22 @@ const TableOfContents = {
             item.style.opacity = '1';
             item.style.visibility = 'visible';
             item.style.display = 'block';
+            item.style.color = ''; // Clear any inline color that might be overriding
+            item.style.textAlign = 'left'; // Ensure text alignment
+            item.style.margin = '0.5rem 0'; // Add consistent margins
         });
+        
+        // 确保目录内容区域可滚动
+        const tocContent = document.querySelector('.toc-content');
+        if (tocContent) {
+            tocContent.style.opacity = '1';
+            tocContent.style.visibility = 'visible';
+            tocContent.style.display = 'block';
+            tocContent.style.overflowY = 'auto';
+            tocContent.style.maxHeight = this.isMobile ? 'calc(50vh - 60px)' : '';
+            tocContent.style.height = 'auto';
+            tocContent.style.width = '100%';
+        }
         
         console.log('TOC content visibility ensured');
     }

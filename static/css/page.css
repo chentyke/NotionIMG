@@ -2005,12 +2005,19 @@ body {
             display: block !important;
             opacity: 1 !important;
             visibility: visible !important;
+            height: auto !important;
+            max-height: calc(50vh - 60px) !important;
+            overflow-y: auto !important;
+            padding-bottom: 20px !important;
+            width: 100% !important;
         }
         
         .toc-container.expanded .toc-list {
             display: block !important;
             opacity: 1 !important;
             visibility: visible !important;
+            width: 100% !important;
+            padding: 0.5rem 1rem !important;
         }
         
         .toc-container.expanded .toc-item,
@@ -2018,6 +2025,10 @@ body {
             display: block !important;
             opacity: 1 !important;
             visibility: visible !important;
+            margin: 0.5rem 0 !important;
+            color: var(--text-primary) !important;
+            text-align: left !important;
+            font-size: 0.9rem !important;
         }
     }
 }
