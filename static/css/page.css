@@ -1725,6 +1725,11 @@ body {
         transform: translateY(0); /* Fully visible */
         transition: none; /* Disable other transitions to avoid conflicts */
         position: fixed; /* Ensure it's fixed at the bottom of the viewport */
+        background-color: var(--bg-secondary); /* Ensure container has background color */
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        display: flex;
+        flex-direction: column;
     }
     
     /* Updated slide in animation from bottom */
@@ -1778,17 +1783,17 @@ body {
     }
     
     .toc-header h3 {
-        font-size: 1.25rem;
+        font-size: 1.125rem;
         font-weight: 600;
         margin: 0;
         color: var(--text-primary);
     }
     
     .toc-collapse-btn {
-        width: 40px;
-        height: 40px;
-        font-size: 1.125rem;
-        background-color: var(--hover-bg);
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+        background-color: transparent;
         border-radius: 50%;
         display: flex;
         align-items: center;
@@ -1809,7 +1814,7 @@ body {
     }
     
     .toc-content {
-        padding: 0.5rem 0;
+        padding: 0;
         scrollbar-width: thin;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
@@ -1839,38 +1844,60 @@ body {
         pointer-events: none;
     }
     
+    .toc-list {
+        background-color: var(--bg-secondary);
+        padding: 0.5rem 0;
+    }
+    
+    .toc-item {
+        background-color: transparent;
+    }
+    
     .toc-link {
-        padding: 0.875rem 1rem;
-        font-size: 1rem;
+        padding: 0.75rem 1rem;
+        font-size: 0.95rem;
         font-weight: 500;
         line-height: 1.4;
         border-left: 3px solid transparent;
         transition: all 0.2s ease;
+        background-color: transparent; /* Ensure transparent background by default */
+        color: var(--text-secondary);
+        display: block;
+        text-decoration: none;
     }
     
     .toc-link:hover {
         background-color: var(--hover-bg);
         padding-left: 1.25rem;
+        color: var(--text-primary);
     }
     
     .toc-link:active {
-        background-color: rgba(var(--link-color-rgb), 0.1);
+        background-color: rgba(var(--link-color-rgb), 0.08);
     }
     
     .toc-link.active {
-        background-color: rgba(var(--link-color-rgb), 0.1);
+        background-color: rgba(var(--link-color-rgb), 0.08);
         border-left-color: var(--link-color);
         padding-left: 1.25rem;
+        color: var(--link-color);
+    }
+    
+    .toc-level-1 {
+        font-weight: 600;
     }
     
     .toc-level-2 {
-        padding-left: 1.5rem;
-        font-size: 0.95rem;
+        padding-left: 1.25rem;
+        font-size: 0.9rem;
+        font-weight: normal;
     }
     
     .toc-level-3 {
-        padding-left: 2.5rem;
-        font-size: 0.9rem;
+        padding-left: 2rem;
+        font-size: 0.85rem;
+        font-weight: normal;
+        color: var(--text-tertiary);
     }
     
     /* Add dim overlay */
@@ -1902,14 +1929,6 @@ body {
         box-shadow: 0 3px 12px rgba(0, 0, 0, 0.35);
     }
     
-    .toc-container::before {
-        color: var(--link-color);
-    }
-    
-    .toc-container:not(.expanded):hover::before {
-        color: var(--link-hover-color);
-    }
-    
     .toc-container.expanded {
         background-color: var(--bg-secondary);
         backdrop-filter: blur(10px);
@@ -1921,24 +1940,33 @@ body {
         border-color: var(--border-color);
     }
     
-    .toc-collapse-btn {
+    .toc-content {
+        background-color: var(--bg-secondary);
+    }
+    
+    .toc-list {
+        background-color: var(--bg-secondary);
+    }
+    
+    .toc-item {
+        background-color: transparent;
+    }
+    
+    .toc-link {
+        color: var(--text-secondary);
+        background-color: transparent;
+    }
+    
+    .toc-link:hover {
         background-color: var(--hover-bg);
         color: var(--text-primary);
     }
     
-    .toc-collapse-btn:hover {
-        background-color: var(--hover-bg);
-    }
-    
     .toc-link.active {
         background-color: rgba(var(--link-color-rgb), 0.15);
+        color: var(--link-color);
     }
     
-    .toc-content::-webkit-scrollbar-thumb {
-        background-color: rgba(255, 255, 255, 0.2);
-    }
-    
-    /* Dark mode overlay */
     .toc-container::after {
         background-color: rgba(0, 0, 0, 0.5);
     }
