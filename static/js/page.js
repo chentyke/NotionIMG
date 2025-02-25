@@ -1177,6 +1177,19 @@ const TableOfContents = {
             }
         });
         
+        // Add document click handler to close the TOC when clicking outside on mobile
+        if (this.isMobile) {
+            document.addEventListener('click', function(e) {
+                // Skip if TOC is already collapsed or click is inside TOC
+                if (self.isCollapsed || e.target.closest('#tableOfContents')) {
+                    return;
+                }
+                
+                console.log('Document clicked outside TOC, collapsing...');
+                self.toggleCollapse(true); // Force collapse
+            });
+        }
+        
         // Ensure button icon matches state
         if (collapseBtn) {
             collapseBtn.title = this.isCollapsed ? '展开目录' : '收起目录';
@@ -1488,10 +1501,16 @@ const TableOfContents = {
             
             // Handle mobile-specific collapse
             if (this.isMobile) {
-                this.container.classList.remove('expanded');
-                this.container.classList.add('collapsed');
+                // For mobile, add slide-out animation before collapsing
+                this.container.style.animation = 'slideOutTocMobile 0.25s cubic-bezier(0.25, 1, 0.5, 1) forwards';
                 
-                // For mobile, just toggle classes immediately
+                // After animation completes, actually collapse
+                setTimeout(() => {
+                    this.container.classList.remove('expanded');
+                    this.container.classList.add('collapsed');
+                    this.container.style.animation = '';
+                }, 250);
+                
                 console.log('Mobile TOC collapsed');
             } else {
                 // Desktop collapse animation
@@ -1540,7 +1559,11 @@ const TableOfContents = {
                 this.container.classList.remove('collapsed');
                 this.container.classList.add('expanded');
                 
-                // For mobile, just toggle classes immediately
+                // Add haptic feedback if available
+                if (window.navigator && window.navigator.vibrate) {
+                    window.navigator.vibrate(50); // Subtle feedback
+                }
+                
                 console.log('Mobile TOC expanded');
             } else {
                 // Desktop expand animation
@@ -2310,4 +2333,30 @@ document.addEventListener('DOMContentLoaded', function() {
             downloadModalImage(event);
         };
     }
-}); 
+});
+
+// Add document click handler to close the TOC when clicking outside on mobile
+document.addEventListener('click', function(event) {
+    // Skip if TOC container doesn't exist
+    const tocContainer = document.getElementById('tableOfContents');
+    if (!tocContainer) return;
+    
+    // Skip if TOC is already collapsed or click is inside TOC
+    if (tocContainer.classList.contains('collapsed') || event.target.closest('#tableOfContents')) {
+        return;
+    }
+    
+    // Only handle on mobile devices
+    if (window.innerWidth <= 1200) {
+        console.log('Document clicked outside TOC, collapsing...');
+        
+        // Find TableOfContents object and call its toggleCollapse method
+        if (typeof TableOfContents !== 'undefined') {
+            TableOfContents.toggleCollapse(true); // Force collapse
+        } else {
+            // Fallback if TableOfContents object is not available
+            tocContainer.classList.remove('expanded');
+            tocContainer.classList.add('collapsed');
+        }
+    }
+});
