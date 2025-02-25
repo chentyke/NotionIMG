@@ -146,4 +146,33 @@
         background-color: rgba(71, 71, 71, 0.5);
         color: #e0e0e0;
     }
+}
+
+/* 表格样式 */
+.prose table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1.5rem 0;
+    border: 1px solid var(--border-color);
+}
+
+.prose th, .prose td {
+    border: 1px solid var(--border-color);
+    padding: 0.75rem 1rem;
+    text-align: left;
+}
+
+.prose th {
+    background-color: var(--code-bg);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.prose tr {
+    transition: background-color 0.2s ease;
+}
+
+.prose tr:hover {
+    background-color: var(--hover-bg);
+    color: var(--text-primary);
 } 
