@@ -1655,6 +1655,8 @@ body {
         align-items: center;
         justify-content: center;
         box-shadow: 0 3px 12px rgba(0, 0, 0, 0.15);
+        overflow: hidden; /* Ensure content doesn't overflow during animation */
+        position: fixed; /* Keep it fixed in collapsed state too */
     }
     
     .toc-container::before {
@@ -1712,10 +1714,8 @@ body {
         border-radius: 12px 12px 0 0; /* Rounded corners only at top */
         box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.25);
         transform: translateY(0); /* Fully visible */
-        transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1),
-                    width 0.35s cubic-bezier(0.25, 1, 0.5, 1),
-                    height 0.35s cubic-bezier(0.25, 1, 0.5, 1),
-                    border-radius 0.35s ease;
+        transition: none; /* Disable other transitions to avoid conflicts */
+        position: fixed; /* Ensure it's fixed at the bottom of the viewport */
     }
     
     /* Updated slide in animation from bottom */
@@ -1748,6 +1748,7 @@ body {
         flex-direction: column;
         transform: translateY(0);
         animation: slideInTocMobile 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+        will-change: transform; /* Optimize for animation performance */
     }
     
     .toc-container.expanded::before {

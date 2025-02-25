@@ -1613,8 +1613,18 @@ const TableOfContents = {
             
             // Handle mobile-specific expand
             if (this.isMobile) {
+                // Remove any existing animation
+                this.container.style.animation = '';
+                
+                // First remove collapsed class
                 this.container.classList.remove('collapsed');
+                
+                // Force reflow to ensure animation starts fresh
+                this.container.offsetHeight;
+                
+                // Then add expanded class with animation
                 this.container.classList.add('expanded');
+                this.container.style.animation = 'slideInTocMobile 0.35s cubic-bezier(0.25, 1, 0.5, 1)';
                 
                 // Add haptic feedback if available
                 if (window.navigator && window.navigator.vibrate) {
