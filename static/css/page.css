@@ -1756,11 +1756,11 @@ body {
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1), top 0.25s ease-out;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1), top 0.25s ease-out;
     z-index: 90; /* Lower than floating header (1000) */
     opacity: 0;
     transform: translateX(20px);
-    will-change: opacity, transform, top;
+    will-change: opacity, transform, top, width, height;
 }
 
 .toc-container:hover {
@@ -1770,6 +1770,29 @@ body {
 .toc-container.visible {
     opacity: 1;
     transform: translateX(0);
+}
+
+/* Transition states */
+.toc-container.collapsing,
+.toc-container.expanding {
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.toc-container.collapsing {
+    width: 24px;
+    height: 120px;
+    opacity: 0.9;
+    border-radius: 12px;
+    right: 12px;
+    top: 30vh;
+}
+
+.toc-container.expanding {
+    width: 260px;
+    opacity: 1;
+    top: 2rem;
+    right: max(calc((100% - 896px) / 2 - 280px), 2rem);
 }
 
 /* Improved collapsed style - rounded rectangle with space from the edge */
@@ -1802,6 +1825,7 @@ body {
     background-color: var(--link-color);
     position: absolute;
     border-radius: 1px;
+    transition: height 0.3s ease, background-color 0.3s ease;
 }
 
 /* Show expand button when TOC is collapsed */
@@ -1823,11 +1847,18 @@ body {
     background-color: var(--hover-bg);
     opacity: 1;
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .toc-container.collapsed:hover::after {
     background-color: var(--link-hover-color);
     height: 60px; /* Slightly longer on hover */
+    transition: height 0.3s ease, background-color 0.3s ease;
+}
+
+/* Content transition */
+.toc-content, .toc-header {
+    transition: opacity 0.25s ease-in-out;
 }
 
 /* Hide the indicator for collapsed state */
@@ -2029,8 +2060,6 @@ body {
     }
 }
 
-/* ... existing code ... */
-
 /* Column layout styles */
 .column-list {
     display: grid;
@@ -2092,7 +2121,7 @@ body {
         background-color: var(--bg-secondary);
         border-color: var(--border-color);
     }
-    
+
     .bookmark-block:hover {
         background-color: var(--hover-bg);
     }

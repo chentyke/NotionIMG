@@ -1061,32 +1061,17 @@ const TableOfContents = {
             }
         });
         
-        // Check if TOC should start collapsed based on user preference
-        const tocCollapsed = localStorage.getItem('tocCollapsed');
-        if (tocCollapsed === 'true') {
-            this.isCollapsed = true;
-            this.container.classList.add('collapsed');
-            
-            // Update button icon to match collapsed state
-            const collapseBtn = document.getElementById('tocCollapseBtn');
-            if (collapseBtn) {
-                collapseBtn.title = '展开目录';
-                collapseBtn.setAttribute('aria-label', '展开目录');
-                const icon = collapseBtn.querySelector('i');
-                if (icon) {
-                    icon.className = 'fas fa-chevron-right'; // Point right when collapsed
-                }
-            }
-        } else {
-            // Ensure button icon matches expanded state
-            const collapseBtn = document.getElementById('tocCollapseBtn');
-            if (collapseBtn) {
-                collapseBtn.title = '收起目录';
-                collapseBtn.setAttribute('aria-label', '收起目录');
-                const icon = collapseBtn.querySelector('i');
-                if (icon) {
-                    icon.className = 'fas fa-chevron-left'; // Point left when expanded
-                }
+        // Always start expanded by default
+        this.isCollapsed = false;
+        this.container.classList.remove('collapsed');
+        
+        // Ensure button icon matches expanded state
+        if (collapseBtn) {
+            collapseBtn.title = '收起目录';
+            collapseBtn.setAttribute('aria-label', '收起目录');
+            const icon = collapseBtn.querySelector('i');
+            if (icon) {
+                icon.className = 'fas fa-chevron-left'; // Point left when expanded
             }
         }
         
@@ -1320,15 +1305,35 @@ const TableOfContents = {
     // Toggle collapse state
     toggleCollapse: function() {
         console.log('toggleCollapse called, current state:', this.isCollapsed);
+        
+        // Store the current container dimensions before toggling
+        const containerWidth = this.container.offsetWidth;
+        const containerHeight = this.container.offsetHeight;
+        
+        // Toggle collapsed state
         this.isCollapsed = !this.isCollapsed;
         console.log('New state:', this.isCollapsed);
         
+        // Get the collapse button
+        const collapseBtn = document.getElementById('tocCollapseBtn');
+        
         if (this.isCollapsed) {
             console.log('Collapsing TOC');
-            this.container.classList.add('collapsed');
-            // Update button icon to match collapsed state
-            const collapseBtn = document.getElementById('tocCollapseBtn');
+            
+            // First set explicit dimensions to allow smooth transition
+            this.container.style.width = `${containerWidth}px`;
+            this.container.style.height = `${containerHeight}px`;
+            
+            // Force reflow
+            this.container.offsetHeight;
+            
+            // Add collapsed class - transition will start
+            this.container.classList.add('collapsing');
+            
+            // Fade out content first
+            if (this.tocList) this.tocList.style.opacity = '0';
             if (collapseBtn) {
+                collapseBtn.style.opacity = '0';
                 collapseBtn.title = '展开目录';
                 collapseBtn.setAttribute('aria-label', '展开目录');
                 const icon = collapseBtn.querySelector('i');
@@ -1337,18 +1342,28 @@ const TableOfContents = {
                 }
             }
             
-            // We're no longer using the hint text
-            const hint = this.container.querySelector('.toc-collapsed-hint');
-            if (hint) {
-                hint.remove();
-            }
-            
-            console.log('TOC collapsed state applied');
+            // Collapse after content fades out
+            setTimeout(() => {
+                // Add collapsed class
+                this.container.classList.add('collapsed');
+                this.container.classList.remove('collapsing');
+                
+                // Reset inline styles after transition completes
+                setTimeout(() => {
+                    this.container.style.width = '';
+                    this.container.style.height = '';
+                }, 300);
+                
+                console.log('TOC collapsed state applied');
+            }, 200);
         } else {
             console.log('Expanding TOC');
+            
+            // Remove collapsed class first
             this.container.classList.remove('collapsed');
+            this.container.classList.add('expanding');
+            
             // Update button icon to match expanded state
-            const collapseBtn = document.getElementById('tocCollapseBtn');
             if (collapseBtn) {
                 collapseBtn.title = '收起目录';
                 collapseBtn.setAttribute('aria-label', '收起目录');
@@ -1358,7 +1373,16 @@ const TableOfContents = {
                 }
             }
             
-            console.log('TOC expanded state applied');
+            // Let the container expand, then fade in content
+            setTimeout(() => {
+                if (this.tocList) this.tocList.style.opacity = '1';
+                if (collapseBtn) collapseBtn.style.opacity = '1';
+                
+                // Remove transitioning class
+                this.container.classList.remove('expanding');
+                
+                console.log('TOC expanded state applied');
+            }, 300);
         }
         
         // Save preference
