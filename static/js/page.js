@@ -1592,20 +1592,35 @@ const TableOfContents = {
         // Get the collapse button
         const collapseBtn = document.getElementById('tocCollapseBtn');
         
+        // 清除任何可能存在的超时计时器
+        if (this._animationTimeout) {
+            clearTimeout(this._animationTimeout);
+            this._animationTimeout = null;
+        }
+        
         if (this.isCollapsed) {
             console.log('Collapsing TOC');
             
             // Handle mobile-specific collapse
             if (this.isMobile) {
+                // 移除所有可能的事件监听器，避免重复或冲突
+                this.container.removeEventListener('animationend', this._handleTocSlideOut);
+                this.container.removeEventListener('animationend', this._handleButtonSlideIn);
+                this.container.removeEventListener('animationend', this._handleButtonHide);
+                
+                // 移除所有可能的动画类
+                this.container.classList.remove('button-showing');
+                this.container.classList.remove('button-hiding');
+                
                 // For mobile, add slide-out animation before collapsing
                 this.container.style.animation = 'slideOutTocMobile 0.35s cubic-bezier(0.25, 1, 0.5, 1) forwards';
                 this.container.classList.add('collapsing'); // Add class for button animation
                 
-                // 监听目录滑出动画结束
-                const handleTocSlideOut = (event) => {
+                // 定义事件处理函数并保存引用
+                this._handleTocSlideOut = (event) => {
                     if (event.animationName === 'slideOutTocMobile') {
                         // 移除监听器
-                        this.container.removeEventListener('animationend', handleTocSlideOut);
+                        this.container.removeEventListener('animationend', this._handleTocSlideOut);
                         
                         // 切换类名
                         this.container.classList.remove('expanded');
@@ -1621,18 +1636,41 @@ const TableOfContents = {
                         // 添加按钮滑入动画
                         this.container.classList.add('button-showing');
                         
-                        // 监听按钮滑入动画结束
-                        const handleButtonSlideIn = (e) => {
+                        // 定义按钮滑入动画结束处理函数并保存引用
+                        this._handleButtonSlideIn = (e) => {
                             if (e.animationName === 'slideInButtonFromRight') {
                                 this.container.classList.remove('button-showing');
-                                this.container.removeEventListener('animationend', handleButtonSlideIn);
+                                this.container.removeEventListener('animationend', this._handleButtonSlideIn);
                             }
                         };
-                        this.container.addEventListener('animationend', handleButtonSlideIn);
+                        
+                        // 监听按钮滑入动画结束
+                        this.container.addEventListener('animationend', this._handleButtonSlideIn);
+                        
+                        // 设置备用超时，确保按钮显示类被移除
+                        this._animationTimeout = setTimeout(() => {
+                            this.container.classList.remove('button-showing');
+                        }, 500); // 比动画时长稍长
                     }
                 };
                 
-                this.container.addEventListener('animationend', handleTocSlideOut);
+                // 监听目录滑出动画结束
+                this.container.addEventListener('animationend', this._handleTocSlideOut);
+                
+                // 设置备用超时，确保目录正确折叠
+                this._animationTimeout = setTimeout(() => {
+                    this.container.classList.remove('expanded');
+                    this.container.classList.add('collapsed');
+                    this.container.classList.remove('collapsing');
+                    this.container.style.animation = '';
+                    this.container.offsetHeight;
+                    this.container.classList.add('button-showing');
+                    
+                    // 再设置一个超时移除按钮显示类
+                    setTimeout(() => {
+                        this.container.classList.remove('button-showing');
+                    }, 500);
+                }, 400); // 比动画时长稍长
                 
                 console.log('Mobile TOC collapsed');
             } else {
@@ -1679,14 +1717,22 @@ const TableOfContents = {
             
             // Handle mobile-specific expand
             if (this.isMobile) {
+                // 移除所有可能的事件监听器，避免重复或冲突
+                this.container.removeEventListener('animationend', this._handleTocSlideOut);
+                this.container.removeEventListener('animationend', this._handleButtonSlideIn);
+                this.container.removeEventListener('animationend', this._handleButtonHide);
+                
+                // 移除所有可能的动画类
+                this.container.classList.remove('button-showing');
+                
                 // 先添加按钮隐藏动画
                 this.container.classList.add('button-hiding');
                 
-                // 监听按钮隐藏动画结束
-                const handleButtonHide = (event) => {
+                // 定义按钮隐藏动画结束处理函数并保存引用
+                this._handleButtonHide = (event) => {
                     if (event.animationName === 'slideOutButtonToLeft') {
                         // 移除监听器
-                        this.container.removeEventListener('animationend', handleButtonHide);
+                        this.container.removeEventListener('animationend', this._handleButtonHide);
                         
                         // 移除按钮隐藏动画类
                         this.container.classList.remove('button-hiding');
@@ -1713,7 +1759,18 @@ const TableOfContents = {
                     }
                 };
                 
-                this.container.addEventListener('animationend', handleButtonHide);
+                // 监听按钮隐藏动画结束
+                this.container.addEventListener('animationend', this._handleButtonHide);
+                
+                // 设置备用超时，确保目录正确展开
+                this._animationTimeout = setTimeout(() => {
+                    this.container.classList.remove('button-hiding');
+                    this.container.classList.remove('collapsed');
+                    this.container.style.animation = '';
+                    this.container.offsetHeight;
+                    this.container.classList.add('expanded');
+                    this.container.style.animation = 'slideInTocMobile 0.35s cubic-bezier(0.25, 1, 0.5, 1)';
+                }, 400); // 比动画时长稍长
             } else {
                 // Desktop expand animation
                 // Remove collapsed class first
@@ -2505,6 +2562,10 @@ document.addEventListener('click', function(event) {
         } else {
             // Fallback if TableOfContents object is not available
             if (tocContainer.classList.contains('expanded')) {
+                // 移除所有可能的动画类
+                tocContainer.classList.remove('button-showing');
+                tocContainer.classList.remove('button-hiding');
+                
                 // Add animation for collapsing
                 tocContainer.style.animation = 'slideOutTocMobile 0.35s cubic-bezier(0.25, 1, 0.5, 1) forwards';
                 
@@ -2513,6 +2574,17 @@ document.addEventListener('click', function(event) {
                     tocContainer.classList.remove('expanded');
                     tocContainer.classList.add('collapsed');
                     tocContainer.style.animation = '';
+                    
+                    // 强制重排
+                    tocContainer.offsetHeight;
+                    
+                    // 添加按钮滑入动画
+                    tocContainer.classList.add('button-showing');
+                    
+                    // 设置超时移除按钮显示类
+                    setTimeout(() => {
+                        tocContainer.classList.remove('button-showing');
+                    }, 500);
                 }, 350);
             } else {
                 tocContainer.classList.remove('expanded');
