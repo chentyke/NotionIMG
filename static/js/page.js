@@ -2029,27 +2029,36 @@ function processRichText(richTextArray) {
         if (annotations.italic) classes.push('italic');
         if (annotations.strikethrough) classes.push('line-through');
         if (annotations.underline) classes.push('underline');
-        if (annotations.code) classes.push('font-mono bg-gray-100 px-1 rounded');
+        if (annotations.code) classes.push('inline-code');
 
         // 构建HTML
-        let html = `<span class="rich-text-wrapper ${classes.join(' ')}"`;
-        if (styles.length > 0) {
-            html += ` style="${styles.join('; ')}"`;
-        }
-        html += '>';
-
+        let html = '';
+        
         // 处理链接
         if (link) {
+            // 链接被包装在外层
             html += `<a href="${link.url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">`;
         }
-
-        html += content;
-
+        
+        // 添加格式化的文本
+        if (classes.length > 0) {
+            if (annotations.code) {
+                // 代码块特殊处理
+                html += `<code class="${classes.join(' ')}">${content}</code>`;
+            } else {
+                // 普通格式化文本
+                html += `<span class="${classes.join(' ')}">${content}</span>`;
+            }
+        } else {
+            // 无格式纯文本
+            html += content;
+        }
+        
+        // 关闭链接标签
         if (link) {
             html += '</a>';
         }
 
-        html += '</span>';
         return html;
     }).join('');
 }

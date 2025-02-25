@@ -2111,4 +2111,99 @@ body {
     .instruction {
         display: none;
     }
+}
+
+/* Text colors */
+.text-default { color: inherit; }
+.text-gray { color: rgb(120, 119, 116); }
+.text-brown { color: rgb(159, 107, 83); }
+.text-orange { color: rgb(217, 115, 13); }
+.text-yellow { color: rgb(203, 145, 47); }
+.text-green { color: rgb(68, 131, 97); }
+.text-blue { color: rgb(51, 126, 169); }
+.text-purple { color: rgb(144, 101, 176); }
+.text-pink { color: rgb(193, 76, 138); }
+.text-red { color: rgb(212, 76, 71); }
+
+/* Background colors */
+.bg-default { background-color: transparent; }
+.bg-gray-background { background-color: rgb(241, 241, 239); }
+.bg-brown-background { background-color: rgb(244, 238, 238); }
+.bg-orange-background { background-color: rgb(251, 236, 221); }
+.bg-yellow-background { background-color: rgb(251, 243, 219); }
+.bg-green-background { background-color: rgb(237, 243, 236); }
+.bg-blue-background { background-color: rgb(231, 243, 248); }
+.bg-purple-background { background-color: rgb(244, 240, 247); }
+.bg-pink-background { background-color: rgb(249, 238, 243); }
+.bg-red-background { background-color: rgb(253, 235, 236); }
+
+/* Link styles */
+.prose a {
+    color: #2563EB;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+.prose a:hover {
+    color: #1D4ED8;
+    text-decoration: underline;
+}
+
+/* Underline style */
+.prose u {
+    text-decoration: underline;
+    text-decoration-thickness: 0.1em;
+    text-underline-offset: 0.1em;
+}
+
+/* Strikethrough style */
+.prose del {
+    text-decoration: line-through;
+    text-decoration-thickness: 0.1em;
+}
+
+/* Bold style */
+.prose strong {
+    font-weight: 600;
+}
+
+/* Italic style */
+.prose em {
+    font-style: italic;
+}
+
+/* Code style for inline code */
+.prose code.inline-code {
+    background-color: #f3f4f6;
+    padding: 0.2em 0.4em;
+    border-radius: 0.25rem;
+    font-size: 0.875em;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* Dark mode color adjustments */
+@media (prefers-color-scheme: dark) {
+    .text-gray { color: rgb(155, 155, 155); }
+    .text-brown { color: rgb(186, 133, 111); }
+    .text-orange { color: rgb(217, 135, 63); }
+    .text-yellow { color: rgb(203, 165, 87); }
+    .text-green { color: rgb(108, 171, 142); }
+    .text-blue { color: rgb(91, 166, 209); }
+    .text-purple { color: rgb(174, 131, 206); }
+    .text-pink { color: rgb(223, 106, 168); }
+    .text-red { color: rgb(235, 106, 101); }
+    
+    .bg-gray-background { background-color: rgba(155, 155, 155, 0.15); }
+    .bg-brown-background { background-color: rgba(186, 133, 111, 0.15); }
+    .bg-orange-background { background-color: rgba(217, 135, 63, 0.15); }
+    .bg-yellow-background { background-color: rgba(203, 165, 87, 0.15); }
+    .bg-green-background { background-color: rgba(108, 171, 142, 0.15); }
+    .bg-blue-background { background-color: rgba(91, 166, 209, 0.15); }
+    .bg-purple-background { background-color: rgba(174, 131, 206, 0.15); }
+    .bg-pink-background { background-color: rgba(223, 106, 168, 0.15); }
+    .bg-red-background { background-color: rgba(235, 106, 101, 0.15); }
+    
+    .prose code.inline-code {
+        background-color: rgba(71, 71, 71, 0.5);
+        color: #e0e0e0;
+    }
 } 
