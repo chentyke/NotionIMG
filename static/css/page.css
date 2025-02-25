@@ -1893,6 +1893,15 @@ body {
         pointer-events: none;
     }
     
+    /* Ensure content is visible when expanded */
+    .toc-container.expanded .toc-header,
+    .toc-container.expanded .toc-content {
+        display: block !important;
+        pointer-events: auto;
+        opacity: 1;
+        visibility: visible;
+    }
+    
     .toc-list {
         background-color: var(--bg-secondary);
         padding: 0;
@@ -1901,6 +1910,8 @@ body {
         list-style: none;
         left: 0; /* 确保左对齐 */
         right: 0; /* 确保右对齐 */
+        opacity: 1; /* 确保不透明 */
+        visibility: visible; /* 确保可见 */
     }
     
     .toc-item {
@@ -1986,6 +1997,28 @@ body {
     .toc-container.expanded::after {
         display: block;
         opacity: 1;
+    }
+    
+    /* Mobile TOC content visibility fix */
+    @media (max-width: 1200px) {
+        .toc-container.expanded .toc-content {
+            display: block !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+        }
+        
+        .toc-container.expanded .toc-list {
+            display: block !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+        }
+        
+        .toc-container.expanded .toc-item,
+        .toc-container.expanded .toc-link {
+            display: block !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+        }
     }
 }
 

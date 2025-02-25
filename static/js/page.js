@@ -1750,6 +1750,9 @@ const TableOfContents = {
                         this.container.classList.add('expanded');
                         this.container.style.animation = 'slideInTocMobile 0.35s cubic-bezier(0.25, 1, 0.5, 1)';
                         
+                        // 确保内容可见
+                        this.ensureTocContentVisible();
+                        
                         // 添加触觉反馈
                         if (window.navigator && window.navigator.vibrate) {
                             window.navigator.vibrate(50);
@@ -1770,6 +1773,14 @@ const TableOfContents = {
                     this.container.offsetHeight;
                     this.container.classList.add('expanded');
                     this.container.style.animation = 'slideInTocMobile 0.35s cubic-bezier(0.25, 1, 0.5, 1)';
+                    
+                    // 确保内容可见
+                    this.ensureTocContentVisible();
+                    
+                    // 添加触觉反馈
+                    if (window.navigator && window.navigator.vibrate) {
+                        window.navigator.vibrate(50);
+                    }
                 }, 400); // 比动画时长稍长
             } else {
                 // Desktop expand animation
@@ -1804,6 +1815,26 @@ const TableOfContents = {
         if (!this.isMobile) {
             localStorage.setItem('tocCollapsed', this.isCollapsed);
         }
+    },
+    
+    // 确保目录内容可见的方法
+    ensureTocContentVisible: function() {
+        if (!this.tocList) return;
+        
+        // 确保目录列表可见
+        this.tocList.style.opacity = '1';
+        this.tocList.style.visibility = 'visible';
+        this.tocList.style.display = 'block';
+        
+        // 确保所有目录项可见
+        const tocItems = this.tocList.querySelectorAll('.toc-item, .toc-link');
+        tocItems.forEach(item => {
+            item.style.opacity = '1';
+            item.style.visibility = 'visible';
+            item.style.display = 'block';
+        });
+        
+        console.log('TOC content visibility ensured');
     }
 };
 

@@ -1,0 +1,14 @@
+                    this.container.classList.remove("button-hiding");
+                    this.container.classList.remove("collapsed");
+                    this.container.style.animation = "";
+                    this.container.offsetHeight;
+                    this.container.classList.add("expanded");
+                    this.container.style.animation = "slideInTocMobile 0.35s cubic-bezier(0.25, 1, 0.5, 1)";
+                    
+                    // 确保内容可见
+                    this.ensureTocContentVisible();
+                    
+                    // 添加触觉反馈
+                    if (window.navigator && window.navigator.vibrate) {
+                        window.navigator.vibrate(50);
+                    }
