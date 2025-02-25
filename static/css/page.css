@@ -8,17 +8,17 @@
     animation: spin 1s linear infinite;
 }
 
+/* Hide TOC on mobile devices */
+@media (max-width: 1200px) {
+    #tableOfContents {
+        display: none !important;
+    }
+}
+
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
-
-/* Update spinner to use CSS variables for better theme support */
-.loading-spinner {
-    border: 3px solid var(--border-color);
-    border-top: 3px solid var(--link-color);
-}
-
 :root {
     /* Light mode colors */
     --bg-primary: #f9fafb;
@@ -35,28 +35,6 @@
     --code-bg: #f3f4f6;
     --hover-bg: #f3f4f6;
     --shadow-color: rgba(0, 0, 0, 0.1);
-    
-    /* Notion colors for fallback - text */
-    --gray-color: rgb(120, 119, 116);
-    --brown-color: rgb(159, 107, 83);
-    --orange-color: rgb(217, 115, 13);
-    --yellow-color: rgb(203, 145, 47);
-    --green-color: rgb(68, 131, 97);
-    --blue-color: rgb(51, 126, 169);
-    --purple-color: rgb(144, 101, 176);
-    --pink-color: rgb(193, 76, 138);
-    --red-color: rgb(212, 76, 71);
-    
-    /* Notion colors for fallback - background */
-    --gray-bg: rgb(241, 241, 239);
-    --brown-bg: rgb(244, 238, 238);
-    --orange-bg: rgb(251, 236, 221);
-    --yellow-bg: rgb(251, 243, 219);
-    --green-bg: rgb(237, 243, 236);
-    --blue-bg: rgb(231, 243, 248);
-    --purple-bg: rgb(244, 240, 247);
-    --pink-bg: rgb(249, 238, 243);
-    --red-bg: rgb(253, 235, 236);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -76,28 +54,6 @@
         --code-bg: #1f2937;
         --hover-bg: #374151;
         --shadow-color: rgba(0, 0, 0, 0.3);
-        
-        /* Dark mode Notion colors for fallback - text */
-        --gray-color: rgb(155, 155, 155);
-        --brown-color: rgb(186, 133, 111);
-        --orange-color: rgb(217, 135, 63);
-        --yellow-color: rgb(203, 165, 87);
-        --green-color: rgb(108, 171, 142);
-        --blue-color: rgb(91, 166, 209);
-        --purple-color: rgb(174, 131, 206);
-        --pink-color: rgb(223, 106, 168);
-        --red-color: rgb(235, 106, 101);
-        
-        /* Dark mode Notion colors for fallback - background */
-        --gray-bg: rgba(155, 155, 155, 0.15);
-        --brown-bg: rgba(186, 133, 111, 0.15);
-        --orange-bg: rgba(217, 135, 63, 0.15);
-        --yellow-bg: rgba(203, 165, 87, 0.15);
-        --green-bg: rgba(108, 171, 142, 0.15);
-        --blue-bg: rgba(91, 166, 209, 0.15);
-        --purple-bg: rgba(174, 131, 206, 0.15);
-        --pink-bg: rgba(223, 106, 168, 0.15);
-        --red-bg: rgba(235, 106, 101, 0.15);
     }
 }
 
@@ -1134,7 +1090,7 @@ body {
     transition: opacity 0.3s ease;
 }
 
-/* Floating header styles */
+/* Restore floating header styles */
 .floating-header {
     position: fixed;
     top: 0;
@@ -1255,7 +1211,7 @@ body {
     animation: shimmer 2s infinite;
 }
 
-/* Image modal styles */
+/* Add improved image modal styles */
 .image-modal {
     display: none;
     position: fixed;
@@ -1686,39 +1642,575 @@ body {
     }
 }
 
-/* Mobile TOC styling - completely hide on mobile */
+/* Mobile TOC styling */
 @media (max-width: 1200px) {
     .toc-container {
-        display: none !important;
+        right: 0;
+        top: auto;
+        bottom: 1.5rem;
+        width: 48px;
+        height: 48px;
+        border-radius: 12px 0 0 12px;
+        transform: translateX(0);
+        opacity: 0.95;
+        max-height: none;
+        border-right: none;
+        transition: none; /* 禁用过渡，完全使用动画控制 */
+        z-index: 900; /* Higher on mobile */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.15);
+        overflow: hidden; /* Ensure content doesn't overflow during animation */
+        position: fixed; /* Keep it fixed in collapsed state too */
+        will-change: transform, opacity; /* 优化动画性能 */
+        backface-visibility: hidden; /* 防止3D变换导致的闪烁 */
+        -webkit-backface-visibility: hidden;
+        transform-style: preserve-3d; /* 确保3D变换的平滑性 */
+        -webkit-transform-style: preserve-3d;
+        perspective: 1000; /* 提高3D变换的性能 */
+        -webkit-perspective: 1000;
     }
     
-    /* Remove all the mobile TOC-specific styles to avoid any conflicts */
-    .toc-container.expanded,
-    .toc-container.collapsed,
-    .toc-container.button-showing,
-    .toc-container.button-hiding,
-    .toc-container::before,
-    .toc-container::after,
-    .toc-container.expanded::before,
-    .toc-container.expanded::after {
+    .toc-container::before {
+        content: "\f03a"; /* fa-list icon */
+        font-family: "Font Awesome 5 Free";
+        font-weight: 900;
+        font-size: 1.3rem;
+        color: var(--link-color);
+        transition: transform 0.3s ease, color 0.2s ease;
+    }
+    
+    /* Add hover effect for the collapsed TOC button */
+    .toc-container:not(.expanded):hover::before {
+        transform: scale(1.15);
+        color: var(--link-hover-color);
+    }
+    
+    .toc-container:not(.expanded):active::before {
+        transform: scale(0.95);
+    }
+    
+    .toc-container.visible {
+        opacity: 0.95;
+    }
+    
+    .toc-container.collapsed {
+        width: 48px;
+        height: 48px;
+        top: auto;
+        bottom: 1.5rem;
+        right: 0;
+        border-radius: 12px 0 0 12px;
+        min-height: 48px;
+        transform: translateX(0); /* Reset position */
+        transition: none; /* 禁用过渡，使用动画代替 */
+    }
+    
+    /* 按钮从右向左滑入动画 - 优化版本 */
+    @keyframes slideInButtonFromRight {
+        0% {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        100% {
+            transform: translateX(0);
+            opacity: 0.95;
+        }
+    }
+    
+    /* 按钮向左滑出动画 - 优化版本 */
+    @keyframes slideOutButtonToLeft {
+        0% {
+            transform: translateX(0);
+            opacity: 0.95;
+        }
+        100% {
+            transform: translateX(-100%);
+            opacity: 0;
+        }
+    }
+    
+    /* 按钮点击后向左滑出 */
+    .toc-container.button-hiding {
+        animation: slideOutButtonToLeft 0.35s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        will-change: transform, opacity; /* 优化动画性能 */
+        pointer-events: none; /* 防止动画过程中的点击 */
+    }
+    
+    /* 按钮重新出现的动画 */
+    .toc-container.button-showing {
+        animation: slideInButtonFromRight 0.35s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        will-change: transform, opacity; /* 优化动画性能 */
+    }
+    
+    /* Button animation when expanding/collapsing */
+    .toc-container.collapsing {
+        transform: translateX(100px); /* Move button to the right when collapsing */
+    }
+    
+    .toc-container.collapsed::after {
+        display: none;
+    }
+    
+    /* Slide from bottom animation */
+    .toc-container.expanding,
+    .toc-container.expanded {
+        width: 100vw; /* 使用视口宽度 */
+        height: 50vh;
+        right: 0;
+        left: 0; /* 确保左边也对齐 */
+        top: auto;
+        bottom: 0; /* Position at bottom for slide-up effect */
+        border-radius: 12px 12px 0 0; /* Rounded corners only at top */
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.25);
+        transform: translateY(0); /* Fully visible */
+        transition: none; /* Disable other transitions to avoid conflicts */
+        position: fixed; /* Ensure it's fixed at the bottom of the viewport */
+        background-color: var(--bg-secondary); /* Ensure container has background color */
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        display: flex;
+        flex-direction: column;
+        padding: 0; /* 移除内边距 */
+        overflow: hidden; /* 防止内容溢出 */
+        margin: 0; /* 移除外边距 */
+        will-change: transform, opacity; /* 优化动画性能 */
+        backface-visibility: hidden; /* 防止3D变换导致的闪烁 */
+        -webkit-backface-visibility: hidden;
+    }
+    
+    /* Updated slide in animation from bottom */
+    @keyframes slideInTocMobile {
+        0% {
+            transform: translateY(100%);
+            opacity: 0.7;
+        }
+        100% {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+    
+    /* Updated slide out animation to bottom */
+    @keyframes slideOutTocMobile {
+        0% {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        100% {
+            transform: translateY(100%);
+            opacity: 0;
+        }
+    }
+    
+    .toc-container.expanded {
+        opacity: 1;
+        display: flex;
+        flex-direction: column;
+        transform: translateY(0);
+        animation: slideInTocMobile 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+        will-change: transform, opacity; /* Optimize for animation performance */
+    }
+    
+    .toc-container.expanded::before {
+        display: none;
+    }
+    
+    .toc-header {
+        padding: 1rem 1.5rem; /* 增加左右内边距 */
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background-color: var(--bg-secondary);
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        border-radius: 12px 12px 0 0;
+        width: 100%; /* 确保宽度100% */
+        margin: 0; /* 移除外边距 */
+        box-sizing: border-box; /* 确保padding不会增加宽度 */
+        left: 0; /* 确保左对齐 */
+        right: 0; /* 确保右对齐 */
+    }
+    
+    .toc-header h3 {
+        font-size: 1.125rem;
+        font-weight: 600;
+        margin: 0;
+        color: var(--text-primary);
+    }
+    
+    .toc-collapse-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+        background-color: transparent;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        color: var(--text-primary); /* Match the text color */
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .toc-collapse-btn:hover {
+        background-color: var(--hover-bg);
+        transform: scale(1.05);
+    }
+    
+    .toc-collapse-btn:active {
+        transform: scale(0.95);
+    }
+    
+    .toc-content {
+        padding: 0;
+        scrollbar-width: thin;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        flex: 1;
+        position: relative;
+        background-color: var(--bg-secondary);
+        width: 100%; /* 确保宽度100% */
+        margin: 0; /* 移除外边距 */
+        left: 0; /* 确保左对齐 */
+        right: 0; /* 确保右对齐 */
+    }
+    
+    /* Mobile specific scrollbar styling */
+    .toc-content::-webkit-scrollbar {
+        width: 4px;
+    }
+    
+    .toc-content::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    
+    .toc-content::-webkit-scrollbar-thumb {
+        background-color: var(--border-color);
+        border-radius: 4px;
+    }
+    
+    /* Ensure content is hidden when not expanded on mobile */
+    .toc-container:not(.expanded) .toc-header,
+    .toc-container:not(.expanded) .toc-content {
         display: none !important;
+        pointer-events: none;
+    }
+    
+    /* Ensure content is visible when expanded */
+    .toc-container.expanded .toc-header,
+    .toc-container.expanded .toc-content {
+        display: block !important;
+        pointer-events: auto;
+        opacity: 1;
+        visibility: visible;
+    }
+    
+    .toc-list {
+        background-color: var(--bg-secondary);
+        padding: 0;
+        margin: 0; /* 移除默认外边距 */
+        width: 100%; /* 确保宽度100% */
+        list-style: none;
+        left: 0; /* 确保左对齐 */
+        right: 0; /* 确保右对齐 */
+        opacity: 1; /* 确保不透明 */
+        visibility: visible; /* 确保可见 */
+    }
+    
+    .toc-item {
+        background-color: transparent;
+        width: 100%; /* 确保宽度100% */
+        margin: 0;
+        padding: 0;
+    }
+    
+    .toc-link {
+        padding: 0.75rem 1.5rem; /* 统一左右内边距 */
+        font-size: 0.95rem;
+        font-weight: 500;
+        line-height: 1.4;
+        border-left: 3px solid transparent;
+        transition: all 0.2s ease;
+        background-color: transparent; /* Ensure transparent background by default */
+        color: var(--text-secondary);
+        display: block;
+        text-decoration: none;
+        width: 100%; /* 确保宽度100% */
+        box-sizing: border-box; /* 确保padding不会增加宽度 */
+        margin: 0; /* 移除外边距 */
+        left: 0; /* 确保左对齐 */
+        right: 0; /* 确保右对齐 */
+    }
+    
+    .toc-link:hover {
+        background-color: var(--hover-bg);
+        padding-left: 1.75rem; /* 调整悬停时的左内边距 */
+        color: var(--text-primary);
+        width: 100%; /* 确保宽度100% */
+        margin: 0; /* 移除外边距 */
+    }
+    
+    .toc-link:active {
+        background-color: rgba(var(--link-color-rgb), 0.08);
+        width: 100%; /* 确保宽度100% */
+        margin: 0; /* 移除外边距 */
+    }
+    
+    .toc-link.active {
+        background-color: rgba(var(--link-color-rgb), 0.08);
+        border-left-color: var(--link-color);
+        padding-left: 1.75rem; /* 调整激活时的左内边距 */
+        color: var(--link-color);
+        width: 100%; /* 确保宽度100% */
+        margin: 0; /* 移除外边距 */
+    }
+    
+    .toc-level-1 {
+        font-weight: 600;
+    }
+    
+    .toc-level-2 {
+        padding-left: 2rem; /* 调整二级目录的左内边距 */
+        font-size: 0.9rem;
+        font-weight: normal;
+    }
+    
+    .toc-level-3 {
+        padding-left: 2.75rem; /* 调整三级目录的左内边距 */
+        font-size: 0.85rem;
+        font-weight: normal;
+        color: var(--text-tertiary);
+    }
+    
+    /* Add dim overlay */
+    .toc-container::after {
+        content: '';
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.3);
+        z-index: -1;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    
+    .toc-container.expanded::after {
+        display: block;
+        opacity: 1;
+    }
+    
+    /* Mobile TOC content visibility fix */
+    @media (max-width: 1200px) {
+        .toc-container.expanded .toc-content {
+            display: block !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+        }
+        
+        .toc-container.expanded .toc-list {
+            display: block !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+        }
+        
+        .toc-container.expanded .toc-item,
+        .toc-container.expanded .toc-link {
+            display: block !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+        }
     }
 }
 
-/* Remove additional mobile TOC fix since we're hiding it completely */
-@media (max-width: 1200px) {
-    /* Override any TOC-related styles for mobile */
-    .toc-container.expanded,
-    .toc-container.expanded .toc-header,
-    .toc-container.expanded .toc-content,
-    .toc-container.expanded .toc-list,
-    .toc-container.expanded .toc-item,
-    .toc-container.expanded .toc-link,
-    .toc-container.expanded .toc-level-1,
-    .toc-container.expanded .toc-level-2,
-    .toc-container.expanded .toc-level-3 {
-        display: none !important;
+/* Dark mode adjustments for mobile TOC */
+@media (prefers-color-scheme: dark) and (max-width: 1200px) {
+    .toc-container {
+        background-color: var(--bg-secondary);
+        border-color: var(--border-color);
+        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.35);
     }
+    
+    .toc-container.expanded {
+        background-color: var(--bg-secondary);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
+    
+    .toc-header {
+        background-color: var(--bg-secondary);
+        border-color: var(--border-color);
+    }
+    
+    .toc-content {
+        background-color: var(--bg-secondary);
+    }
+    
+    .toc-list {
+        background-color: var(--bg-secondary);
+    }
+    
+    .toc-item {
+        background-color: transparent;
+    }
+    
+    .toc-link {
+        color: var(--text-secondary);
+        background-color: transparent;
+        width: 100%; /* 确保宽度100% */
+        margin: 0; /* 移除外边距 */
+    }
+    
+    .toc-link:hover {
+        background-color: var(--hover-bg);
+        color: var(--text-primary);
+        width: 100%; /* 确保宽度100% */
+        margin: 0; /* 移除外边距 */
+    }
+    
+    .toc-link.active {
+        background-color: rgba(var(--link-color-rgb), 0.15);
+        color: var(--link-color);
+        width: 100%; /* 确保宽度100% */
+        margin: 0; /* 移除外边距 */
+    }
+    
+    .toc-container::after {
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+}
+
+/* Column layout styles */
+.column-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    margin: 1rem 0;
+}
+
+@media (min-width: 768px) {
+    .column-list {
+        grid-template-columns: repeat(var(--columns, 2), 1fr);
+    }
+}
+
+.column {
+    min-width: 0;
+}
+
+.column > * {
+    margin-top: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.column > *:first-child {
+    margin-top: 0;
+}
+
+.column > *:last-child {
+    margin-bottom: 0;
+}
+
+/* Bookmark styles */
+.bookmark-block {
+    transition: all 0.2s ease;
+}
+
+.bookmark-block:hover {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.bookmark-block a {
+    text-decoration: none !important;
+}
+
+.bookmark-block a:hover {
+    text-decoration: none !important;
+}
+
+.bookmark-block .fa-link {
+    font-size: 1.125rem;
+}
+
+.bookmark-block .fa-external-link-alt {
+    font-size: 0.875rem;
+}
+
+@media (prefers-color-scheme: dark) {
+    .bookmark-block {
+        background-color: var(--bg-secondary);
+        border-color: var(--border-color);
+    }
+
+    .bookmark-block:hover {
+        background-color: var(--hover-bg);
+    }
+}
+
+/* Modal download button styles */
+.modal-download-button {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    display: flex;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    border: none;
+    border-radius: 9999px;
+    cursor: pointer;
+    overflow: hidden;
+    padding: 0.75rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1002;
+    width: 3rem;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+.image-modal.visible .modal-download-button {
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: 0.2s;
+}
+
+.modal-download-button:hover {
+    width: 8.5rem;
+    padding-right: 1.5rem;
+    background-color: rgba(0, 0, 0, 0.8);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modal-download-button i {
+    font-size: 1.25rem;
+    margin-right: 0;
+    transition: margin-right 0.3s ease;
+    flex-shrink: 0;
+}
+
+.modal-download-button:hover i {
+    margin-right: 0.75rem;
+}
+
+.modal-download-button span {
+    opacity: 0;
+    max-width: 0;
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-block;
+}
+
+.modal-download-button:hover span {
+    opacity: 1;
+    max-width: 200px;
+    transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1) 0.1s, max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Add improved page transition styles */
@@ -1791,18 +2283,6 @@ body {
     will-change: width;
 }
 
-/* Improved container transitions */
-.container {
-    opacity: 0;
-    transform: translateY(10px);
-    transition: opacity 0.4s ease-out, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.container.loaded {
-    opacity: 1;
-    transform: translateY(0);
-}
-
 /* Add improved image error styles */
 .image-error {
     display: flex;
@@ -1817,40 +2297,310 @@ body {
     text-align: center;
 }
 
-/* Loading animation keyframes */
-@keyframes slideDown {
-    from {
-        opacity: 0;
-        transform: translateY(-20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
+/* Improved container transitions */
+.container {
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.4s ease-out, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.container.loaded {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Mobile only/desktop only display helpers */
+@media (hover: hover) {
+    .mobile-only {
+        display: none;
     }
 }
 
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
+@media (hover: none) {
+    .desktop-only {
+        display: none;
     }
 }
 
-/* Mobile optimizations for loading elements */
+/* Optimized list styles for better rendering */
+.prose ul,
+.prose ol {
+    list-style-position: outside;
+    padding-left: 1.5rem;
+    margin: 0.75rem 0;
+}
+
+.prose ul {
+    list-style-type: disc;
+}
+
+.prose ol {
+    list-style-type: decimal;
+}
+
+.prose li {
+    margin: 0.375rem 0;
+    padding-left: 0.25rem;
+    line-height: 1.6;
+    position: relative;
+}
+
+.prose li::marker {
+    color: var(--text-tertiary);
+}
+
+.prose .nested-list {
+    margin: 0.375rem 0 0.375rem 1.25rem;
+}
+
+.prose .nested-content {
+    margin-top: 0.375rem;
+    margin-bottom: 0.375rem;
+}
+
+/* Mobile optimizations */
 @media (max-width: 640px) {
+    .container.mx-auto {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    .bg-white {
+        border-radius: 0.5rem;
+    }
+    
+    .p-6 {
+        padding: 1rem;
+    }
+    
     .loading-progress {
         width: 85%;
         max-width: 280px;
     }
     
-    .loading-overlay .loading-text {
-        font-size: 0.8rem;
+    .prose h1 {
+        font-size: 1.75rem;
+        line-height: 1.3;
     }
     
-    .loading-overlay .loading-spinner {
-        width: 28px;
-        height: 28px;
+    .prose h2 {
+        font-size: 1.5rem;
+    }
+    
+    .prose h3 {
+        font-size: 1.25rem;
+    }
+    
+    .prose p {
+        font-size: 1rem;
+        line-height: 1.6;
+    }
+    
+    .image-modal img {
+        max-width: 95%;
     }
 }
+
+/* Better touch focus styles on mobile */
+@media (hover: none) {
+    .toggle-header:active {
+        background-color: var(--hover-bg);
+    }
+    
+    .prose a:active {
+        color: var(--link-hover-color);
+    }
+}
+
+/* Fix potential dark mode issues */
+@media (prefers-color-scheme: dark) {
+    .image-placeholder {
+        background-color: var(--hover-bg);
+    }
+    
+    .animate-pulse {
+        background: linear-gradient(90deg, 
+            var(--hover-bg) 0%, 
+            var(--bg-secondary) 50%, 
+            var(--hover-bg) 100%);
+    }
+    
+    .image-error {
+        background-color: rgba(239, 68, 68, 0.2);
+    }
+}
+
+/* Optimized toggle block styles */
+.toggle-block {
+    border-radius: 0.375rem;
+    margin: 0.75rem 0;
+    font-size: inherit;
+    position: relative;
+}
+
+.toggle-header {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 0.5rem 0.375rem;
+    border-radius: 0.375rem;
+    transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    min-height: 1.5em;
+    color: inherit;
+    user-select: none;
+}
+
+.toggle-header:hover {
+    background-color: var(--hover-bg);
+}
+
+.toggle-icon {
+    width: 1rem;
+    height: 1rem;
+    margin-right: 0.5rem;
+    flex-shrink: 0;
+    opacity: 0.5;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.toggle-text {
+    flex: 1;
+    white-space: pre-wrap;
+    word-break: break-word;
+    caret-color: rgb(55, 53, 47);
+    padding: 3px 2px;
+    min-height: 1.5em;
+    color: inherit;
+}
+
+.toggle-content {
+    margin-left: 1.5rem;
+    overflow: hidden;
+    height: 0;
+    opacity: 0;
+    transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: height, opacity;
+}
+
+.toggle-content-inner {
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+}
+
+.toggle-block.open .toggle-icon {
+    transform: rotate(90deg);
+    opacity: 0.8;
+}
+
+.toggle-block.open .toggle-content {
+    opacity: 1;
+}
+
+/* Remove modal instructions CSS */
+.modal-instructions,
+.image-modal.visible .modal-instructions,
+.instruction {
+    display: none;
+}
+
+@media (max-width: 640px) {
+    .modal-instructions,
+    .instruction {
+        display: none;
+    }
+}
+
+/* Text colors */
+.text-default { color: inherit; }
+.text-gray { color: rgb(120, 119, 116); }
+.text-brown { color: rgb(159, 107, 83); }
+.text-orange { color: rgb(217, 115, 13); }
+.text-yellow { color: rgb(203, 145, 47); }
+.text-green { color: rgb(68, 131, 97); }
+.text-blue { color: rgb(51, 126, 169); }
+.text-purple { color: rgb(144, 101, 176); }
+.text-pink { color: rgb(193, 76, 138); }
+.text-red { color: rgb(212, 76, 71); }
+
+/* Background colors */
+.bg-default { background-color: transparent; }
+.bg-gray-background { background-color: rgb(241, 241, 239); }
+.bg-brown-background { background-color: rgb(244, 238, 238); }
+.bg-orange-background { background-color: rgb(251, 236, 221); }
+.bg-yellow-background { background-color: rgb(251, 243, 219); }
+.bg-green-background { background-color: rgb(237, 243, 236); }
+.bg-blue-background { background-color: rgb(231, 243, 248); }
+.bg-purple-background { background-color: rgb(244, 240, 247); }
+.bg-pink-background { background-color: rgb(249, 238, 243); }
+.bg-red-background { background-color: rgb(253, 235, 236); }
+
+/* Link styles */
+.prose a {
+    color: #2563EB;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+.prose a:hover {
+    color: #1D4ED8;
+    text-decoration: underline;
+}
+
+/* Underline style */
+.prose u {
+    text-decoration: underline;
+    text-decoration-thickness: 0.1em;
+    text-underline-offset: 0.1em;
+}
+
+/* Strikethrough style */
+.prose del {
+    text-decoration: line-through;
+    text-decoration-thickness: 0.1em;
+}
+
+/* Bold style */
+.prose strong {
+    font-weight: 600;
+}
+
+/* Italic style */
+.prose em {
+    font-style: italic;
+}
+
+/* Code style for inline code */
+.prose code.inline-code {
+    background-color: #f3f4f6;
+    padding: 0.2em 0.4em;
+    border-radius: 0.25rem;
+    font-size: 0.875em;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* Dark mode color adjustments */
+@media (prefers-color-scheme: dark) {
+    .text-gray { color: rgb(155, 155, 155); }
+    .text-brown { color: rgb(186, 133, 111); }
+    .text-orange { color: rgb(217, 135, 63); }
+    .text-yellow { color: rgb(203, 165, 87); }
+    .text-green { color: rgb(108, 171, 142); }
+    .text-blue { color: rgb(91, 166, 209); }
+    .text-purple { color: rgb(174, 131, 206); }
+    .text-pink { color: rgb(223, 106, 168); }
+    .text-red { color: rgb(235, 106, 101); }
+    
+    .bg-gray-background { background-color: rgba(155, 155, 155, 0.15); }
+    .bg-brown-background { background-color: rgba(186, 133, 111, 0.15); }
+    .bg-orange-background { background-color: rgba(217, 135, 63, 0.15); }
+    .bg-yellow-background { background-color: rgba(203, 165, 87, 0.15); }
+    .bg-green-background { background-color: rgba(108, 171, 142, 0.15); }
+    .bg-blue-background { background-color: rgba(91, 166, 209, 0.15); }
+    .bg-purple-background { background-color: rgba(174, 131, 206, 0.15); }
+    .bg-pink-background { background-color: rgba(223, 106, 168, 0.15); }
+    .bg-red-background { background-color: rgba(235, 106, 101, 0.15); }
+    
+    .prose code.inline-code {
+        background-color: rgba(71, 71, 71, 0.5);
+        color: #e0e0e0;
+    }
+} 

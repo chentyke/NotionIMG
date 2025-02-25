@@ -1126,6 +1126,17 @@ const TableOfContents = {
     // Initialize the TOC module
     init: function() {
         console.log('Initializing TableOfContents');
+        
+        // Check if we're on mobile - use a more reliable mobile detection
+        this.isMobile = window.innerWidth <= 1200;
+        console.log('Is mobile device:', this.isMobile);
+        
+        // Skip TOC initialization on mobile devices
+        if (this.isMobile) {
+            console.log('Mobile device detected, skipping TOC initialization');
+            return;
+        }
+        
         this.container = document.getElementById('tableOfContents');
         this.tocList = document.getElementById('tocList');
         if (!this.container || !this.tocList) {
@@ -1133,18 +1144,6 @@ const TableOfContents = {
             return;
         }
         
-        // Check if we're on mobile - use a more reliable mobile detection
-        this.isMobile = window.innerWidth <= 1200;
-        console.log('Is mobile device:', this.isMobile);
-        
-        // If on mobile, completely hide TOC and disable functionality
-        if (this.isMobile) {
-            console.log('Mobile device detected - disabling TOC');
-            this.container.style.display = 'none';
-            return; // Exit early - don't set up any TOC functionality on mobile
-        }
-        
-        // Set initial state for desktop
         // For desktop, default to expanded unless explicitly saved as collapsed
         const savedCollapsed = localStorage.getItem('tocCollapsed');
         
@@ -1193,6 +1192,19 @@ const TableOfContents = {
             }
         });
         
+        // Add document click handler to close the TOC when clicking outside on mobile
+        if (this.isMobile) {
+            document.addEventListener('click', function(e) {
+                // Skip if TOC is already collapsed or click is inside TOC
+                if (self.isCollapsed || e.target.closest('#tableOfContents')) {
+                    return;
+                }
+                
+                console.log('Document clicked outside TOC, collapsing...');
+                self.toggleCollapse(true); // Force collapse
+            });
+        }
+        
         // Ensure button icon matches state
         if (collapseBtn) {
             collapseBtn.title = this.isCollapsed ? '展开目录' : '收起目录';
@@ -1201,6 +1213,19 @@ const TableOfContents = {
             if (icon) {
                 icon.className = this.isCollapsed ? 'fas fa-chevron-left' : 'fas fa-chevron-right';
             }
+        }
+        
+        // Add click handlers to TOC links for mobile auto-collapse
+        if (this.isMobile) {
+            this.tocList.addEventListener('click', function(e) {
+                const link = e.target.closest('.toc-link');
+                if (link) {
+                    // Wait for the scroll to happen before collapsing
+                    setTimeout(() => {
+                        self.toggleCollapse(true); // Force collapse
+                    }, 300);
+                }
+            });
         }
         
         // Check floating header visibility and adjust TOC position accordingly
@@ -1232,16 +1257,20 @@ const TableOfContents = {
             // Clean up any animation styles
             this.container.style.animation = '';
             
-            // If switching to mobile, hide TOC completely
+            // Reset state based on new device type
             if (this.isMobile) {
-                console.log('Switched to mobile view - hiding TOC');
-                this.container.style.display = 'none';
-                // No need to do anything else since it's hidden
+                // Switching to mobile - always collapse
+                this.isCollapsed = true;
+                
+                // Remove any desktop-specific classes
+                this.container.classList.remove('expanding');
+                this.container.classList.remove('collapsing');
+                
+                // Add mobile classes
+                this.container.classList.add('collapsed');
+                this.container.classList.remove('expanded');
             } else {
                 // Switching to desktop
-                console.log('Switched to desktop view - showing TOC');
-                this.container.style.display = '';
-                
                 // Check saved preference
                 const savedCollapsed = localStorage.getItem('tocCollapsed');
                 
@@ -1257,29 +1286,31 @@ const TableOfContents = {
                     this.isCollapsed = false;
                     this.container.classList.remove('collapsed');
                 }
-                
-                // Update icon
-                const collapseBtn = document.getElementById('tocCollapseBtn');
-                if (collapseBtn) {
-                    collapseBtn.title = this.isCollapsed ? '展开目录' : '收起目录';
-                    collapseBtn.setAttribute('aria-label', this.isCollapsed ? '展开目录' : '收起目录');
-                    collapseBtn.style.opacity = '1'; // Reset any opacity changes
-                    const icon = collapseBtn.querySelector('i');
-                    if (icon) {
-                        icon.className = this.isCollapsed ? 'fas fa-chevron-left' : 'fas fa-chevron-right';
-                    }
+            }
+            
+            // Update icon
+            const collapseBtn = document.getElementById('tocCollapseBtn');
+            if (collapseBtn) {
+                collapseBtn.title = this.isCollapsed ? '展开目录' : '收起目录';
+                collapseBtn.setAttribute('aria-label', this.isCollapsed ? '展开目录' : '收起目录');
+                collapseBtn.style.opacity = '1'; // Reset any opacity changes
+                const icon = collapseBtn.querySelector('i');
+                if (icon) {
+                    icon.className = this.isCollapsed ? 'fas fa-chevron-left' : 'fas fa-chevron-right';
                 }
-                
-                // Reset any opacity changes for content
-                if (this.tocList) {
-                    this.tocList.style.opacity = '';
-                }
-                
-                // Reset any inline styles that might interfere with responsiveness
-                this.container.style.width = '';
-                this.container.style.height = '';
-                
-                // Check and adjust TOC position
+            }
+            
+            // Reset any opacity changes for content
+            if (this.tocList) {
+                this.tocList.style.opacity = '';
+            }
+            
+            // Reset any inline styles that might interfere with responsiveness
+            this.container.style.width = '';
+            this.container.style.height = '';
+            
+            // Check and adjust TOC position if on desktop
+            if (!this.isMobile) {
                 const floatingHeader = document.getElementById('floatingHeader');
                 if (floatingHeader && floatingHeader.classList.contains('visible')) {
                     this.container.style.top = '4rem';
@@ -1292,8 +1323,22 @@ const TableOfContents = {
     
     // Build the TOC from page headings
     build: function() {
+        console.log('Building TableOfContents');
+        
+        // Skip TOC building on mobile devices
+        if (this.isMobile) {
+            console.log('Mobile device detected, skipping TOC building');
+            return;
+        }
+        
         // Reset state
         this.headings = [];
+        
+        if (!this.tocList) {
+            console.log('TOC list not found');
+            return;
+        }
+        
         this.tocList.innerHTML = '';
         
         // Collect all heading elements
@@ -1690,29 +1735,8 @@ const TableOfContents = {
                         this.container.classList.add('expanded');
                         this.container.style.animation = 'slideInTocMobile 0.35s cubic-bezier(0.25, 1, 0.5, 1)';
                         
-                        // 检查目录是否有内容
-                        this.checkTocContent();
-                        
-                        // 立即确保内容可见
+                        // 确保内容可见
                         this.ensureTocContentVisible();
-                        
-                        // 再次调用确保内容可见 - 连续调用多次以确保生效
-                        setTimeout(() => {
-                            this.ensureTocContentVisible();
-                        }, 50);
-                        
-                        setTimeout(() => {
-                            this.ensureTocContentVisible();
-                        }, 150);
-                        
-                        setTimeout(() => {
-                            this.ensureTocContentVisible();
-                        }, 300);
-                        
-                        // 动画结束后再次确保内容可见
-                        this.container.addEventListener('animationend', () => {
-                            this.ensureTocContentVisible();
-                        }, { once: true });
                         
                         // 添加触觉反馈
                         if (window.navigator && window.navigator.vibrate) {
@@ -1735,29 +1759,8 @@ const TableOfContents = {
                     this.container.classList.add('expanded');
                     this.container.style.animation = 'slideInTocMobile 0.35s cubic-bezier(0.25, 1, 0.5, 1)';
                     
-                    // 检查目录是否有内容
-                    this.checkTocContent();
-                    
-                    // 立即确保内容可见
+                    // 确保内容可见
                     this.ensureTocContentVisible();
-                    
-                    // 再次调用确保内容可见 - 连续调用多次以确保生效
-                    setTimeout(() => {
-                        this.ensureTocContentVisible();
-                    }, 50);
-                    
-                    setTimeout(() => {
-                        this.ensureTocContentVisible();
-                    }, 150);
-                    
-                    setTimeout(() => {
-                        this.ensureTocContentVisible();
-                    }, 300);
-                    
-                    // 动画结束后再次确保内容可见
-                    this.container.addEventListener('animationend', () => {
-                        this.ensureTocContentVisible();
-                    }, { once: true });
                     
                     // 添加触觉反馈
                     if (window.navigator && window.navigator.vibrate) {
@@ -1803,138 +1806,20 @@ const TableOfContents = {
     ensureTocContentVisible: function() {
         if (!this.tocList) return;
         
-        console.log('Ensuring TOC content visibility');
-        
-        // 查找TOC头部和内容区域
-        const tocHeader = document.querySelector('.toc-header');
-        const tocContent = document.querySelector('.toc-content');
-        
-        // 先确保容器本身的样式正确
-        if (this.container) {
-            this.container.style.opacity = '1';
-            this.container.style.visibility = 'visible';
-            this.container.style.display = 'flex';
-            this.container.style.flexDirection = 'column';
-            this.container.style.zIndex = '999';
-            this.container.style.backgroundColor = 'var(--bg-secondary)';
-            
-            // 对于移动设备，固定位置
-            if (this.isMobile) {
-                this.container.style.position = 'fixed';
-                this.container.style.bottom = '0';
-                this.container.style.left = '0';
-                this.container.style.width = '100vw';
-                this.container.style.height = '50vh';
-            }
-        }
-        
-        // 确保头部可见
-        if (tocHeader) {
-            tocHeader.style.opacity = '1';
-            tocHeader.style.visibility = 'visible';
-            tocHeader.style.display = 'flex';
-            tocHeader.style.width = '100%';
-            tocHeader.style.zIndex = '1000';
-            tocHeader.style.justifyContent = 'space-between';
-            tocHeader.style.alignItems = 'center';
-            tocHeader.style.backgroundColor = 'var(--bg-secondary)';
-            tocHeader.style.borderBottom = '1px solid var(--border-color)';
-        }
-        
-        // 确保内容区域可见且可滚动
-        if (tocContent) {
-            tocContent.style.opacity = '1';
-            tocContent.style.visibility = 'visible';
-            tocContent.style.display = 'block';
-            tocContent.style.overflowY = 'auto';
-            tocContent.style.maxHeight = this.isMobile ? 'calc(50vh - 60px)' : '';
-            tocContent.style.height = 'auto';
-            tocContent.style.width = '100%';
-            tocContent.style.flex = '1';
-            tocContent.style.zIndex = '1000';
-            tocContent.style.backgroundColor = 'var(--bg-secondary)';
-        }
-        
         // 确保目录列表可见
-        if (this.tocList) {
-            this.tocList.style.opacity = '1';
-            this.tocList.style.visibility = 'visible';
-            this.tocList.style.display = 'block';
-            this.tocList.style.width = '100%';
-            this.tocList.style.listStyle = 'none';
-            this.tocList.style.padding = '0.5rem';
-            this.tocList.style.margin = '0';
-            this.tocList.style.zIndex = '1001';
-            this.tocList.style.backgroundColor = 'var(--bg-secondary)';
-        }
+        this.tocList.style.opacity = '1';
+        this.tocList.style.visibility = 'visible';
+        this.tocList.style.display = 'block';
         
-        // 确保所有目录项可见 - 更彻底的处理
+        // 确保所有目录项可见
         const tocItems = this.tocList.querySelectorAll('.toc-item, .toc-link');
         tocItems.forEach(item => {
             item.style.opacity = '1';
             item.style.visibility = 'visible';
             item.style.display = 'block';
-            item.style.color = 'var(--text-primary)';
-            item.style.textAlign = 'left';
-            item.style.margin = '0.5rem 0';
-            item.style.zIndex = '1002';
-            
-            // 如果是链接元素，添加更多样式
-            if (item.classList.contains('toc-link')) {
-                item.style.padding = '0.75rem 1.5rem';
-                item.style.fontSize = '0.95rem';
-                item.style.lineHeight = '1.4';
-                item.style.borderLeft = '3px solid transparent';
-                item.style.backgroundColor = 'transparent';
-                item.style.textDecoration = 'none';
-            }
-            
-            // 处理不同级别的标题
-            if (item.classList.contains('toc-level-1')) {
-                item.style.fontWeight = '600';
-            } else if (item.classList.contains('toc-level-2')) {
-                item.style.paddingLeft = '2rem';
-            } else if (item.classList.contains('toc-level-3')) {
-                item.style.paddingLeft = '3rem';
-            }
         });
         
-        console.log('TOC content visibility forced - total items:', tocItems.length);
-    },
-    
-    // 添加 debug 检查，在展开 TOC 前确认是否有内容
-    checkTocContent: function() {
-        // 检查是否有目录项
-        const items = this.tocList?.querySelectorAll('.toc-item') || [];
-        const itemsCount = items.length;
-        console.log(`TOC items count: ${itemsCount}`);
-        
-        if (itemsCount === 0) {
-            console.log('No TOC items found, attempting to rebuild TOC');
-            this.build(); // 尝试重新构建 TOC
-            
-            // 再次检查
-            const newItems = this.tocList?.querySelectorAll('.toc-item') || [];
-            console.log(`Rebuilt TOC items count: ${newItems.length}`);
-            
-            if (newItems.length === 0) {
-                console.warn('Still no TOC items, setting placeholder content');
-                
-                // 如果仍然没有内容，添加一个临时项
-                const noItemsMessage = document.createElement('li');
-                noItemsMessage.className = 'toc-item';
-                noItemsMessage.style.padding = '1rem';
-                noItemsMessage.style.textAlign = 'center';
-                noItemsMessage.style.color = 'var(--text-secondary)';
-                noItemsMessage.textContent = '未检测到页面标题';
-                
-                if (this.tocList) {
-                    this.tocList.appendChild(noItemsMessage);
-                }
-            }
-        }
-        
-        return itemsCount > 0;
+        console.log('TOC content visibility ensured');
     }
 };
 
@@ -2448,13 +2333,6 @@ function processRichText(richTextArray) {
         return '';
     }
 
-    // 添加调试输出，帮助诊断富文本渲染问题
-    if (richTextArray.some(item => item?.annotations?.color && item.annotations.color !== 'default')) {
-        console.debug('Processing rich text with color annotations:', 
-            richTextArray.filter(item => item?.annotations?.color && item.annotations.color !== 'default')
-                .map(item => `${item.text.content}: ${item.annotations.color}`));
-    }
-
     return richTextArray.map(textObj => {
         if (!textObj || !textObj.text) {
             return '';
@@ -2470,22 +2348,10 @@ function processRichText(richTextArray) {
 
         // 处理颜色
         if (annotations.color && annotations.color !== 'default') {
-            // 这里有一个问题: bg-blue_background 不是有效的 CSS 类名（下划线）
-            // 背景颜色应该是 bg-blue-background 格式（连字符）
             if (annotations.color.endsWith('_background')) {
-                // 将 blue_background 转换为 bg-blue-background
-                const colorName = annotations.color.replace('_background', '-background');
-                classes.push(`bg-${colorName}`);
-                
-                // 添加备用内联样式，以防CSS类不存在
-                const bgColor = annotations.color.replace('_background', '');
-                styles.push(`background-color: var(--${bgColor}-bg, inherit)`);
+                classes.push(`bg-${annotations.color}`);
             } else {
-                // 前景颜色直接使用 text-color 格式
                 classes.push(`text-${annotations.color}`);
-                
-                // 添加备用内联样式，以防CSS类不存在
-                styles.push(`color: var(--${annotations.color}-color, inherit)`);
             }
         }
 
@@ -2506,16 +2372,13 @@ function processRichText(richTextArray) {
         }
         
         // 添加格式化的文本
-        if (classes.length > 0 || styles.length > 0) {
-            const styleAttr = styles.length > 0 ? ` style="${styles.join('; ')}"` : '';
-            const classAttr = classes.length > 0 ? ` class="${classes.join(' ')}"` : '';
-            
+        if (classes.length > 0) {
             if (annotations.code) {
                 // 代码块特殊处理
-                html += `<code${classAttr}${styleAttr}>${content}</code>`;
+                html += `<code class="${classes.join(' ')}">${content}</code>`;
             } else {
                 // 普通格式化文本
-                html += `<span${classAttr}${styleAttr}>${content}</span>`;
+                html += `<span class="${classes.join(' ')}">${content}</span>`;
             }
         } else {
             // 无格式纯文本
@@ -2700,21 +2563,49 @@ document.addEventListener('click', function(event) {
     const tocContainer = document.getElementById('tableOfContents');
     if (!tocContainer) return;
     
-    // Skip if we're on mobile (TOC is hidden)
-    if (window.innerWidth <= 1200) return;
-    
     // Skip if TOC is already collapsed or click is inside TOC
     if (tocContainer.classList.contains('collapsed') || event.target.closest('#tableOfContents')) {
         return;
     }
     
-    // Only handle on desktop devices
-    if (window.innerWidth > 1200) {
+    // Only handle on mobile devices
+    if (window.innerWidth <= 1200) {
         console.log('Document clicked outside TOC, collapsing...');
         
         // Find TableOfContents object and call its toggleCollapse method
         if (typeof TableOfContents !== 'undefined') {
             TableOfContents.toggleCollapse(true); // Force collapse
+        } else {
+            // Fallback if TableOfContents object is not available
+            if (tocContainer.classList.contains('expanded')) {
+                // 移除所有可能的动画类
+                tocContainer.classList.remove('button-showing');
+                tocContainer.classList.remove('button-hiding');
+                
+                // Add animation for collapsing
+                tocContainer.style.animation = 'slideOutTocMobile 0.35s cubic-bezier(0.25, 1, 0.5, 1) forwards';
+                
+                // After animation completes, actually collapse
+                setTimeout(() => {
+                    tocContainer.classList.remove('expanded');
+                    tocContainer.classList.add('collapsed');
+                    tocContainer.style.animation = '';
+                    
+                    // 强制重排
+                    tocContainer.offsetHeight;
+                    
+                    // 添加按钮滑入动画
+                    tocContainer.classList.add('button-showing');
+                    
+                    // 设置超时移除按钮显示类
+                    setTimeout(() => {
+                        tocContainer.classList.remove('button-showing');
+                    }, 500);
+                }, 350);
+            } else {
+                tocContainer.classList.remove('expanded');
+                tocContainer.classList.add('collapsed');
+            }
         }
     }
 });
