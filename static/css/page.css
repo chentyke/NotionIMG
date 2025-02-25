@@ -35,6 +35,28 @@
     --code-bg: #f3f4f6;
     --hover-bg: #f3f4f6;
     --shadow-color: rgba(0, 0, 0, 0.1);
+    
+    /* Notion colors for fallback - text */
+    --gray-color: rgb(120, 119, 116);
+    --brown-color: rgb(159, 107, 83);
+    --orange-color: rgb(217, 115, 13);
+    --yellow-color: rgb(203, 145, 47);
+    --green-color: rgb(68, 131, 97);
+    --blue-color: rgb(51, 126, 169);
+    --purple-color: rgb(144, 101, 176);
+    --pink-color: rgb(193, 76, 138);
+    --red-color: rgb(212, 76, 71);
+    
+    /* Notion colors for fallback - background */
+    --gray-bg: rgb(241, 241, 239);
+    --brown-bg: rgb(244, 238, 238);
+    --orange-bg: rgb(251, 236, 221);
+    --yellow-bg: rgb(251, 243, 219);
+    --green-bg: rgb(237, 243, 236);
+    --blue-bg: rgb(231, 243, 248);
+    --purple-bg: rgb(244, 240, 247);
+    --pink-bg: rgb(249, 238, 243);
+    --red-bg: rgb(253, 235, 236);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -54,6 +76,28 @@
         --code-bg: #1f2937;
         --hover-bg: #374151;
         --shadow-color: rgba(0, 0, 0, 0.3);
+        
+        /* Dark mode Notion colors for fallback - text */
+        --gray-color: rgb(155, 155, 155);
+        --brown-color: rgb(186, 133, 111);
+        --orange-color: rgb(217, 135, 63);
+        --yellow-color: rgb(203, 165, 87);
+        --green-color: rgb(108, 171, 142);
+        --blue-color: rgb(91, 166, 209);
+        --purple-color: rgb(174, 131, 206);
+        --pink-color: rgb(223, 106, 168);
+        --red-color: rgb(235, 106, 101);
+        
+        /* Dark mode Notion colors for fallback - background */
+        --gray-bg: rgba(155, 155, 155, 0.15);
+        --brown-bg: rgba(186, 133, 111, 0.15);
+        --orange-bg: rgba(217, 135, 63, 0.15);
+        --yellow-bg: rgba(203, 165, 87, 0.15);
+        --green-bg: rgba(108, 171, 142, 0.15);
+        --blue-bg: rgba(91, 166, 209, 0.15);
+        --purple-bg: rgba(174, 131, 206, 0.15);
+        --pink-bg: rgba(223, 106, 168, 0.15);
+        --red-bg: rgba(235, 106, 101, 0.15);
     }
 }
 

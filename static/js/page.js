@@ -2448,6 +2448,13 @@ function processRichText(richTextArray) {
         return '';
     }
 
+    // 添加调试输出，帮助诊断富文本渲染问题
+    if (richTextArray.some(item => item?.annotations?.color && item.annotations.color !== 'default')) {
+        console.debug('Processing rich text with color annotations:', 
+            richTextArray.filter(item => item?.annotations?.color && item.annotations.color !== 'default')
+                .map(item => `${item.text.content}: ${item.annotations.color}`));
+    }
+
     return richTextArray.map(textObj => {
         if (!textObj || !textObj.text) {
             return '';
@@ -2463,10 +2470,22 @@ function processRichText(richTextArray) {
 
         // 处理颜色
         if (annotations.color && annotations.color !== 'default') {
+            // 这里有一个问题: bg-blue_background 不是有效的 CSS 类名（下划线）
+            // 背景颜色应该是 bg-blue-background 格式（连字符）
             if (annotations.color.endsWith('_background')) {
-                classes.push(`bg-${annotations.color}`);
+                // 将 blue_background 转换为 bg-blue-background
+                const colorName = annotations.color.replace('_background', '-background');
+                classes.push(`bg-${colorName}`);
+                
+                // 添加备用内联样式，以防CSS类不存在
+                const bgColor = annotations.color.replace('_background', '');
+                styles.push(`background-color: var(--${bgColor}-bg, inherit)`);
             } else {
+                // 前景颜色直接使用 text-color 格式
                 classes.push(`text-${annotations.color}`);
+                
+                // 添加备用内联样式，以防CSS类不存在
+                styles.push(`color: var(--${annotations.color}-color, inherit)`);
             }
         }
 
@@ -2487,13 +2506,16 @@ function processRichText(richTextArray) {
         }
         
         // 添加格式化的文本
-        if (classes.length > 0) {
+        if (classes.length > 0 || styles.length > 0) {
+            const styleAttr = styles.length > 0 ? ` style="${styles.join('; ')}"` : '';
+            const classAttr = classes.length > 0 ? ` class="${classes.join(' ')}"` : '';
+            
             if (annotations.code) {
                 // 代码块特殊处理
-                html += `<code class="${classes.join(' ')}">${content}</code>`;
+                html += `<code${classAttr}${styleAttr}>${content}</code>`;
             } else {
                 // 普通格式化文本
-                html += `<span class="${classes.join(' ')}">${content}</span>`;
+                html += `<span${classAttr}${styleAttr}>${content}</span>`;
             }
         } else {
             // 无格式纯文本
