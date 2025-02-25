@@ -1907,23 +1907,17 @@ body {
 }
 
 .toc-content {
-    overflow-y: auto;
+    overflow-y: scroll;
     flex: 1;
-    scrollbar-width: thin;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
     padding: 0.5rem 0;
 }
 
 .toc-content::-webkit-scrollbar {
-    width: 4px;
-}
-
-.toc-content::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.toc-content::-webkit-scrollbar-thumb {
-    background-color: var(--border-color);
-    border-radius: 4px;
+    display: none; /* Chrome, Safari, Opera */
+    width: 0;
+    height: 0;
 }
 
 .toc-list {
