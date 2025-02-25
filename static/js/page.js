@@ -1133,17 +1133,29 @@ const TableOfContents = {
             return;
         }
         
-        // Check if we're on mobile
+        // Check if we're on mobile - use a more reliable mobile detection
         this.isMobile = window.innerWidth <= 1200;
+        console.log('Is mobile device:', this.isMobile);
         
         // Set initial state based on device type
         if (this.isMobile) {
             this.isCollapsed = true;
             this.container.classList.add('collapsed');
             this.container.classList.remove('expanded');
+            
+            // Remove any desktop-specific classes
+            this.container.classList.remove('expanding');
+            this.container.classList.remove('collapsing');
         } else {
-            this.isCollapsed = false;
-            this.container.classList.remove('collapsed');
+            // For desktop, check saved preference
+            const savedCollapsed = localStorage.getItem('tocCollapsed');
+            this.isCollapsed = savedCollapsed === 'true';
+            
+            if (this.isCollapsed) {
+                this.container.classList.add('collapsed');
+            } else {
+                this.container.classList.remove('collapsed');
+            }
         }
         
         // Set up collapse button
@@ -1237,17 +1249,40 @@ const TableOfContents = {
         
         // If we changed between mobile and desktop
         if (wasMobile !== this.isMobile) {
+            console.log('Switching between mobile and desktop view');
+            
+            // Clean up any animation styles
+            this.container.style.animation = '';
+            
             // Reset state based on new device type
             if (this.isMobile) {
                 // Switching to mobile - always collapse
                 this.isCollapsed = true;
+                
+                // Remove any desktop-specific classes
+                this.container.classList.remove('expanding');
+                this.container.classList.remove('collapsing');
+                
+                // Add mobile classes
                 this.container.classList.add('collapsed');
                 this.container.classList.remove('expanded');
             } else {
-                // Switching to desktop - always expand
-                this.isCollapsed = false;
-                this.container.classList.remove('collapsed');
+                // Switching to desktop
+                // Check saved preference
+                const savedCollapsed = localStorage.getItem('tocCollapsed');
+                
+                // Clear mobile-specific classes
                 this.container.classList.remove('expanded');
+                
+                if (savedCollapsed === 'true') {
+                    // User prefers collapsed
+                    this.isCollapsed = true;
+                    this.container.classList.add('collapsed');
+                } else {
+                    // Default to expanded on desktop
+                    this.isCollapsed = false;
+                    this.container.classList.remove('collapsed');
+                }
             }
             
             // Update icon
@@ -1255,9 +1290,29 @@ const TableOfContents = {
             if (collapseBtn) {
                 collapseBtn.title = this.isCollapsed ? '展开目录' : '收起目录';
                 collapseBtn.setAttribute('aria-label', this.isCollapsed ? '展开目录' : '收起目录');
+                collapseBtn.style.opacity = '1'; // Reset any opacity changes
                 const icon = collapseBtn.querySelector('i');
                 if (icon) {
                     icon.className = this.isCollapsed ? 'fas fa-chevron-left' : 'fas fa-chevron-right';
+                }
+            }
+            
+            // Reset any opacity changes for content
+            if (this.tocList) {
+                this.tocList.style.opacity = '';
+            }
+            
+            // Reset any inline styles that might interfere with responsiveness
+            this.container.style.width = '';
+            this.container.style.height = '';
+            
+            // Check and adjust TOC position if on desktop
+            if (!this.isMobile) {
+                const floatingHeader = document.getElementById('floatingHeader');
+                if (floatingHeader && floatingHeader.classList.contains('visible')) {
+                    this.container.style.top = '4rem';
+                } else {
+                    this.container.style.top = '2rem';
                 }
             }
         }
@@ -1502,14 +1557,16 @@ const TableOfContents = {
             // Handle mobile-specific collapse
             if (this.isMobile) {
                 // For mobile, add slide-out animation before collapsing
-                this.container.style.animation = 'slideOutTocMobile 0.25s cubic-bezier(0.25, 1, 0.5, 1) forwards';
+                this.container.style.animation = 'slideOutTocMobile 0.35s cubic-bezier(0.25, 1, 0.5, 1) forwards';
+                this.container.classList.add('collapsing'); // Add class for button animation
                 
                 // After animation completes, actually collapse
                 setTimeout(() => {
                     this.container.classList.remove('expanded');
                     this.container.classList.add('collapsed');
                     this.container.style.animation = '';
-                }, 250);
+                    this.container.classList.remove('collapsing');
+                }, 350);
                 
                 console.log('Mobile TOC collapsed');
             } else {
@@ -2355,8 +2412,20 @@ document.addEventListener('click', function(event) {
             TableOfContents.toggleCollapse(true); // Force collapse
         } else {
             // Fallback if TableOfContents object is not available
-            tocContainer.classList.remove('expanded');
-            tocContainer.classList.add('collapsed');
+            if (tocContainer.classList.contains('expanded')) {
+                // Add animation for collapsing
+                tocContainer.style.animation = 'slideOutTocMobile 0.35s cubic-bezier(0.25, 1, 0.5, 1) forwards';
+                
+                // After animation completes, actually collapse
+                setTimeout(() => {
+                    tocContainer.classList.remove('expanded');
+                    tocContainer.classList.add('collapsed');
+                    tocContainer.style.animation = '';
+                }, 350);
+            } else {
+                tocContainer.classList.remove('expanded');
+                tocContainer.classList.add('collapsed');
+            }
         }
     }
 });
