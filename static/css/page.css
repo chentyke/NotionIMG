@@ -1776,6 +1776,56 @@ body {
     width: 42px;
     transform: translateX(calc(100% - 42px)); /* Move to the right when collapsed */
     right: max(calc((100% - 896px) / 2 - 42px), 1rem);
+    cursor: pointer;
+    overflow: visible;
+    box-shadow: -2px 0 6px rgba(0, 0, 0, 0.1);
+    background-color: var(--link-color);
+}
+
+/* Enhanced style for collapsed TOC */
+.toc-container.collapsed:hover {
+    background-color: var(--link-hover-color);
+    transform: translateX(calc(100% - 45px)); /* Slight movement on hover */
+    box-shadow: -3px 0 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Indicator for collapsed TOC */
+.toc-collapsed-hint {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-align: center;
+    line-height: 1.3;
+    pointer-events: none; /* Allow clicks to pass through to the container */
+    transition: opacity 0.2s ease;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+.toc-container.collapsed .toc-collapse-btn {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 24px;
+    height: 24px;
+    z-index: 10;
+    background-color: rgba(255, 255, 255, 0.15);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: none;
+}
+
+.toc-container.collapsed .toc-collapse-btn:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+    transform: translateX(-50%) scale(1.1);
 }
 
 .toc-header {
@@ -1816,27 +1866,6 @@ body {
     color: var(--link-color);
     background-color: var(--hover-bg);
     transform: scale(1.1);
-}
-
-.toc-container.collapsed .toc-collapse-btn {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background-color: var(--bg-secondary);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    color: var(--link-color);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.toc-container.collapsed .toc-collapse-btn:hover {
-    background-color: var(--hover-bg);
-    transform: translate(-50%, -50%) scale(1.1);
 }
 
 .toc-content {
@@ -2090,4 +2119,21 @@ body {
     opacity: 1;
     max-width: 200px;
     transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1) 0.1s, max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Dark mode adjustments for collapsed TOC */
+@media (prefers-color-scheme: dark) {
+    .toc-container.collapsed {
+        background-color: var(--link-color);
+        box-shadow: -2px 0 8px rgba(0, 0, 0, 0.3);
+    }
+    
+    .toc-container.collapsed:hover {
+        background-color: var(--link-hover-color);
+    }
+    
+    .toc-collapsed-hint {
+        color: var(--bg-primary);
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
 } 
