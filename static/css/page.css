@@ -1,0 +1,1703 @@
+/* Add loading spinner styles immediately */
+.loading-spinner {
+    border: 3px solid #e5e7eb;
+    border-top: 3px solid #3b82f6;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    animation: spin 1s linear infinite;
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+:root {
+    /* Light mode colors */
+    --bg-primary: #f9fafb;
+    --bg-secondary: #ffffff;
+    --text-primary: #111827;
+    --text-secondary: #4b5563;
+    --text-tertiary: #6B7280;
+    --border-color: #E5E7EB;
+    --link-color: #2563EB;
+    --link-hover-color: #1D4ED8;
+    --success-color: #10B981;
+    --success-border: #059669;
+    --code-bg: #f3f4f6;
+    --hover-bg: #f3f4f6;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        /* Dark mode colors */
+        --bg-primary: #111827;
+        --bg-secondary: #1f2937;
+        --text-primary: #f9fafb;
+        --text-secondary: #e5e7eb;
+        --text-tertiary: #9ca3af;
+        --border-color: #374151;
+        --link-color: #60a5fa;
+        --link-hover-color: #93c5fd;
+        --success-color: #059669;
+        --success-border: #10B981;
+        --code-bg: #1f2937;
+        --hover-bg: #374151;
+        --shadow-color: rgba(0, 0, 0, 0.3);
+    }
+}
+
+body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.bg-white {
+    background-color: var(--bg-secondary) !important;
+}
+
+.prose {
+    color: var(--text-primary);
+}
+
+.prose pre {
+    background-color: var(--code-bg);
+}
+
+.prose blockquote {
+    border-left-color: var(--border-color);
+    color: var(--text-secondary);
+}
+
+.prose code.inline-code {
+    background-color: var(--code-bg);
+}
+
+.prose a {
+    color: var(--link-color);
+}
+
+.prose a:hover {
+    color: var(--link-hover-color);
+}
+
+.page-header {
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    animation: slideDown 0.5s ease-out;
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 0.5rem; /* 增加与封面的距离 */
+}
+
+.page-title {
+    color: var(--text-primary);
+}
+
+.edit-date {
+    color: var(--text-tertiary);
+}
+
+.copy-link-button {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+    color: var(--text-tertiary);
+}
+
+.copy-link-button:hover {
+    background-color: var(--hover-bg);
+}
+
+.copy-link-button.copied {
+    background-color: var(--success-color);
+    border-color: var(--success-border);
+    color: var(--bg-primary);
+}
+
+.prose table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1.5rem 0;
+    border: 1px solid var(--border-color);
+}
+
+.prose th, .prose td {
+    border: 1px solid var(--border-color);
+    padding: 0.75rem 1rem;
+    text-align: left;
+}
+
+.prose th {
+    background-color: var(--code-bg);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.prose tr {
+    transition: background-color 0.2s ease;
+}
+
+.prose tr:hover {
+    background-color: var(--hover-bg);
+    color: var(--text-primary);
+}
+
+.shadow-sm {
+    box-shadow: 0 1px 2px var(--shadow-color);
+}
+
+.toggle-header:hover {
+    background-color: var(--hover-bg);
+}
+
+.language-label {
+    color: var(--text-tertiary);
+}
+
+.copy-button {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+    color: var(--text-secondary);
+}
+
+.copy-button:hover {
+    background-color: var(--hover-bg);
+    border-color: var(--border-color);
+}
+
+.copy-button.copied {
+    background-color: var(--success-color);
+    color: var(--bg-secondary);
+    border-color: var(--success-border);
+}
+
+.todo-checkbox {
+    border-color: var(--border-color);
+}
+
+.todo-checkbox:checked {
+    background-color: var(--success-color);
+    border-color: var(--success-border);
+}
+
+.todo-text.completed {
+    color: var(--text-tertiary);
+}
+
+/* Add smooth transition for color scheme changes */
+* {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+.loading-spinner {
+    border: 3px solid var(--border-color);
+    border-top: 3px solid var(--link-color);
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    animation: spin 1s linear infinite;
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+.prose {
+    max-width: 65ch;
+    margin: 0 auto;
+    line-height: 1.75;
+    font-size: 1.125rem;
+}
+.prose img {
+    border-radius: 0.5rem;
+    margin: 1.5rem 0;
+    cursor: pointer;
+    transition: all 0.5s ease-out;
+    opacity: 0;
+    transform: translateY(10px);
+    filter: blur(0);
+    will-change: transform, opacity, filter;
+}
+.prose img.loaded {
+    opacity: 1;
+    transform: translateY(0);
+}
+.prose img:hover {
+    transform: scale(1.02) translateY(0);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+.prose pre {
+    background-color: #f3f4f6;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    margin: 0.75rem 0;
+    overflow-x: auto;
+    position: relative;
+    text-align: left;
+    line-height: 1.4;
+}
+
+@media (prefers-color-scheme: dark) {
+    .prose pre {
+        background-color: #1e1e1e;
+        border: 1px solid #2d2d2d;
+    }
+
+    .prose pre code {
+        color: #e4e4e4;
+    }
+
+    .language-label {
+        color: #9ca3af;
+    }
+
+    .copy-button {
+        background-color: #2d2d2d;
+        border-color: #404040;
+        color: #e4e4e4;
+    }
+
+    .copy-button:hover {
+        background-color: #404040;
+        border-color: #4a4a4a;
+    }
+
+    .copy-button.copied {
+        background-color: #059669;
+        color: #ffffff;
+        border-color: #047857;
+    }
+
+    /* 代码高亮颜色 */
+    .prose pre .keyword { color: #569cd6; }
+    .prose pre .string { color: #ce9178; }
+    .prose pre .number { color: #b5cea8; }
+    .prose pre .comment { color: #6a9955; }
+    .prose pre .function { color: #dcdcaa; }
+    .prose pre .class { color: #4ec9b0; }
+    .prose pre .operator { color: #d4d4d4; }
+    .prose pre .punctuation { color: #d4d4d4; }
+    .prose pre .variable { color: #9cdcfe; }
+    .prose pre .property { color: #9cdcfe; }
+    .prose pre .constant { color: #4fc1ff; }
+}
+.language-label {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.75rem;
+    font-size: 0.75rem;
+    color: #6B7280;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    text-transform: lowercase;
+}
+.prose pre code {
+    display: block;
+    text-align: left;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.875em;
+    line-height: 1.5;
+    white-space: pre;
+    padding: 0;
+    margin: 1.25rem 0 0;
+}
+.copy-button {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    background-color: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    color: #4b5563;
+    cursor: pointer;
+    transition: all 0.2s;
+    opacity: 0;
+}
+.prose pre:hover .copy-button {
+    opacity: 1;
+}
+.copy-button:hover {
+    background-color: #f3f4f6;
+    border-color: #d1d5db;
+}
+.copy-button.copied {
+    background-color: #10B981;
+    color: white;
+    border-color: #059669;
+}
+.prose blockquote {
+    border-left: 4px solid #e5e7eb;
+    padding-left: 1rem;
+    margin: 0.75rem 0;
+    font-style: italic;
+    color: #4b5563;
+    line-height: 1.5;
+}
+.prose h1 {
+    font-size: 2.5rem;
+    margin: 2rem 0 1rem;
+    line-height: 1.3;
+}
+.page-cover {
+    opacity: 0;
+    transition: opacity 0.3s ease-out;
+    width: calc(100% + 3rem);
+    height: 150px;
+    margin: -1.5rem -1.5rem 1.5rem -1.5rem;
+    border-radius: 0.75rem 0.75rem 0 0;
+    overflow: hidden;
+    position: relative;
+    background-color: var(--bg-primary);
+}
+
+.page-cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 0.3s ease-out;
+}
+
+@media (max-width: 640px) {
+    .page-cover {
+        width: calc(100% + 2rem);
+        height: 100px;
+        margin: -1rem -1rem 1rem -1rem;
+        border-radius: 0.5rem 0.5rem 0 0;
+    }
+
+    .container.mx-auto {
+        padding: 1rem; /* 统一移动端内边距 */
+    }
+
+    .bg-white {
+        border-radius: 0.5rem; /* 调整移动端卡片圆角 */
+    }
+
+    .p-6 {
+        padding: 1rem; /* 调整移动端内部内边距 */
+    }
+}
+
+.page-title-container {
+    flex: 1;
+}
+.page-title {
+    font-size: 2.5rem;
+    line-height: 1.3;
+    margin-bottom: 0.5rem;  /* 从 0.75rem 减少到 0.5rem */
+    font-weight: 700;
+}
+.edit-date {
+    font-size: 1rem;
+    margin-bottom: 0.5rem;  /* 从 1rem 减少到 0.5rem */
+}
+.prose h2 {
+    font-size: 2rem;
+    margin: 1.75rem 0 0.875rem;
+    line-height: 1.3;
+}
+.prose h3 {
+    font-size: 1.5rem;
+    margin: 1.5rem 0 0.75rem;
+    line-height: 1.3;
+}
+.prose p {
+    margin: 1rem 0;
+    line-height: 1.75;
+}
+.prose ul, .prose ol {
+    list-style-position: outside;
+    padding-left: 1.5rem;
+    margin: 0.5rem 0;
+}
+
+.prose ul {
+    list-style-type: disc;
+}
+
+.prose ol {
+    list-style-type: decimal;
+}
+
+.prose li {
+    margin: 0.25rem 0;
+    padding-left: 0.25rem;
+    line-height: 1.5;
+    display: list-item;  /* 确保正确的列表项显示 */
+}
+
+/* 修复列表标记与内容的对齐问题 */
+.prose li::marker {
+    line-height: 1.5;  /* 与内容保持相同的行高 */
+    vertical-align: top;  /* 确保标记顶部对齐 */
+    font-size: 1em;  /* 确保标记大小与内容一致 */
+    unicode-bidi: isolate;  /* 处理标记的文字方向 */
+    font-variant-numeric: tabular-nums;  /* 确保数字等宽 */
+    text-align: end;  /* 确保数字右对齐 */
+    color: var(--text-tertiary);
+}
+
+.prose .list-item-content {
+    display: inline-block;
+    vertical-align: top;
+    line-height: 1.5;  /* 与列表项保持相同的行高 */
+}
+
+/* 确保嵌套列表的对齐 */
+.prose .nested-list {
+    margin: 0.25rem 0 0.25rem 1.25rem;
+}
+
+.prose .nested-list li {
+    margin: 0.25rem 0;
+}
+
+/* 处理多行内容的对齐 */
+.prose li > p,
+.prose li > div {
+    display: inline-block;
+    vertical-align: top;
+    margin: 0;
+    line-height: 1.5;
+}
+
+@media (prefers-color-scheme: dark) {
+    .prose li::marker {
+        color: var(--text-secondary);
+    }
+}
+
+.prose .nested-content {
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.prose .nested-list {
+    margin: 0.25rem 0 0.25rem 1.5rem;
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+    .prose li.list-item::marker {
+        color: var(--text-secondary);
+    }
+}
+.prose ul ul, .prose ol ol,
+.prose ul ol, .prose ol ul {
+    margin: 0.25rem 0 0.25rem 0.5rem;
+}
+.prose li {
+    margin: 0.25rem 0;
+    padding-left: 0.25rem;
+}
+.prose li::marker {
+    color: #6B7280;
+}
+.prose li > p {
+    margin: 0;
+    display: inline;
+}
+.prose li > * {
+    margin-top: 0.25rem;
+    margin-bottom: 0.25rem;
+}
+.image-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0);
+    z-index: 1000;
+    cursor: zoom-out;
+    transition: background-color 0.3s ease-out;
+}
+.image-modal.visible {
+    background-color: rgba(0, 0, 0, 0.9);
+}
+.image-modal img {
+    max-width: 90%;
+    max-height: 90vh;
+    margin: auto;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.95);
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    opacity: 0;
+    transition: all 0.3s ease-out;
+}
+.image-modal.visible img {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+.close-button {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    color: white;
+    font-size: 2rem;
+    cursor: pointer;
+    z-index: 1001;
+    width: 2.5rem;
+    height: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 9999px;
+    transition: background-color 0.2s;
+}
+.close-button:hover {
+    background-color: rgba(0, 0, 0, 0.7);
+}
+.prose code.inline-code {
+    background-color: #f3f4f6;
+    padding: 0.2em 0.4em;
+    border-radius: 0.25rem;
+    font-size: 0.875em;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+/* Text colors */
+.text-default { color: inherit; }
+.text-gray { color: rgb(120, 119, 116); }
+.text-brown { color: rgb(159, 107, 83); }
+.text-orange { color: rgb(217, 115, 13); }
+.text-yellow { color: rgb(203, 145, 47); }
+.text-green { color: rgb(68, 131, 97); }
+.text-blue { color: rgb(51, 126, 169); }
+.text-purple { color: rgb(144, 101, 176); }
+.text-pink { color: rgb(193, 76, 138); }
+.text-red { color: rgb(212, 76, 71); }
+/* Background colors */
+.bg-default { background-color: transparent; }
+.bg-gray-background { background-color: rgb(241, 241, 239); }
+.bg-brown-background { background-color: rgb(244, 238, 238); }
+.bg-orange-background { background-color: rgb(251, 236, 221); }
+.bg-yellow-background { background-color: rgb(251, 243, 219); }
+.bg-green-background { background-color: rgb(237, 243, 236); }
+.bg-blue-background { background-color: rgb(231, 243, 248); }
+.bg-purple-background { background-color: rgb(244, 240, 247); }
+.bg-pink-background { background-color: rgb(249, 238, 243); }
+.bg-red-background { background-color: rgb(253, 235, 236); }
+/* Link styles */
+.prose a {
+    color: #2563EB;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+.prose a:hover {
+    color: #1D4ED8;
+    text-decoration: underline;
+}
+/* Underline style */
+.prose u {
+    text-decoration: underline;
+    text-decoration-thickness: 0.1em;
+    text-underline-offset: 0.1em;
+}
+/* Strikethrough style */
+.prose del {
+    text-decoration: line-through;
+    text-decoration-thickness: 0.1em;
+}
+/* Bold style */
+.prose strong {
+    font-weight: 600;
+}
+/* Italic style */
+.prose em {
+    font-style: italic;
+}
+.prose table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1.5rem 0;
+    border: 1px solid var(--border-color);
+}
+.prose th, .prose td {
+    border: 1px solid var(--border-color);
+    padding: 0.75rem 1rem;
+    text-align: left;
+}
+.prose th {
+    background-color: var(--code-bg);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+.prose tr {
+    transition: background-color 0.2s ease;
+}
+.prose tr:hover {
+    background-color: var(--hover-bg);
+    color: var(--text-primary);
+}
+@media (prefers-color-scheme: dark) {
+    .prose tr:hover {
+        background-color: var(--hover-bg);
+        color: var(--text-primary);
+    }
+    .prose th {
+        background-color: var(--code-bg);
+        color: var(--text-primary);
+    }
+    .prose td {
+        color: var(--text-primary);
+    }
+}
+/* Add toggle block styles */
+.toggle-block {
+    border-radius: 0.375rem;
+    margin: 0.5rem 0;
+    font-size: inherit;
+    position: relative;
+}
+.toggle-header {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 0.25rem 0;
+    border-radius: 0.375rem;
+    transition: background-color 0.2s;
+    min-height: 1.5em;
+    color: inherit;
+    width: 100%;
+    user-select: none;
+}
+.toggle-header:hover {
+    background-color: rgba(55, 53, 47, 0.08);
+}
+.toggle-icon {
+    width: 1rem;
+    height: 1rem;
+    margin-right: 0.5rem;
+    transition: transform 0.15s ease-in;
+    flex-shrink: 0;
+    opacity: 0.35;
+}
+.toggle-text {
+    flex: 1;
+    white-space: pre-wrap;
+    word-break: break-word;
+    caret-color: rgb(55, 53, 47);
+    padding: 3px 2px;
+    min-height: 1.5em;
+    color: inherit;
+}
+.toggle-content {
+    margin-left: 1.5rem;
+    overflow: hidden;
+    height: 0;
+    opacity: 0;
+    transition: height 0.2s ease-out, opacity 0.1s ease-out;
+    will-change: height, opacity;
+}
+.toggle-content-inner {
+    padding-top: 0.25rem;
+}
+.toggle-block.open .toggle-icon {
+    transform: rotate(90deg);
+    opacity: 0.6;
+}
+.toggle-block.open .toggle-content {
+    opacity: 1;
+    transition: height 0.2s ease-in, opacity 0.2s ease-in;
+}
+.toggle-block .toggle-block {
+    margin-left: 0;
+}
+/* Add smooth transitions */
+.prose * {
+    transition: all 0.2s ease-out;
+}
+#pageContent {
+    animation: fadeIn 0.5s ease-out;
+}
+.back-button {
+    transition: transform 0.2s ease-out;
+}
+.back-button:hover {
+    transform: translateX(-4px);
+}
+/* Add keyframe animations */
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+/* Add todo item styles */
+.todo-item {
+    display: flex;
+    align-items: center;
+    margin: 0.5rem 0;
+    transition: all 0.2s ease-out;
+}
+.todo-checkbox {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 1.2em;
+    height: 1.2em;
+    border: 2px solid #d1d5db;
+    border-radius: 0.25em;
+    margin-right: 0.75em;
+    cursor: not-allowed;
+    position: relative;
+    transition: all 0.2s ease-out;
+}
+.todo-checkbox:checked {
+    background-color: #10B981;
+    border-color: #10B981;
+}
+.todo-checkbox:checked::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 45%;
+    width: 0.25em;
+    height: 0.5em;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: translate(-50%, -50%) rotate(45deg);
+}
+.todo-text {
+    transition: all 0.2s ease-out;
+    flex: 1;
+}
+.todo-text.completed {
+    color: #9CA3AF;
+    text-decoration: line-through;
+    text-decoration-thickness: 2px;
+    text-decoration-color: #D1D5DB;
+}
+.copy-link-button {
+    flex-shrink: 0;
+    margin-top: 0.5rem;
+    padding: 0.5rem 0;
+    background-color: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.375rem;
+    color: #6B7280;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    overflow: hidden;
+    width: 36px;
+    min-width: 36px;
+    position: relative;
+}
+.copy-link-button i {
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+}
+.copy-link-button:hover {
+    width: 120px;
+}
+.copy-link-button:hover i {
+    position: static;
+    transform: none;
+}
+.copy-link-button span {
+    opacity: 0;
+    max-width: 0;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+.copy-link-button:hover span {
+    opacity: 1;
+    max-width: 100px;
+}
+.copy-link-button.copied {
+    background-color: #10B981;
+    color: white;
+    border-color: #059669;
+    width: 36px;
+}
+.copy-link-button.copied span {
+    opacity: 0;
+    max-width: 0;
+}
+.copy-link-button.copied i {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+/* Mobile-specific styles */
+@media (max-width: 640px) {
+    .page-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+    }
+    
+    .page-title {
+        font-size: 2rem;
+        line-height: 1.2;
+        margin-bottom: 0.25rem;
+    }
+    
+    .edit-date {
+        margin-bottom: 0.75rem;
+    }
+    
+    .copy-link-button {
+        align-self: flex-start;
+        margin-top: -0.5rem;
+        width: 32px !important;
+        min-width: 32px !important;
+        margin-bottom: 0.5rem;
+    }
+
+    .copy-link-button i {
+        position: static;
+        transform: none;
+    }
+
+    .copy-link-button span {
+        display: none;
+    }
+
+    .copy-link-button.copied {
+        width: 32px !important;
+    }
+
+    .copy-link-button.copied i {
+        position: static;
+        transform: none;
+    }
+
+    .copy-link-button.copied span {
+        display: none;
+    }
+    
+    .prose p {
+        margin: 0.5rem 0;
+        line-height: 1.5;
+    }
+    
+    .prose h1 {
+        margin: 1.25rem 0 0.375rem;
+    }
+    
+    .prose h2 {
+        margin: 1rem 0 0.375rem;
+    }
+    
+    .prose h3 {
+        margin: 0.75rem 0 0.375rem;
+    }
+    
+    .prose blockquote {
+        margin: 0.75rem 0;
+        line-height: 1.5;
+    }
+    
+    .prose pre {
+        margin: 0.75rem 0;
+        line-height: 1.4;
+    }
+    
+    .prose img {
+        margin: 0.75rem 0;
+    }
+}
+
+.container {
+    background-color: var(--bg-primary);
+}
+
+.bg-gray-50 {
+    background-color: var(--bg-primary) !important;
+}
+
+.bg-white {
+    background-color: var(--bg-secondary) !important;
+}
+
+.page-title {
+    color: var(--text-primary) !important;
+}
+
+.loading-spinner {
+    border: 3px solid var(--border-color);
+    border-top: 3px solid var(--link-color);
+}
+
+.loading-progress {
+    background: var(--border-color);
+}
+
+.loading-progress-bar {
+    background: var(--link-color);
+}
+
+.copy-link-button {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+    color: var(--text-tertiary);
+}
+
+.copy-link-button:hover {
+    background-color: var(--hover-bg);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+.copy-link-button.copied {
+    background-color: var(--success-color);
+    border-color: var(--success-border);
+    color: var(--bg-primary);
+}
+
+.back-button {
+    color: var(--link-color) !important;
+}
+
+.back-button:hover {
+    color: var(--link-hover-color) !important;
+}
+
+.border-gray-200 {
+    border-color: var(--border-color) !important;
+}
+
+/* Dark mode specific overrides */
+@media (prefers-color-scheme: dark) {
+    .text-gray-500 {
+        color: var(--text-tertiary) !important;
+    }
+
+    .text-blue-500 {
+        color: var(--link-color) !important;
+    }
+
+    .text-blue-600 {
+        color: var(--link-color) !important;
+    }
+
+    .hover\:text-blue-600:hover {
+        color: var(--link-hover-color) !important;
+    }
+}
+
+.file-block {
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-secondary);
+    transition: all 0.3s ease;
+}
+
+.file-block:hover {
+    border-color: var(--link-color);
+}
+
+.file-block .file-info {
+    border-top-color: var(--border-color);
+}
+
+.file-block .text-primary {
+    color: var(--text-primary);
+}
+
+.file-block .text-tertiary {
+    color: var(--text-tertiary);
+}
+
+.file-block .download-button {
+    background-color: var(--link-color);
+    color: var(--bg-secondary);
+    border: 1px solid var(--link-color);
+    transition: all 0.3s ease;
+}
+
+.file-block .download-button:hover {
+    background-color: var(--link-hover-color);
+    border-color: var(--link-hover-color);
+}
+
+.file-block iframe {
+    background-color: var(--bg-primary);
+    border: none;
+}
+
+/* Mobile optimization for file blocks */
+@media (max-width: 640px) {
+    .file-block {
+        margin: 0.75rem 0;
+    }
+
+    .file-block .file-preview {
+        margin-bottom: 0;
+    }
+
+    .file-block iframe {
+        height: 40vh;
+    }
+
+    .file-block .file-info {
+        padding: 0.75rem;
+        gap: 0.5rem;
+    }
+
+    .file-block .download-button {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+    }
+
+    .file-block .download-button i {
+        font-size: 0.875rem;
+    }
+
+    .file-block img {
+        max-height: 40vh;
+        object-fit: contain;
+    }
+
+    .file-block .text-sm {
+        font-size: 0.75rem;
+    }
+}
+
+/* 优化文件块的基础样式 */
+.file-block {
+    transition: all 0.3s ease;
+}
+
+.file-block .file-preview {
+    background-color: var(--bg-secondary);
+    position: relative;
+    overflow: hidden;
+}
+
+.file-block .file-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.file-block .download-button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.file-block img {
+    width: 100%;
+    height: auto;
+    max-height: 60vh;
+    object-fit: contain;
+}
+
+.image-placeholder {
+    width: 100%;
+    border-radius: 0.5rem;
+    margin: 1.5rem 0;
+    position: relative;
+    overflow: hidden;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .5; }
+}
+
+.animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* 添加毛玻璃标题栏样式 */
+.floating-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding: 0.75rem 0;  /* 移除左右内边距 */
+    transform: translateY(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-bottom: 1px solid rgba(229, 231, 235, 0.5);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.floating-header.visible {
+    transform: translateY(0);
+}
+
+.floating-header .content-wrapper {
+    max-width: calc(896px + 2rem);  /* 页面内容宽度 + 两侧小边距 */
+    width: 100%;
+    margin: 0 auto;
+    padding: 0 1rem;  /* 添加较小的左右内边距 */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.floating-header h1 {
+    font-size: 1.25rem;
+    font-weight: 700;  /* 修改浮动标题加粗程度 */
+    color: var(--text-primary);
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: calc(100% - 48px);
+}
+
+.floating-header .copy-link-button {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    margin: 0;
+    padding: 0;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    color: var(--text-tertiary);
+    transition: background-color 0.2s ease;
+}
+
+.floating-header .copy-link-button i {
+    font-size: 0.875rem;
+}
+
+.floating-header .copy-link-button:hover {
+    background-color: var(--hover-bg);
+}
+
+.floating-header .copy-link-button.copied {
+    background-color: var(--success-color);
+    border-color: var(--success-border);
+    color: var(--bg-secondary);
+}
+
+@media (max-width: 640px) {
+    .floating-header {
+        padding: 0.625rem 0;  /* 移除左右内边距 */
+    }
+    
+    .floating-header .content-wrapper {
+        padding: 0 1.25rem;  /* 保持移动端的左右边距 */
+    }
+    
+    .floating-header h1 {
+        font-size: 1.125rem;
+    }
+    
+    .floating-header .copy-link-button {
+        width: 28px;
+        height: 28px;
+        min-width: 28px;
+    }
+    
+    .floating-header .copy-link-button i {
+        font-size: 0.75rem;
+    }
+
+    .page-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+    }
+    
+    .page-title {
+        font-size: 2rem;
+        line-height: 1.2;
+        margin-bottom: 0.25rem;
+    }
+    
+    .edit-date {
+        margin-bottom: 0.75rem;
+    }
+    
+    /* 移动端页面内的复制按钮使用完整样式 */
+    .page-header .copy-link-button {
+        align-self: flex-start;
+        margin-top: -0.5rem;
+        width: 120px !important;
+        min-width: 120px !important;
+        margin-bottom: 0.5rem;
+        padding: 0.5rem;
+    }
+
+    .page-header .copy-link-button i {
+        position: static;
+        transform: none;
+        margin-right: 0.5rem;
+    }
+
+    .page-header .copy-link-button span {
+        display: inline;
+        opacity: 1;
+        max-width: none;
+    }
+
+    .page-header .copy-link-button.copied {
+        width: 120px !important;
+    }
+
+    .page-header .copy-link-button.copied i {
+        position: static;
+        transform: none;
+        margin-right: 0.5rem;
+    }
+
+    .page-header .copy-link-button.copied span {
+        display: inline;
+        opacity: 1;
+        max-width: none;
+    }
+}
+
+/* 调整主容器的内边距 */
+.container.mx-auto {
+    padding-left: 1rem;  /* 减小左边距 */
+    padding-right: 1rem;  /* 减小右边距 */
+}
+
+@media (max-width: 640px) {
+    .container.mx-auto {
+        padding-left: 1.25rem;  /* 移动端保持较大边距 */
+        padding-right: 1.25rem;
+    }
+}
+
+/* 适配深色模式 */
+@media (prefers-color-scheme: dark) {
+    .floating-header {
+        background: rgba(17, 24, 39, 0.8);
+        border-bottom-color: rgba(55, 65, 81, 0.5);
+    }
+}
+
+.prose .rich-text-wrapper {
+    display: inline;
+}
+
+/* Add bookmark block styles */
+.bookmark-block {
+    transition: all 0.2s ease;
+}
+
+.bookmark-block:hover {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.bookmark-block a {
+    text-decoration: none !important;
+}
+
+.bookmark-block a:hover {
+    text-decoration: none !important;
+}
+
+.bookmark-block .fa-link {
+    font-size: 1.125rem;
+}
+
+.bookmark-block .fa-external-link-alt {
+    font-size: 0.875rem;
+}
+
+@media (prefers-color-scheme: dark) {
+    .bookmark-block {
+        background-color: var(--bg-secondary);
+        border-color: var(--border-color);
+    }
+    
+    .bookmark-block:hover {
+        background-color: var(--hover-bg);
+    }
+}
+
+/* List styles */
+.prose ul,
+.prose ol {
+    list-style-position: outside;
+    padding-left: 1.5rem;
+    margin: 0.5rem 0;
+}
+
+.prose ul {
+    list-style-type: disc;
+}
+
+.prose ol {
+    list-style-type: decimal;
+}
+
+.prose li {
+    margin: 0.25rem 0;
+    padding-left: 0.25rem;
+    line-height: 1.5;
+    display: list-item;  /* 确保正确的列表项显示 */
+}
+
+/* 修复列表标记与内容的对齐问题 */
+.prose li::marker {
+    line-height: 1.5;  /* 与内容保持相同的行高 */
+    vertical-align: top;  /* 确保标记顶部对齐 */
+    font-size: 1em;  /* 确保标记大小与内容一致 */
+    unicode-bidi: isolate;  /* 处理标记的文字方向 */
+    font-variant-numeric: tabular-nums;  /* 确保数字等宽 */
+    text-align: end;  /* 确保数字右对齐 */
+    color: var(--text-tertiary);
+}
+
+.prose .list-item-content {
+    display: inline-block;
+    vertical-align: top;
+    line-height: 1.5;  /* 与列表项保持相同的行高 */
+}
+
+/* 确保嵌套列表的对齐 */
+.prose .nested-list {
+    margin: 0.25rem 0 0.25rem 1.25rem;
+}
+
+.prose .nested-list li {
+    margin: 0.25rem 0;
+}
+
+/* 处理多行内容的对齐 */
+.prose li > p,
+.prose li > div {
+    display: inline-block;
+    vertical-align: top;
+    margin: 0;
+    line-height: 1.5;
+}
+
+@media (prefers-color-scheme: dark) {
+    .prose li::marker {
+        color: var(--text-secondary);
+    }
+}
+
+.prose .nested-content {
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+/* 调整段落和其他块级元素的间距 */
+.prose p {
+    margin: 0.75rem 0;  /* 减少段落间距 */
+    line-height: 1.6;
+}
+
+.prose h1, .prose h2, .prose h3 {
+    margin-top: 1.5rem;  /* 标题上方间距保持较大 */
+    margin-bottom: 0.75rem;  /* 减少标题下方间距 */
+}
+
+/* 调整列表内部的块级元素间距 */
+.prose li > * {
+    margin-top: 0.25rem;
+    margin-bottom: 0.25rem;
+}
+
+/* 调整相邻列表的间距 */
+.prose ul + ul,
+.prose ol + ol,
+.prose ul + ol,
+.prose ol + ul {
+    margin-top: 0.25rem;  /* 减少相邻列表之间的间距 */
+}
+
+/* Add column layout styles */
+.column-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    margin: 1rem 0;
+}
+
+@media (min-width: 768px) {
+    .column-list {
+        grid-template-columns: repeat(var(--columns, 2), 1fr);
+    }
+}
+
+.column {
+    min-width: 0;  /* 确保列内容不会溢出 */
+}
+
+/* Ensure proper spacing between blocks inside columns */
+.column > * {
+    margin-top: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.column > *:first-child {
+    margin-top: 0;
+}
+
+.column > *:last-child {
+    margin-bottom: 0;
+}
+
+/* Add download button styles for image modal */
+.modal-download-button {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    display: flex;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    border: none;
+    border-radius: 9999px;
+    cursor: pointer;
+    overflow: hidden;
+    padding: 0.75rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1002;
+    width: 3rem;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+.image-modal.visible .modal-download-button {
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: 0.2s;
+}
+
+.modal-download-button:hover {
+    width: 8.5rem;
+    padding-right: 1.5rem;
+    background-color: rgba(0, 0, 0, 0.8);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modal-download-button i {
+    font-size: 1.25rem;
+    margin-right: 0;
+    transition: margin-right 0.3s ease;
+    flex-shrink: 0;
+}
+
+.modal-download-button:hover i {
+    margin-right: 0.75rem;
+}
+
+.modal-download-button span {
+    opacity: 0;
+    max-width: 0;
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-block;
+}
+
+.modal-download-button:hover span {
+    opacity: 1;
+    max-width: 200px;
+    transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1) 0.1s, max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (max-width: 640px) {
+    .modal-download-button {
+        width: auto;
+        padding: 0.75rem 1.5rem;
+        border-radius: 2rem;
+    }
+
+    .modal-download-button i {
+        margin-right: 0.75rem;
+    }
+
+    .modal-download-button span {
+        opacity: 1;
+        max-width: 200px;
+    }
+}
+
+/* Add loading overlay styles */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--bg-primary);
+    z-index: 2000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 1;
+    transition: opacity 0.3s ease-out;
+}
+
+.loading-overlay.fade-out {
+    opacity: 0;
+}
+
+.loading-overlay .loading-spinner {
+    width: 40px;
+    height: 40px;
+}
+
+/* Hide page content during loading */
+.container {
+    opacity: 0;
+    transition: opacity 0.3s ease-out;
+}
+
+.container.loaded {
+    opacity: 1;
+}
+
+/* Optimize page cover styles */
+.page-cover {
+    opacity: 0;
+    transition: opacity 0.3s ease-out;
+    width: calc(100% + 3rem);
+    height: 150px;
+    margin: -1.5rem -1.5rem 1.5rem -1.5rem;
+    border-radius: 0.75rem 0.75rem 0 0;
+    overflow: hidden;
+    position: relative;
+    background-color: var(--bg-primary);
+}
+
+.page-cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 0.3s ease-out;
+}
+
+.page-cover.loaded {
+    opacity: 1;
+}
+
+.page-cover.loaded img {
+    opacity: 1;
+}
+
+@media (max-width: 640px) {
+    .page-cover {
+        width: calc(100% + 2rem);
+        height: 100px;
+        margin: -1rem -1rem 1rem -1rem;
+        border-radius: 0.5rem 0.5rem 0 0;
+    }
+}
+
+/* Hide back button by default */
+.mt-8 {
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease-out;
+}
+
+.mt-8.visible {
+    opacity: 1;
+}
+
+/* Add page transition styles */
+.page-transition {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--bg-primary);
+    z-index: 1999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease-out;
+}
+
+.page-transition.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Optimize loading overlay */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--bg-primary);
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    opacity: 1;
+    transition: opacity 0.3s ease-out;
+}
+
+.loading-overlay .loading-spinner {
+    width: 40px;
+    height: 40px;
+    margin-bottom: 1rem;
+}
+
+.loading-overlay .loading-text {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+    opacity: 0.8;
+}
+
+.loading-progress {
+    width: 200px;
+    height: 2px;
+    background-color: var(--border-color);
+    border-radius: 1px;
+    overflow: hidden;
+    margin-top: 1rem;
+}
+
+.loading-progress-bar {
+    height: 100%;
+    background-color: var(--link-color);
+    transition: width 0.3s ease-out;
+} 
