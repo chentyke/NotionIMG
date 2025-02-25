@@ -1780,7 +1780,7 @@ body {
     right: 12px; /* Space from the right edge */
     border-radius: 12px; /* Rounded corners */
     cursor: pointer;
-    overflow: visible;
+    overflow: hidden; /* Changed from visible to hidden to prevent content overflow */
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
     background-color: var(--bg-secondary);
     border: 1px solid var(--border-color);
@@ -1804,9 +1804,13 @@ body {
     border-radius: 1px;
 }
 
-/* Position the button differently in collapsed mode */
+/* Show expand button when TOC is collapsed */
+.toc-container.collapsed .toc-header {
+    display: none; /* Hide the entire header when collapsed */
+}
+
 .toc-container.collapsed .toc-collapse-btn {
-    display: none; /* Hide the button completely instead of just setting opacity to 0 */
+    display: none; /* Hide the button completely */
 }
 
 /* Show the button on hover */
@@ -1824,6 +1828,11 @@ body {
 .toc-container.collapsed:hover::after {
     background-color: var(--link-hover-color);
     height: 60px; /* Slightly longer on hover */
+}
+
+/* Hide the indicator for collapsed state */
+.toc-collapsed-hint {
+    display: none;
 }
 
 .toc-header {
