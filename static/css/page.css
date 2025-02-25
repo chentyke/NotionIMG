@@ -7,10 +7,18 @@
     height: 24px;
     animation: spin 1s linear infinite;
 }
+
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+
+/* Update spinner to use CSS variables for better theme support */
+.loading-spinner {
+    border: 3px solid var(--border-color);
+    border-top: 3px solid var(--link-color);
+}
+
 :root {
     /* Light mode colors */
     --bg-primary: #f9fafb;
@@ -1082,7 +1090,7 @@ body {
     transition: opacity 0.3s ease;
 }
 
-/* Restore floating header styles */
+/* Floating header styles */
 .floating-header {
     position: fixed;
     top: 0;
@@ -1203,7 +1211,7 @@ body {
     animation: shimmer 2s infinite;
 }
 
-/* Add improved image modal styles */
+/* Image modal styles */
 .image-modal {
     display: none;
     position: fixed;
@@ -1666,5 +1674,139 @@ body {
     .toc-container.expanded .toc-level-2,
     .toc-container.expanded .toc-level-3 {
         display: none !important;
+    }
+}
+
+/* Add improved page transition styles */
+.page-transition {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--bg-primary);
+    z-index: 1999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.page-transition.active {
+    opacity: 0.9;
+    pointer-events: auto;
+}
+
+/* Add improved loading overlay styles */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--bg-primary);
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    opacity: 1;
+    transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.loading-overlay.fade-out {
+    opacity: 0;
+}
+
+.loading-overlay .loading-spinner {
+    width: 32px;
+    height: 32px;
+}
+
+.loading-overlay .loading-text {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    margin-top: 1rem;
+    opacity: 0.8;
+    font-weight: 500;
+}
+
+.loading-progress {
+    width: 220px;
+    height: 3px;
+    background-color: var(--border-color);
+    border-radius: 1.5px;
+    overflow: hidden;
+    margin-top: 1rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.loading-progress-bar {
+    height: 100%;
+    background-color: var(--link-color);
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: width;
+}
+
+/* Improved container transitions */
+.container {
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.4s ease-out, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.container.loaded {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Add improved image error styles */
+.image-error {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background-color: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.5);
+    color: #EF4444;
+    font-size: 0.875rem;
+    border-radius: 0.5rem;
+    text-align: center;
+}
+
+/* Loading animation keyframes */
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Mobile optimizations for loading elements */
+@media (max-width: 640px) {
+    .loading-progress {
+        width: 85%;
+        max-width: 280px;
+    }
+    
+    .loading-overlay .loading-text {
+        font-size: 0.8rem;
+    }
+    
+    .loading-overlay .loading-spinner {
+        width: 28px;
+        height: 28px;
     }
 }
