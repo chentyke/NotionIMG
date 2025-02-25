@@ -1147,12 +1147,19 @@ const TableOfContents = {
             this.container.classList.remove('expanding');
             this.container.classList.remove('collapsing');
         } else {
-            // For desktop, check saved preference
+            // For desktop, default to expanded unless explicitly saved as collapsed
             const savedCollapsed = localStorage.getItem('tocCollapsed');
+            
+            // If no saved preference, default to expanded (not collapsed)
+            if (savedCollapsed === null) {
+                localStorage.setItem('tocCollapsed', 'false');
+            }
+            
             this.isCollapsed = savedCollapsed === 'true';
             
             if (this.isCollapsed) {
                 this.container.classList.add('collapsed');
+                this.container.classList.remove('expanding');
             } else {
                 this.container.classList.remove('collapsed');
             }
@@ -1354,6 +1361,15 @@ const TableOfContents = {
         
         // Show TOC with animation
         this.container.style.display = 'flex';
+        
+        // For desktop, ensure TOC is expanded if not explicitly collapsed
+        if (!this.isMobile && !this.isCollapsed) {
+            this.container.classList.remove('collapsed');
+            if (this.tocList) {
+                this.tocList.style.opacity = '1';
+            }
+        }
+        
         setTimeout(() => {
             this.container.classList.add('visible');
         }, 100);

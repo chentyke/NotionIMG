@@ -1464,6 +1464,15 @@ body {
     transition: height 0.3s ease, background-color 0.3s ease;
 }
 
+/* Hide all content in collapsed state */
+.toc-container.collapsed .toc-content,
+.toc-container.collapsed .toc-list,
+.toc-container.collapsed .toc-header {
+    display: none !important;
+    pointer-events: none;
+    opacity: 0;
+}
+
 /* Show expand button when TOC is collapsed */
 .toc-container.collapsed .toc-header {
     display: none; /* Hide the entire header when collapsed */
@@ -1823,9 +1832,11 @@ body {
         border-radius: 4px;
     }
     
+    /* Ensure content is hidden when not expanded on mobile */
     .toc-container:not(.expanded) .toc-header,
     .toc-container:not(.expanded) .toc-content {
-        display: none;
+        display: none !important;
+        pointer-events: none;
     }
     
     .toc-link {
