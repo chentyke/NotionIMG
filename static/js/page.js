@@ -1137,57 +1137,29 @@ const TableOfContents = {
         this.isMobile = window.innerWidth <= 1200;
         console.log('Is mobile device:', this.isMobile);
         
-        // Set initial state based on device type
+        // If on mobile, completely hide TOC and disable functionality
         if (this.isMobile) {
-            this.isCollapsed = true;
-            
-            // 先隐藏容器，避免闪烁
-            this.container.style.opacity = '0';
-            
-            // 添加折叠类
+            console.log('Mobile device detected - disabling TOC');
+            this.container.style.display = 'none';
+            return; // Exit early - don't set up any TOC functionality on mobile
+        }
+        
+        // Set initial state for desktop
+        // For desktop, default to expanded unless explicitly saved as collapsed
+        const savedCollapsed = localStorage.getItem('tocCollapsed');
+        
+        // If no saved preference, default to expanded (not collapsed)
+        if (savedCollapsed === null) {
+            localStorage.setItem('tocCollapsed', 'false');
+        }
+        
+        this.isCollapsed = savedCollapsed === 'true';
+        
+        if (this.isCollapsed) {
             this.container.classList.add('collapsed');
-            this.container.classList.remove('expanded');
-            
-            // Remove any desktop-specific classes
             this.container.classList.remove('expanding');
-            this.container.classList.remove('collapsing');
-            this.container.classList.remove('button-hiding');
-            this.container.classList.remove('button-showing');
-            
-            // 延迟显示并添加动画效果
-            setTimeout(() => {
-                // 恢复可见性
-                this.container.style.opacity = '';
-                
-                // 添加从右向左滑入的动画
-                this.container.classList.add('button-showing');
-                
-                // 动画结束后移除动画类
-                const handleInitAnimation = (event) => {
-                    if (event.animationName === 'slideInButtonFromRight') {
-                        this.container.classList.remove('button-showing');
-                        this.container.removeEventListener('animationend', handleInitAnimation);
-                    }
-                };
-                this.container.addEventListener('animationend', handleInitAnimation);
-            }, 500);
         } else {
-            // For desktop, default to expanded unless explicitly saved as collapsed
-            const savedCollapsed = localStorage.getItem('tocCollapsed');
-            
-            // If no saved preference, default to expanded (not collapsed)
-            if (savedCollapsed === null) {
-                localStorage.setItem('tocCollapsed', 'false');
-            }
-            
-            this.isCollapsed = savedCollapsed === 'true';
-            
-            if (this.isCollapsed) {
-                this.container.classList.add('collapsed');
-                this.container.classList.remove('expanding');
-            } else {
-                this.container.classList.remove('collapsed');
-            }
+            this.container.classList.remove('collapsed');
         }
         
         // Set up collapse button
@@ -1221,19 +1193,6 @@ const TableOfContents = {
             }
         });
         
-        // Add document click handler to close the TOC when clicking outside on mobile
-        if (this.isMobile) {
-            document.addEventListener('click', function(e) {
-                // Skip if TOC is already collapsed or click is inside TOC
-                if (self.isCollapsed || e.target.closest('#tableOfContents')) {
-                    return;
-                }
-                
-                console.log('Document clicked outside TOC, collapsing...');
-                self.toggleCollapse(true); // Force collapse
-            });
-        }
-        
         // Ensure button icon matches state
         if (collapseBtn) {
             collapseBtn.title = this.isCollapsed ? '展开目录' : '收起目录';
@@ -1242,19 +1201,6 @@ const TableOfContents = {
             if (icon) {
                 icon.className = this.isCollapsed ? 'fas fa-chevron-left' : 'fas fa-chevron-right';
             }
-        }
-        
-        // Add click handlers to TOC links for mobile auto-collapse
-        if (this.isMobile) {
-            this.tocList.addEventListener('click', function(e) {
-                const link = e.target.closest('.toc-link');
-                if (link) {
-                    // Wait for the scroll to happen before collapsing
-                    setTimeout(() => {
-                        self.toggleCollapse(true); // Force collapse
-                    }, 300);
-                }
-            });
         }
         
         // Check floating header visibility and adjust TOC position accordingly
@@ -1286,20 +1232,16 @@ const TableOfContents = {
             // Clean up any animation styles
             this.container.style.animation = '';
             
-            // Reset state based on new device type
+            // If switching to mobile, hide TOC completely
             if (this.isMobile) {
-                // Switching to mobile - always collapse
-                this.isCollapsed = true;
-                
-                // Remove any desktop-specific classes
-                this.container.classList.remove('expanding');
-                this.container.classList.remove('collapsing');
-                
-                // Add mobile classes
-                this.container.classList.add('collapsed');
-                this.container.classList.remove('expanded');
+                console.log('Switched to mobile view - hiding TOC');
+                this.container.style.display = 'none';
+                // No need to do anything else since it's hidden
             } else {
                 // Switching to desktop
+                console.log('Switched to desktop view - showing TOC');
+                this.container.style.display = '';
+                
                 // Check saved preference
                 const savedCollapsed = localStorage.getItem('tocCollapsed');
                 
@@ -1315,31 +1257,29 @@ const TableOfContents = {
                     this.isCollapsed = false;
                     this.container.classList.remove('collapsed');
                 }
-            }
-            
-            // Update icon
-            const collapseBtn = document.getElementById('tocCollapseBtn');
-            if (collapseBtn) {
-                collapseBtn.title = this.isCollapsed ? '展开目录' : '收起目录';
-                collapseBtn.setAttribute('aria-label', this.isCollapsed ? '展开目录' : '收起目录');
-                collapseBtn.style.opacity = '1'; // Reset any opacity changes
-                const icon = collapseBtn.querySelector('i');
-                if (icon) {
-                    icon.className = this.isCollapsed ? 'fas fa-chevron-left' : 'fas fa-chevron-right';
+                
+                // Update icon
+                const collapseBtn = document.getElementById('tocCollapseBtn');
+                if (collapseBtn) {
+                    collapseBtn.title = this.isCollapsed ? '展开目录' : '收起目录';
+                    collapseBtn.setAttribute('aria-label', this.isCollapsed ? '展开目录' : '收起目录');
+                    collapseBtn.style.opacity = '1'; // Reset any opacity changes
+                    const icon = collapseBtn.querySelector('i');
+                    if (icon) {
+                        icon.className = this.isCollapsed ? 'fas fa-chevron-left' : 'fas fa-chevron-right';
+                    }
                 }
-            }
-            
-            // Reset any opacity changes for content
-            if (this.tocList) {
-                this.tocList.style.opacity = '';
-            }
-            
-            // Reset any inline styles that might interfere with responsiveness
-            this.container.style.width = '';
-            this.container.style.height = '';
-            
-            // Check and adjust TOC position if on desktop
-            if (!this.isMobile) {
+                
+                // Reset any opacity changes for content
+                if (this.tocList) {
+                    this.tocList.style.opacity = '';
+                }
+                
+                // Reset any inline styles that might interfere with responsiveness
+                this.container.style.width = '';
+                this.container.style.height = '';
+                
+                // Check and adjust TOC position
                 const floatingHeader = document.getElementById('floatingHeader');
                 if (floatingHeader && floatingHeader.classList.contains('visible')) {
                     this.container.style.top = '4rem';
@@ -2738,49 +2678,21 @@ document.addEventListener('click', function(event) {
     const tocContainer = document.getElementById('tableOfContents');
     if (!tocContainer) return;
     
+    // Skip if we're on mobile (TOC is hidden)
+    if (window.innerWidth <= 1200) return;
+    
     // Skip if TOC is already collapsed or click is inside TOC
     if (tocContainer.classList.contains('collapsed') || event.target.closest('#tableOfContents')) {
         return;
     }
     
-    // Only handle on mobile devices
-    if (window.innerWidth <= 1200) {
+    // Only handle on desktop devices
+    if (window.innerWidth > 1200) {
         console.log('Document clicked outside TOC, collapsing...');
         
         // Find TableOfContents object and call its toggleCollapse method
         if (typeof TableOfContents !== 'undefined') {
             TableOfContents.toggleCollapse(true); // Force collapse
-        } else {
-            // Fallback if TableOfContents object is not available
-            if (tocContainer.classList.contains('expanded')) {
-                // 移除所有可能的动画类
-                tocContainer.classList.remove('button-showing');
-                tocContainer.classList.remove('button-hiding');
-                
-                // Add animation for collapsing
-                tocContainer.style.animation = 'slideOutTocMobile 0.35s cubic-bezier(0.25, 1, 0.5, 1) forwards';
-                
-                // After animation completes, actually collapse
-                setTimeout(() => {
-                    tocContainer.classList.remove('expanded');
-                    tocContainer.classList.add('collapsed');
-                    tocContainer.style.animation = '';
-                    
-                    // 强制重排
-                    tocContainer.offsetHeight;
-                    
-                    // 添加按钮滑入动画
-                    tocContainer.classList.add('button-showing');
-                    
-                    // 设置超时移除按钮显示类
-                    setTimeout(() => {
-                        tocContainer.classList.remove('button-showing');
-                    }, 500);
-                }, 350);
-            } else {
-                tocContainer.classList.remove('expanded');
-                tocContainer.classList.add('collapsed');
-            }
         }
     }
 });
