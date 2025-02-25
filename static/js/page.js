@@ -1121,6 +1121,7 @@ const TableOfContents = {
     isCollapsed: false,
     activeHeadingId: null,
     observer: null,
+    isMobile: false,
     
     // Initialize the TOC module
     init: function() {
@@ -1130,6 +1131,19 @@ const TableOfContents = {
         if (!this.container || !this.tocList) {
             console.log('TOC container or list not found');
             return;
+        }
+        
+        // Check if we're on mobile
+        this.isMobile = window.innerWidth <= 1200;
+        
+        // Set initial state based on device type
+        if (this.isMobile) {
+            this.isCollapsed = true;
+            this.container.classList.add('collapsed');
+            this.container.classList.remove('expanded');
+        } else {
+            this.isCollapsed = false;
+            this.container.classList.remove('collapsed');
         }
         
         // Set up collapse button
@@ -1157,24 +1171,33 @@ const TableOfContents = {
         const self = this; // Store reference to TableOfContents
         this.container.addEventListener('click', function(e) {
             // Only handle clicks on the container itself when collapsed, not on children
-            if (self.isCollapsed && e.target === self.container) {
+            if (self.isCollapsed && (e.target === self.container || e.target.classList.contains('toc-container'))) {
                 console.log('Collapsed container clicked');
                 self.toggleCollapse();
             }
         });
         
-        // Always start expanded by default
-        this.isCollapsed = false;
-        this.container.classList.remove('collapsed');
-        
-        // Ensure button icon matches expanded state
+        // Ensure button icon matches state
         if (collapseBtn) {
-            collapseBtn.title = '收起目录';
-            collapseBtn.setAttribute('aria-label', '收起目录');
+            collapseBtn.title = this.isCollapsed ? '展开目录' : '收起目录';
+            collapseBtn.setAttribute('aria-label', this.isCollapsed ? '展开目录' : '收起目录');
             const icon = collapseBtn.querySelector('i');
             if (icon) {
-                icon.className = 'fas fa-chevron-right'; // Point right when expanded to indicate collapse direction
+                icon.className = this.isCollapsed ? 'fas fa-chevron-left' : 'fas fa-chevron-right';
             }
+        }
+        
+        // Add click handlers to TOC links for mobile auto-collapse
+        if (this.isMobile) {
+            this.tocList.addEventListener('click', function(e) {
+                const link = e.target.closest('.toc-link');
+                if (link) {
+                    // Wait for the scroll to happen before collapsing
+                    setTimeout(() => {
+                        self.toggleCollapse(true); // Force collapse
+                    }, 300);
+                }
+            });
         }
         
         // Check floating header visibility and adjust TOC position accordingly
@@ -1189,6 +1212,42 @@ const TableOfContents = {
         
         // Create intersection observer for headings
         this.setupIntersectionObserver();
+        
+        // Listen for window resize events to adjust for mobile/desktop
+        window.addEventListener('resize', this.handleResize.bind(this));
+    },
+    
+    // Handle window resize
+    handleResize: function() {
+        const wasMobile = this.isMobile;
+        this.isMobile = window.innerWidth <= 1200;
+        
+        // If we changed between mobile and desktop
+        if (wasMobile !== this.isMobile) {
+            // Reset state based on new device type
+            if (this.isMobile) {
+                // Switching to mobile - always collapse
+                this.isCollapsed = true;
+                this.container.classList.add('collapsed');
+                this.container.classList.remove('expanded');
+            } else {
+                // Switching to desktop - always expand
+                this.isCollapsed = false;
+                this.container.classList.remove('collapsed');
+                this.container.classList.remove('expanded');
+            }
+            
+            // Update icon
+            const collapseBtn = document.getElementById('tocCollapseBtn');
+            if (collapseBtn) {
+                collapseBtn.title = this.isCollapsed ? '展开目录' : '收起目录';
+                collapseBtn.setAttribute('aria-label', this.isCollapsed ? '展开目录' : '收起目录');
+                const icon = collapseBtn.querySelector('i');
+                if (icon) {
+                    icon.className = this.isCollapsed ? 'fas fa-chevron-left' : 'fas fa-chevron-right';
+                }
+            }
+        }
     },
     
     // Build the TOC from page headings
@@ -1405,15 +1464,20 @@ const TableOfContents = {
     },
     
     // Toggle collapse state
-    toggleCollapse: function() {
+    toggleCollapse: function(forceCollapse) {
         console.log('toggleCollapse called, current state:', this.isCollapsed);
+        
+        // If forcing collapse and already collapsed, do nothing
+        if (forceCollapse === true && this.isCollapsed) {
+            return;
+        }
         
         // Store the current container dimensions before toggling
         const containerWidth = this.container.offsetWidth;
         const containerHeight = this.container.offsetHeight;
         
         // Toggle collapsed state
-        this.isCollapsed = !this.isCollapsed;
+        this.isCollapsed = forceCollapse === true ? true : !this.isCollapsed;
         console.log('New state:', this.isCollapsed);
         
         // Get the collapse button
@@ -1422,73 +1486,95 @@ const TableOfContents = {
         if (this.isCollapsed) {
             console.log('Collapsing TOC');
             
-            // First set explicit dimensions to allow smooth transition
-            this.container.style.width = `${containerWidth}px`;
-            this.container.style.height = `${containerHeight}px`;
-            
-            // Force reflow
-            this.container.offsetHeight;
-            
-            // Add collapsed class - transition will start
-            this.container.classList.add('collapsing');
-            
-            // Fade out content first
-            if (this.tocList) this.tocList.style.opacity = '0';
-            if (collapseBtn) {
-                collapseBtn.style.opacity = '0';
-                collapseBtn.title = '展开目录';
-                collapseBtn.setAttribute('aria-label', '展开目录');
-                const icon = collapseBtn.querySelector('i');
-                if (icon) {
-                    icon.className = 'fas fa-chevron-left'; // Point left when collapsed to indicate expansion direction
-                }
-            }
-            
-            // Collapse after content fades out
-            setTimeout(() => {
-                // Add collapsed class
+            // Handle mobile-specific collapse
+            if (this.isMobile) {
+                this.container.classList.remove('expanded');
                 this.container.classList.add('collapsed');
-                this.container.classList.remove('collapsing');
                 
-                // Reset inline styles after transition completes
+                // For mobile, just toggle classes immediately
+                console.log('Mobile TOC collapsed');
+            } else {
+                // Desktop collapse animation
+                // First set explicit dimensions to allow smooth transition
+                this.container.style.width = `${containerWidth}px`;
+                this.container.style.height = `${containerHeight}px`;
+                
+                // Force reflow
+                this.container.offsetHeight;
+                
+                // Add collapsed class - transition will start
+                this.container.classList.add('collapsing');
+                
+                // Fade out content first
+                if (this.tocList) this.tocList.style.opacity = '0';
+                if (collapseBtn) {
+                    collapseBtn.style.opacity = '0';
+                    collapseBtn.title = '展开目录';
+                    collapseBtn.setAttribute('aria-label', '展开目录');
+                    const icon = collapseBtn.querySelector('i');
+                    if (icon) {
+                        icon.className = 'fas fa-chevron-left'; // Point left when collapsed to indicate expansion direction
+                    }
+                }
+                
+                // Collapse after content fades out
                 setTimeout(() => {
-                    this.container.style.width = '';
-                    this.container.style.height = '';
-                }, 300);
-                
-                console.log('TOC collapsed state applied');
-            }, 200);
+                    // Add collapsed class
+                    this.container.classList.add('collapsed');
+                    this.container.classList.remove('collapsing');
+                    
+                    // Reset inline styles after transition completes
+                    setTimeout(() => {
+                        this.container.style.width = '';
+                        this.container.style.height = '';
+                    }, 300);
+                    
+                    console.log('TOC collapsed state applied');
+                }, 200);
+            }
         } else {
             console.log('Expanding TOC');
             
-            // Remove collapsed class first
-            this.container.classList.remove('collapsed');
-            this.container.classList.add('expanding');
-            
-            // Update button icon to match expanded state
-            if (collapseBtn) {
-                collapseBtn.title = '收起目录';
-                collapseBtn.setAttribute('aria-label', '收起目录');
-                const icon = collapseBtn.querySelector('i');
-                if (icon) {
-                    icon.className = 'fas fa-chevron-right'; // Point right when expanded to indicate collapse direction
+            // Handle mobile-specific expand
+            if (this.isMobile) {
+                this.container.classList.remove('collapsed');
+                this.container.classList.add('expanded');
+                
+                // For mobile, just toggle classes immediately
+                console.log('Mobile TOC expanded');
+            } else {
+                // Desktop expand animation
+                // Remove collapsed class first
+                this.container.classList.remove('collapsed');
+                this.container.classList.add('expanding');
+                
+                // Update button icon to match expanded state
+                if (collapseBtn) {
+                    collapseBtn.title = '收起目录';
+                    collapseBtn.setAttribute('aria-label', '收起目录');
+                    const icon = collapseBtn.querySelector('i');
+                    if (icon) {
+                        icon.className = 'fas fa-chevron-right'; // Point right when expanded to indicate collapse direction
+                    }
                 }
+                
+                // Let the container expand, then fade in content
+                setTimeout(() => {
+                    if (this.tocList) this.tocList.style.opacity = '1';
+                    if (collapseBtn) collapseBtn.style.opacity = '1';
+                    
+                    // Remove transitioning class
+                    this.container.classList.remove('expanding');
+                    
+                    console.log('TOC expanded state applied');
+                }, 300);
             }
-            
-            // Let the container expand, then fade in content
-            setTimeout(() => {
-                if (this.tocList) this.tocList.style.opacity = '1';
-                if (collapseBtn) collapseBtn.style.opacity = '1';
-                
-                // Remove transitioning class
-                this.container.classList.remove('expanding');
-                
-                console.log('TOC expanded state applied');
-            }, 300);
         }
         
-        // Save preference
-        localStorage.setItem('tocCollapsed', this.isCollapsed);
+        // Save preference (but only for desktop)
+        if (!this.isMobile) {
+            localStorage.setItem('tocCollapsed', this.isCollapsed);
+        }
     }
 };
 
