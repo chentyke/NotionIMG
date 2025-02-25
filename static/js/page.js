@@ -216,11 +216,15 @@ function openImageModal(originalUrl) {
     const modal = document.getElementById('imageModal');
     const modalImg = document.getElementById('modalImage');
     
+    // Reset any existing transforms/state
+    resetImageModalState();
+    
     // Show the modal first
     modal.style.display = "block";
     
     // Set loading state
     modalImg.classList.add('loading');
+    modalImg.src = ''; // Clear previous image
     
     // Preload the image
     const img = new Image();
@@ -256,24 +260,58 @@ function openImageModal(originalUrl) {
     // Start loading
     img.src = originalUrl;
     
+    // Prevent scrolling on the body
+    document.body.style.overflow = 'hidden';
+    
     // Initialize zoom and pan variables
     initImageModalControls();
+    
+    // Add ESC key listener
+    document.addEventListener('keydown', handleModalKeyDown);
 }
 
-function closeImageModal() {
+function closeImageModal(event) {
+    // If this is a direct click event and not on the modal background, ignore it
+    if (event && event.target && !event.target.classList.contains('image-modal') && 
+        !event.target.classList.contains('close-button')) {
+        return;
+    }
+    
     const modal = document.getElementById('imageModal');
     const modalImg = document.getElementById('modalImage');
     
     modal.classList.remove('visible');
     
     // Reset any transforms
-    resetImageTransforms();
+    resetImageModalState();
+    
+    // Remove ESC key listener
+    document.removeEventListener('keydown', handleModalKeyDown);
+    
+    // Re-enable scrolling on the body
+    document.body.style.overflow = '';
     
     setTimeout(() => {
         modal.style.display = "none";
         modalImg.classList.remove('loading', 'error');
         modalImg.src = '';
     }, 300);
+}
+
+// Handle ESC key for modal
+function handleModalKeyDown(event) {
+    if (event.key === 'Escape') {
+        closeImageModal();
+    }
+}
+
+// Reset modal state completely
+function resetImageModalState() {
+    const modalImg = document.getElementById('modalImage');
+    if (modalImg) {
+        modalImg.style.transform = '';
+        modalImg.style.pointerEvents = 'auto';
+    }
 }
 
 // Initialize image modal zoom and pan controls
@@ -292,7 +330,7 @@ function initImageModalControls() {
     let lastTap = 0;
     
     function handleDoubleClick(e) {
-        e.preventDefault();
+        e.stopPropagation(); // Prevent the modal close
         const currentTime = new Date().getTime();
         const tapLength = currentTime - lastTap;
         
@@ -310,7 +348,6 @@ function initImageModalControls() {
                 // Reset zoom
                 resetImageTransforms();
             }
-            e.stopPropagation(); // Prevent closing the modal
         }
         
         lastTap = currentTime;
@@ -332,6 +369,7 @@ function initImageModalControls() {
     // Mouse wheel zoom
     function handleWheel(e) {
         e.preventDefault();
+        e.stopPropagation();
         
         const rect = img.getBoundingClientRect();
         const mouseX = e.clientX - rect.left;
@@ -359,51 +397,50 @@ function initImageModalControls() {
     
     // Mouse and touch handlers for panning
     function handleMouseDown(e) {
+        // Only if click is directly on the image
+        if (e.target !== img) return;
+        
         e.preventDefault();
+        e.stopPropagation(); // Prevent closing modal
         
         if (scale > 1) {
             panning = true;
             startX = e.clientX - pointX;
             startY = e.clientY - pointY;
             
-            // Prevent image drag behavior
-            img.style.pointerEvents = 'none';
+            // Change cursor
+            img.style.cursor = 'grabbing';
         }
     }
     
     function handleMouseMove(e) {
+        if (!panning) return;
+        
         e.preventDefault();
         
-        if (panning && scale > 1) {
-            pointX = e.clientX - startX;
-            pointY = e.clientY - startY;
-            updateTransform();
-        }
+        pointX = e.clientX - startX;
+        pointY = e.clientY - startY;
+        updateTransform();
     }
     
-    function handleMouseUp() {
+    function handleMouseUp(e) {
         panning = false;
-        img.style.pointerEvents = 'auto';
+        img.style.cursor = 'grab';
     }
-    
-    // Attach event listeners
-    img.addEventListener('dblclick', handleDoubleClick);
-    img.addEventListener('wheel', handleWheel);
-    img.addEventListener('mousedown', handleMouseDown);
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
     
     // Touch events for mobile
     let lastTouchDistance = 0;
     
     function handleTouchStart(e) {
+        e.stopPropagation(); // Prevent closing modal
+        
         if (e.touches.length === 1) {
             // Single touch - prepare for panning or double-tap
-            handleMouseDown({ 
-                preventDefault: () => {}, 
-                clientX: e.touches[0].clientX, 
-                clientY: e.touches[0].clientY 
-            });
+            if (scale > 1) {
+                panning = true;
+                startX = e.touches[0].clientX - pointX;
+                startY = e.touches[0].clientY - pointY;
+            }
             
             // Handle double-tap detection
             const currentTime = new Date().getTime();
@@ -437,18 +474,22 @@ function initImageModalControls() {
                 touch2.clientX - touch1.clientX,
                 touch2.clientY - touch1.clientY
             );
+            
+            // Disable panning while pinching
+            panning = false;
         }
     }
     
     function handleTouchMove(e) {
-        if (e.touches.length === 1 && scale > 1) {
+        e.stopPropagation(); // Prevent parent elements from scrolling
+        
+        if (e.touches.length === 1 && panning) {
             // Single touch panning
             e.preventDefault();
-            handleMouseMove({ 
-                preventDefault: () => {}, 
-                clientX: e.touches[0].clientX, 
-                clientY: e.touches[0].clientY 
-            });
+            
+            pointX = e.touches[0].clientX - startX;
+            pointY = e.touches[0].clientY - startY;
+            updateTransform();
         } else if (e.touches.length === 2) {
             // Pinch zoom
             e.preventDefault();
@@ -492,40 +533,101 @@ function initImageModalControls() {
         }
     }
     
-    function handleTouchEnd() {
-        lastTouchDistance = 0;
-        handleMouseUp();
+    function handleTouchEnd(e) {
+        // If no more touches, end panning
+        if (e.touches.length === 0) {
+            panning = false;
+        }
+        
+        // If ending a pinch (going from 2 touches to 1)
+        if (e.touches.length === 1 && lastTouchDistance > 0) {
+            lastTouchDistance = 0;
+            
+            // Set up panning with the remaining touch
+            if (scale > 1) {
+                panning = true;
+                startX = e.touches[0].clientX - pointX;
+                startY = e.touches[0].clientY - pointY;
+            }
+        }
     }
     
-    // Attach touch event listeners
-    img.addEventListener('touchstart', handleTouchStart, { passive: false });
-    window.addEventListener('touchmove', handleTouchMove, { passive: false });
-    window.addEventListener('touchend', handleTouchEnd);
+    // Correct handling of modal clicks
+    modal.onclick = function(e) {
+        // Close only if clicking directly on modal background, not on image or controls
+        if (e.target === modal) {
+            closeImageModal();
+        }
+    };
     
-    // Remove event listeners when modal is closed
-    const cleanup = () => {
+    // Close button handler
+    const closeButton = modal.querySelector('.close-button');
+    if (closeButton) {
+        closeButton.onclick = function(e) {
+            e.stopPropagation();
+            closeImageModal();
+        };
+    }
+    
+    // Attach event listeners
+    img.addEventListener('dblclick', handleDoubleClick);
+    img.addEventListener('wheel', handleWheel);
+    img.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    
+    // Touch events
+    img.addEventListener('touchstart', handleTouchStart, { passive: false });
+    img.addEventListener('touchmove', handleTouchMove, { passive: false });
+    img.addEventListener('touchend', handleTouchEnd);
+    
+    // Set initial cursor style when zoomed
+    if (scale > 1) {
+        img.style.cursor = 'grab';
+    }
+    
+    // Store cleanup function for later use
+    modal._cleanupFunction = function() {
         img.removeEventListener('dblclick', handleDoubleClick);
         img.removeEventListener('wheel', handleWheel);
         img.removeEventListener('mousedown', handleMouseDown);
-        window.removeEventListener('mousemove', handleMouseMove);
-        window.removeEventListener('mouseup', handleMouseUp);
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
         img.removeEventListener('touchstart', handleTouchStart);
-        window.removeEventListener('touchmove', handleTouchMove);
-        window.removeEventListener('touchend', handleTouchEnd);
-        
-        // Remove this once-only event listener
-        modal.removeEventListener('transitionend', cleanup);
+        img.removeEventListener('touchmove', handleTouchMove);
+        img.removeEventListener('touchend', handleTouchEnd);
     };
     
-    modal.addEventListener('transitionend', cleanup, { once: true });
+    // Cleanup event listeners when modal is hidden
+    modal.addEventListener('transitionend', function handler(e) {
+        if (e.propertyName === 'opacity' && !modal.classList.contains('visible')) {
+            if (typeof modal._cleanupFunction === 'function') {
+                modal._cleanupFunction();
+                modal._cleanupFunction = null;
+            }
+            modal.removeEventListener('transitionend', handler);
+        }
+    });
 }
 
-// Close modal when pressing Escape
-document.addEventListener('keydown', function(event) {
+// Remove previous document-level event listener for Escape key
+// and replace with the function above
+document.removeEventListener('keydown', function(event) {
     if (event.key === 'Escape') {
         closeImageModal();
     }
 });
+
+// Update the download button to use stopPropagation
+const modalDownloadButton = document.getElementById('modalDownloadButton');
+if (modalDownloadButton) {
+    // Replace the onclick attribute with a safer event listener
+    modalDownloadButton.onclick = function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        downloadModalImage(event);
+    };
+}
 
 // Add popstate listener for browser history
 window.addEventListener('popstate', () => {

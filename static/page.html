@@ -102,17 +102,20 @@
     </div>
 
     <!-- Image Modal with enhanced features -->
-    <div id="imageModal" class="image-modal" onclick="closeImageModal()">
-        <span class="close-button" onclick="closeImageModal()" aria-label="关闭图片预览">×</span>
-        <img id="modalImage" class="loading" src="" alt="Full size image">
-        <div class="modal-instructions">
-            <div class="instruction desktop-only">双击图片放大 / 滚轮缩放 / 拖动平移</div>
-            <div class="instruction mobile-only">双指缩放 / 拖动平移 / 双击放大</div>
+    <div id="imageModal" class="image-modal">
+        <div class="modal-backdrop" onclick="closeImageModal()"></div>
+        <div class="modal-content">
+            <button class="close-button" aria-label="关闭图片预览">×</button>
+            <img id="modalImage" class="loading" src="" alt="Full size image">
+            <div class="modal-instructions">
+                <div class="instruction desktop-only">双击图片放大 / 滚轮缩放 / 拖动平移</div>
+                <div class="instruction mobile-only">双指缩放 / 拖动平移 / 双击放大</div>
+            </div>
+            <button id="modalDownloadButton" class="modal-download-button" aria-label="下载原图">
+                <i class="fas fa-download"></i>
+                <span>下载原图</span>
+            </button>
         </div>
-        <button id="modalDownloadButton" class="modal-download-button" onclick="downloadModalImage(event)" aria-label="下载原图">
-            <i class="fas fa-download"></i>
-            <span>下载原图</span>
-        </button>
     </div>
 </body>
 </html> 
