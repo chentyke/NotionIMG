@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>未找到页面</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .error-container {
+            transition: all 0.3s ease-out;
+        }
+        .back-button {
+            transition: all 0.2s ease-out;
+        }
+        .back-button:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center">
+    <div class="container mx-auto px-4 py-8 max-w-lg">
+        <div class="error-container bg-white rounded-xl shadow-md overflow-hidden">
+            <div class="p-8 text-center">
+                <div class="text-red-500 mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                </div>
+                <h1 id="errorTitle" class="text-3xl font-bold mb-4 text-gray-800">未找到页面</h1>
+                <p id="errorMessage" class="text-gray-600 mb-6">没有找到与标签 "<span id="suffixName" class="font-semibold"></span>" 相关的页面</p>
+                <div class="flex justify-center">
+                    <button onclick="window.location.href='/'" class="back-button bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-6 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300">
+                        返回首页
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 获取当前 suffix
+        const suffix = window.location.pathname.substring(1);
+        
+        // 设置错误信息
+        document.getElementById('suffixName').textContent = suffix;
+        document.title = `未找到标签: ${suffix}`;
+    </script>
+</body>
+</html> 

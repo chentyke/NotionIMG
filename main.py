@@ -713,7 +713,8 @@ async def read_suffix_pages(suffix: str):
         
         if not pages:
             logger.warning(f"No pages found for suffix '{suffix}'")
-            raise HTTPException(status_code=404, detail="No pages found for this suffix")
+            # 返回自定义错误页面，而不是抛出 HTTPException
+            return FileResponse("static/suffix_not_found.html")
         
         logger.info(f"Found {len(pages)} pages for suffix '{suffix}'")
         for page in pages:
@@ -734,7 +735,6 @@ async def read_suffix_pages(suffix: str):
         raise
     except Exception as e:
         logger.error(f"Error processing suffix route '{suffix}': {str(e)}")
-        logger.error("Stack trace:", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.get("/api/pages")
