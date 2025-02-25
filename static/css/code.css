@@ -1,0 +1,107 @@
+.prose pre {
+    background-color: var(--code-bg);
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    margin: 0.75rem 0;
+    overflow-x: auto;
+    position: relative;
+    text-align: left;
+    line-height: 1.4;
+}
+
+.language-label {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.75rem;
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    text-transform: lowercase;
+}
+
+.prose pre code {
+    display: block;
+    text-align: left;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.875em;
+    line-height: 1.5;
+    white-space: pre;
+    padding: 0;
+    margin: 1.25rem 0 0;
+}
+
+.copy-button {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+    opacity: 0;
+}
+
+.prose pre:hover .copy-button {
+    opacity: 1;
+}
+
+.copy-button:hover {
+    background-color: var(--hover-bg);
+    border-color: var(--border-color);
+}
+
+.copy-button.copied {
+    background-color: var(--success-color);
+    color: var(--bg-secondary);
+    border-color: var(--success-border);
+}
+
+/* Dark mode code highlighting */
+@media (prefers-color-scheme: dark) {
+    .prose pre {
+        background-color: #1e1e1e;
+        border: 1px solid #2d2d2d;
+    }
+
+    .prose pre code {
+        color: #e4e4e4;
+    }
+
+    .language-label {
+        color: #9ca3af;
+    }
+
+    .copy-button {
+        background-color: #2d2d2d;
+        border-color: #404040;
+        color: #e4e4e4;
+    }
+
+    .copy-button:hover {
+        background-color: #404040;
+        border-color: #4a4a4a;
+    }
+
+    .copy-button.copied {
+        background-color: #059669;
+        color: #ffffff;
+        border-color: #047857;
+    }
+
+    /* 代码高亮颜色 */
+    .prose pre .keyword { color: #569cd6; }
+    .prose pre .string { color: #ce9178; }
+    .prose pre .number { color: #b5cea8; }
+    .prose pre .comment { color: #6a9955; }
+    .prose pre .function { color: #dcdcaa; }
+    .prose pre .class { color: #4ec9b0; }
+    .prose pre .operator { color: #d4d4d4; }
+    .prose pre .punctuation { color: #d4d4d4; }
+    .prose pre .variable { color: #9cdcfe; }
+    .prose pre .property { color: #9cdcfe; }
+    .prose pre .constant { color: #4fc1ff; }
+} 

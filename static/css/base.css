@@ -1,0 +1,231 @@
+:root {
+    /* Light mode colors */
+    --bg-primary: #f9fafb;
+    --bg-secondary: #ffffff;
+    --text-primary: #111827;
+    --text-secondary: #4b5563;
+    --text-tertiary: #6B7280;
+    --border-color: #E5E7EB;
+    --link-color: #2563EB;
+    --link-hover-color: #1D4ED8;
+    --link-color-rgb: 37, 99, 235;
+    --success-color: #10B981;
+    --success-border: #059669;
+    --code-bg: #f3f4f6;
+    --hover-bg: #f3f4f6;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        /* Dark mode colors */
+        --bg-primary: #111827;
+        --bg-secondary: #1f2937;
+        --text-primary: #f9fafb;
+        --text-secondary: #e5e7eb;
+        --text-tertiary: #9ca3af;
+        --border-color: #374151;
+        --link-color: #60a5fa;
+        --link-hover-color: #93c5fd;
+        --link-color-rgb: 96, 165, 250;
+        --success-color: #059669;
+        --success-border: #10B981;
+        --code-bg: #1f2937;
+        --hover-bg: #374151;
+        --shadow-color: rgba(0, 0, 0, 0.3);
+    }
+}
+
+body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.container {
+    background-color: var(--bg-primary);
+}
+
+.bg-gray-50 {
+    background-color: var(--bg-primary) !important;
+}
+
+.bg-white {
+    background-color: var(--bg-secondary) !important;
+}
+
+/* Add smooth transition for color scheme changes */
+* {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Mobile optimizations */
+@media (max-width: 640px) {
+    .container.mx-auto {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    .bg-white {
+        border-radius: 0.5rem;
+    }
+    
+    .p-6 {
+        padding: 1rem;
+    }
+}
+
+/* Better touch focus styles on mobile */
+@media (hover: none) {
+    .toggle-header:active {
+        background-color: var(--hover-bg);
+    }
+    
+    .prose a:active {
+        color: var(--link-hover-color);
+    }
+}
+
+/* Mobile only/desktop only display helpers */
+@media (hover: hover) {
+    .mobile-only {
+        display: none;
+    }
+}
+
+@media (hover: none) {
+    .desktop-only {
+        display: none;
+    }
+}
+
+/* Text colors */
+.text-default { color: inherit; }
+.text-gray { color: rgb(120, 119, 116); }
+.text-brown { color: rgb(159, 107, 83); }
+.text-orange { color: rgb(217, 115, 13); }
+.text-yellow { color: rgb(203, 145, 47); }
+.text-green { color: rgb(68, 131, 97); }
+.text-blue { color: rgb(51, 126, 169); }
+.text-purple { color: rgb(144, 101, 176); }
+.text-pink { color: rgb(193, 76, 138); }
+.text-red { color: rgb(212, 76, 71); }
+
+/* Background colors */
+.bg-default { background-color: transparent; }
+.bg-gray-background { background-color: rgb(241, 241, 239); }
+.bg-brown-background { background-color: rgb(244, 238, 238); }
+.bg-orange-background { background-color: rgb(251, 236, 221); }
+.bg-yellow-background { background-color: rgb(251, 243, 219); }
+.bg-green-background { background-color: rgb(237, 243, 236); }
+.bg-blue-background { background-color: rgb(231, 243, 248); }
+.bg-purple-background { background-color: rgb(244, 240, 247); }
+.bg-pink-background { background-color: rgb(249, 238, 243); }
+.bg-red-background { background-color: rgb(253, 235, 236); }
+
+/* Dark mode color adjustments */
+@media (prefers-color-scheme: dark) {
+    .text-gray { color: rgb(155, 155, 155); }
+    .text-brown { color: rgb(186, 133, 111); }
+    .text-orange { color: rgb(217, 135, 63); }
+    .text-yellow { color: rgb(203, 165, 87); }
+    .text-green { color: rgb(108, 171, 142); }
+    .text-blue { color: rgb(91, 166, 209); }
+    .text-purple { color: rgb(174, 131, 206); }
+    .text-pink { color: rgb(223, 106, 168); }
+    .text-red { color: rgb(235, 106, 101); }
+    
+    .bg-gray-background { background-color: rgba(155, 155, 155, 0.15); }
+    .bg-brown-background { background-color: rgba(186, 133, 111, 0.15); }
+    .bg-orange-background { background-color: rgba(217, 135, 63, 0.15); }
+    .bg-yellow-background { background-color: rgba(203, 165, 87, 0.15); }
+    .bg-green-background { background-color: rgba(108, 171, 142, 0.15); }
+    .bg-blue-background { background-color: rgba(91, 166, 209, 0.15); }
+    .bg-purple-background { background-color: rgba(174, 131, 206, 0.15); }
+    .bg-pink-background { background-color: rgba(223, 106, 168, 0.15); }
+    .bg-red-background { background-color: rgba(235, 106, 101, 0.15); }
+}
+
+/* Add keyframe animations */
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+.animate-pulse {
+    background: linear-gradient(90deg, 
+        var(--border-color) 0%, 
+        var(--bg-secondary) 50%, 
+        var(--border-color) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+}
+
+/* Fix potential dark mode issues */
+@media (prefers-color-scheme: dark) {
+    .image-placeholder {
+        background-color: var(--hover-bg);
+    }
+    
+    .animate-pulse {
+        background: linear-gradient(90deg, 
+            var(--hover-bg) 0%, 
+            var(--bg-secondary) 50%, 
+            var(--hover-bg) 100%);
+    }
+    
+    .image-error {
+        background-color: rgba(239, 68, 68, 0.2);
+    }
+}
+
+.border-gray-200 {
+    border-color: var(--border-color) !important;
+}
+
+/* Dark mode specific overrides */
+@media (prefers-color-scheme: dark) {
+    .text-gray-500 {
+        color: var(--text-tertiary) !important;
+    }
+
+    .text-blue-500 {
+        color: var(--link-color) !important;
+    }
+
+    .text-blue-600 {
+        color: var(--link-color) !important;
+    }
+
+    .hover\:text-blue-600:hover {
+        color: var(--link-hover-color) !important;
+    }
+} 
