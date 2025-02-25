@@ -596,7 +596,6 @@ const PageTransition = {
             // Reinitialize TOC after transition
             TableOfContents.init();
             TableOfContents.build();
-            TableOfContents.updatePosition();
             
             // Restore scroll position if needed
             if (sessionStorage.getItem('lastScrollPos')) {
@@ -1263,31 +1262,32 @@ const TableOfContents = {
         
         if (this.isCollapsed) {
             this.container.classList.add('collapsed');
+            // Update button title and icon
+            const collapseBtn = document.getElementById('tocCollapseBtn');
+            if (collapseBtn) {
+                collapseBtn.title = '展开目录';
+                collapseBtn.setAttribute('aria-label', '展开目录');
+                const icon = collapseBtn.querySelector('i');
+                if (icon) {
+                    icon.className = 'fas fa-chevron-right';
+                }
+            }
         } else {
             this.container.classList.remove('collapsed');
+            // Update button title and icon
+            const collapseBtn = document.getElementById('tocCollapseBtn');
+            if (collapseBtn) {
+                collapseBtn.title = '收起目录';
+                collapseBtn.setAttribute('aria-label', '收起目录');
+                const icon = collapseBtn.querySelector('i');
+                if (icon) {
+                    icon.className = 'fas fa-chevron-left';
+                }
+            }
         }
         
         // Save preference
         localStorage.setItem('tocCollapsed', this.isCollapsed);
-    },
-    
-    // Update TOC position based on scroll
-    updatePosition: function() {
-        if (!this.container) return;
-        
-        const scrollTop = window.scrollY;
-        
-        // Get container position
-        const rect = this.container.getBoundingClientRect();
-        
-        // Adjust top position to keep it in view
-        const minTop = 80; // Min distance from top (adjust for header)
-        const maxTop = window.innerHeight - rect.height - 20; // Max top position
-        
-        let newTop = Math.max(minTop, Math.min(2 + scrollTop, maxTop));
-        
-        // Apply new position
-        this.container.style.top = `${newTop}px`;
     }
 };
 
@@ -1488,14 +1488,6 @@ async function loadPage(pageId = null) {
         // Initialize TOC after content is rendered
         TableOfContents.init();
         TableOfContents.build();
-        
-        // Update TOC position on scroll
-        window.addEventListener('scroll', () => {
-            TableOfContents.updatePosition();
-        });
-        
-        // Initial update of TOC position
-        TableOfContents.updatePosition();
         
         // Show container with animation when everything is loaded
         updateLoadingProgress(90);
@@ -1747,9 +1739,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // 更新滚动位置
         lastScrollTop = scrollTop;
-        
-        // Update TOC position on scroll
-        TableOfContents.updatePosition();
     });
     
     // Initial check on page load
