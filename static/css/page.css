@@ -401,9 +401,10 @@ body {
 }
 .page-cover {
     opacity: 0;
-    transition: opacity 0.3s ease-out;
+    transform: translateY(-5px);
+    transition: opacity 0.5s ease-out, transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     width: calc(100% + 3rem);
-    height: 150px;
+    height: 180px;
     margin: -1.5rem -1.5rem 1.5rem -1.5rem;
     border-radius: 0.75rem 0.75rem 0 0;
     overflow: hidden;
@@ -416,13 +417,24 @@ body {
     height: 100%;
     object-fit: cover;
     opacity: 0;
-    transition: opacity 0.3s ease-out;
+    transform: scale(1.05);
+    transition: opacity 0.5s ease-out, transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.page-cover.loaded {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.page-cover.loaded img {
+    opacity: 1;
+    transform: scale(1);
 }
 
 @media (max-width: 640px) {
     .page-cover {
         width: calc(100% + 2rem);
-        height: 100px;
+        height: 140px;
         margin: -1rem -1rem 1rem -1rem;
         border-radius: 0.5rem 0.5rem 0 0;
     }
@@ -470,7 +482,7 @@ body {
 .prose ul, .prose ol {
     list-style-position: outside;
     padding-left: 1.5rem;
-    margin: 0.5rem 0;
+    margin: 0.75rem 0;
 }
 
 .prose ul {
@@ -482,392 +494,130 @@ body {
 }
 
 .prose li {
-    margin: 0.25rem 0;
+    margin: 0.375rem 0;
     padding-left: 0.25rem;
-    line-height: 1.5;
-    display: list-item;  /* 确保正确的列表项显示 */
+    line-height: 1.6;
+    position: relative;
 }
 
-/* 修复列表标记与内容的对齐问题 */
 .prose li::marker {
-    line-height: 1.5;  /* 与内容保持相同的行高 */
-    vertical-align: top;  /* 确保标记顶部对齐 */
-    font-size: 1em;  /* 确保标记大小与内容一致 */
-    unicode-bidi: isolate;  /* 处理标记的文字方向 */
-    font-variant-numeric: tabular-nums;  /* 确保数字等宽 */
-    text-align: end;  /* 确保数字右对齐 */
     color: var(--text-tertiary);
 }
 
-.prose .list-item-content {
-    display: inline-block;
-    vertical-align: top;
-    line-height: 1.5;  /* 与列表项保持相同的行高 */
-}
-
-/* 确保嵌套列表的对齐 */
 .prose .nested-list {
-    margin: 0.25rem 0 0.25rem 1.25rem;
-}
-
-.prose .nested-list li {
-    margin: 0.25rem 0;
-}
-
-/* 处理多行内容的对齐 */
-.prose li > p,
-.prose li > div {
-    display: inline-block;
-    vertical-align: top;
-    margin: 0;
-    line-height: 1.5;
-}
-
-@media (prefers-color-scheme: dark) {
-    .prose li::marker {
-        color: var(--text-secondary);
-    }
+    margin: 0.375rem 0 0.375rem 1.25rem;
 }
 
 .prose .nested-content {
-    margin-top: 0.5rem;
-    margin-bottom: 0.5rem;
+    margin-top: 0.375rem;
+    margin-bottom: 0.375rem;
 }
 
-.prose .nested-list {
-    margin: 0.25rem 0 0.25rem 1.5rem;
-}
-
-/* Dark mode adjustments */
-@media (prefers-color-scheme: dark) {
-    .prose li.list-item::marker {
-        color: var(--text-secondary);
-    }
-}
-.prose ul ul, .prose ol ol,
-.prose ul ol, .prose ol ul {
-    margin: 0.25rem 0 0.25rem 0.5rem;
-}
-.prose li {
-    margin: 0.25rem 0;
-    padding-left: 0.25rem;
-}
-.prose li::marker {
-    color: #6B7280;
-}
-.prose li > p {
-    margin: 0;
-    display: inline;
-}
-.prose li > * {
-    margin-top: 0.25rem;
-    margin-bottom: 0.25rem;
-}
-.image-modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 1000;
-    overflow: hidden;
-}
-.modal-backdrop {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0);
-    transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    cursor: zoom-out;
-}
-.image-modal.visible .modal-backdrop {
-    background-color: rgba(0, 0, 0, 0.9);
-}
-.modal-content {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1;
-}
-.image-modal img {
-    max-width: 90%;
-    max-height: 90vh;
-    border-radius: 0.5rem;
-    opacity: 0;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    transform: scale(0.9);
-    will-change: transform, opacity;
-    object-fit: contain;
-    cursor: grab;
-}
-.image-modal img.loading {
-    filter: blur(5px);
-}
-.image-modal img.error {
-    border: 2px solid #EF4444;
-}
-.image-modal.visible img {
-    opacity: 1;
-    transform: scale(1);
-}
-.close-button {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    color: white;
-    font-size: 2rem;
-    background-color: rgba(0, 0, 0, 0.5);
-    border: none;
-    width: 2.5rem;
-    height: 2.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 9999px;
-    cursor: pointer;
-    z-index: 1001;
-    transition: background-color 0.2s;
-    opacity: 0.8;
-}
-.close-button:hover {
-    background-color: rgba(0, 0, 0, 0.7);
-    opacity: 1;
-}
-.modal-instructions {
-    position: fixed;
-    bottom: 5rem;
-    left: 50%;
-    transform: translateX(-50%);
-    color: rgba(255, 255, 255, 0.7);
-    text-align: center;
-    font-size: 0.875rem;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    pointer-events: none;
-    z-index: 1001;
-}
-.image-modal.visible .modal-instructions {
-    opacity: 1;
-    transition-delay: 0.5s;
-}
-.instruction {
-    padding: 0.5rem 1rem;
-    background-color: rgba(0, 0, 0, 0.5);
-    border-radius: 2rem;
-    white-space: nowrap;
-    margin: 0.25rem 0;
-}
-/* Modal download button styles */
-.modal-download-button {
-    position: fixed;
-    bottom: 2rem;
-    right: 2rem;
-    display: flex;
-    align-items: center;
-    background-color: rgba(0, 0, 0, 0.7);
-    color: white;
-    border: none;
-    border-radius: 9999px;
-    cursor: pointer;
-    overflow: hidden;
-    padding: 0.75rem;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    z-index: 1002;
-    width: 3rem;
-    white-space: nowrap;
-    opacity: 0;
-    transform: translateY(20px);
-}
-.image-modal.visible .modal-download-button {
-    opacity: 1;
-    transform: translateY(0);
-    transition-delay: 0.2s;
-}
-.modal-download-button:hover {
-    width: 8.5rem;
-    padding-right: 1.5rem;
-    background-color: rgba(0, 0, 0, 0.8);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.modal-download-button i {
-    font-size: 1.25rem;
-    margin-right: 0;
-    transition: margin-right 0.3s ease;
-    flex-shrink: 0;
-}
-.modal-download-button:hover i {
-    margin-right: 0.75rem;
-}
-.modal-download-button span {
-    opacity: 0;
-    max-width: 0;
-    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    display: inline-block;
-}
-.modal-download-button:hover span {
-    opacity: 1;
-    max-width: 200px;
-    transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1) 0.1s, max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
+/* Mobile optimizations */
 @media (max-width: 640px) {
-    .modal-download-button {
-        width: auto;
-        padding: 0.75rem 1.5rem;
-        border-radius: 2rem;
-        bottom: 1.5rem;
-        right: 1.5rem;
-    }
-
-    .modal-download-button i {
-        margin-right: 0.75rem;
-    }
-
-    .modal-download-button span {
-        opacity: 1;
-        max-width: 200px;
+    .container.mx-auto {
+        padding-left: 1rem;
+        padding-right: 1rem;
     }
     
-    .modal-instructions {
-        bottom: 4rem;
-        font-size: 0.75rem;
-        width: 90%;
+    .bg-white {
+        border-radius: 0.5rem;
     }
     
-    .instruction {
-        padding: 0.375rem 0.75rem;
+    .p-6 {
+        padding: 1rem;
     }
     
-    .close-button {
-        top: 0.75rem;
-        right: 0.75rem;
-        width: 2rem;
-        height: 2rem;
+    .loading-progress {
+        width: 85%;
+        max-width: 280px;
+    }
+    
+    .prose h1 {
+        font-size: 1.75rem;
+        line-height: 1.3;
+    }
+    
+    .prose h2 {
         font-size: 1.5rem;
     }
+    
+    .prose h3 {
+        font-size: 1.25rem;
+    }
+    
+    .prose p {
+        font-size: 1rem;
+        line-height: 1.6;
+    }
+    
+    .image-modal img {
+        max-width: 95%;
+    }
 }
-/* Text colors */
-.text-default { color: inherit; }
-.text-gray { color: rgb(120, 119, 116); }
-.text-brown { color: rgb(159, 107, 83); }
-.text-orange { color: rgb(217, 115, 13); }
-.text-yellow { color: rgb(203, 145, 47); }
-.text-green { color: rgb(68, 131, 97); }
-.text-blue { color: rgb(51, 126, 169); }
-.text-purple { color: rgb(144, 101, 176); }
-.text-pink { color: rgb(193, 76, 138); }
-.text-red { color: rgb(212, 76, 71); }
-/* Background colors */
-.bg-default { background-color: transparent; }
-.bg-gray-background { background-color: rgb(241, 241, 239); }
-.bg-brown-background { background-color: rgb(244, 238, 238); }
-.bg-orange-background { background-color: rgb(251, 236, 221); }
-.bg-yellow-background { background-color: rgb(251, 243, 219); }
-.bg-green-background { background-color: rgb(237, 243, 236); }
-.bg-blue-background { background-color: rgb(231, 243, 248); }
-.bg-purple-background { background-color: rgb(244, 240, 247); }
-.bg-pink-background { background-color: rgb(249, 238, 243); }
-.bg-red-background { background-color: rgb(253, 235, 236); }
-/* Link styles */
-.prose a {
-    color: #2563EB;
-    text-decoration: none;
-    transition: color 0.2s;
-}
-.prose a:hover {
-    color: #1D4ED8;
-    text-decoration: underline;
-}
-/* Underline style */
-.prose u {
-    text-decoration: underline;
-    text-decoration-thickness: 0.1em;
-    text-underline-offset: 0.1em;
-}
-/* Strikethrough style */
-.prose del {
-    text-decoration: line-through;
-    text-decoration-thickness: 0.1em;
-}
-/* Bold style */
-.prose strong {
-    font-weight: 600;
-}
-/* Italic style */
-.prose em {
-    font-style: italic;
-}
-.prose table {
-    border-collapse: collapse;
-    width: 100%;
-    margin: 1.5rem 0;
-    border: 1px solid var(--border-color);
-}
-.prose th, .prose td {
-    border: 1px solid var(--border-color);
-    padding: 0.75rem 1rem;
-    text-align: left;
-}
-.prose th {
-    background-color: var(--code-bg);
-    font-weight: 600;
-    color: var(--text-primary);
-}
-.prose tr {
-    transition: background-color 0.2s ease;
-}
-.prose tr:hover {
-    background-color: var(--hover-bg);
-    color: var(--text-primary);
-}
-@media (prefers-color-scheme: dark) {
-    .prose tr:hover {
+
+/* Better touch focus styles on mobile */
+@media (hover: none) {
+    .toggle-header:active {
         background-color: var(--hover-bg);
-        color: var(--text-primary);
     }
-    .prose th {
-        background-color: var(--code-bg);
-        color: var(--text-primary);
-    }
-    .prose td {
-        color: var(--text-primary);
+    
+    .prose a:active {
+        color: var(--link-hover-color);
     }
 }
-/* Add toggle block styles */
+
+/* Fix potential dark mode issues */
+@media (prefers-color-scheme: dark) {
+    .image-placeholder {
+        background-color: var(--hover-bg);
+    }
+    
+    .animate-pulse {
+        background: linear-gradient(90deg, 
+            var(--hover-bg) 0%, 
+            var(--bg-secondary) 50%, 
+            var(--hover-bg) 100%);
+    }
+    
+    .image-error {
+        background-color: rgba(239, 68, 68, 0.2);
+    }
+}
+
+/* Optimized toggle block styles */
 .toggle-block {
     border-radius: 0.375rem;
-    margin: 0.5rem 0;
+    margin: 0.75rem 0;
     font-size: inherit;
     position: relative;
 }
+
 .toggle-header {
     display: flex;
     align-items: center;
     cursor: pointer;
-    padding: 0.25rem 0;
+    padding: 0.5rem 0.375rem;
     border-radius: 0.375rem;
-    transition: background-color 0.2s;
+    transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     min-height: 1.5em;
     color: inherit;
-    width: 100%;
     user-select: none;
 }
+
 .toggle-header:hover {
-    background-color: rgba(55, 53, 47, 0.08);
+    background-color: var(--hover-bg);
 }
+
 .toggle-icon {
     width: 1rem;
     height: 1rem;
     margin-right: 0.5rem;
-    transition: transform 0.15s ease-in;
     flex-shrink: 0;
-    opacity: 0.35;
+    opacity: 0.5;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
 .toggle-text {
     flex: 1;
     white-space: pre-wrap;
@@ -877,28 +627,30 @@ body {
     min-height: 1.5em;
     color: inherit;
 }
+
 .toggle-content {
     margin-left: 1.5rem;
     overflow: hidden;
     height: 0;
     opacity: 0;
-    transition: height 0.2s ease-out, opacity 0.1s ease-out;
+    transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     will-change: height, opacity;
 }
+
 .toggle-content-inner {
     padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
 }
+
 .toggle-block.open .toggle-icon {
     transform: rotate(90deg);
-    opacity: 0.6;
+    opacity: 0.8;
 }
+
 .toggle-block.open .toggle-content {
     opacity: 1;
-    transition: height 0.2s ease-in, opacity 0.2s ease-in;
 }
-.toggle-block .toggle-block {
-    margin-left: 0;
-}
+
 /* Add smooth transitions */
 .prose * {
     transition: all 0.2s ease-out;
@@ -1039,7 +791,7 @@ body {
     transform: translateX(-50%);
 }
 
-/* Improved mobile optimizations */
+/* Mobile optimizations */
 @media (max-width: 640px) {
     .container.mx-auto {
         padding-left: 1rem;
@@ -2099,4 +1851,287 @@ body {
     opacity: 1;
     max-width: 200px;
     transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1) 0.1s, max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Add improved page transition styles */
+.page-transition {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--bg-primary);
+    z-index: 1999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.page-transition.active {
+    opacity: 0.9;
+    pointer-events: auto;
+}
+
+/* Add improved loading overlay styles */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--bg-primary);
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    opacity: 1;
+    transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.loading-overlay.fade-out {
+    opacity: 0;
+}
+
+.loading-overlay .loading-spinner {
+    width: 32px;
+    height: 32px;
+}
+
+.loading-overlay .loading-text {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    margin-top: 1rem;
+    opacity: 0.8;
+    font-weight: 500;
+}
+
+.loading-progress {
+    width: 220px;
+    height: 3px;
+    background-color: var(--border-color);
+    border-radius: 1.5px;
+    overflow: hidden;
+    margin-top: 1rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.loading-progress-bar {
+    height: 100%;
+    background-color: var(--link-color);
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: width;
+}
+
+/* Add improved image error styles */
+.image-error {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background-color: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.5);
+    color: #EF4444;
+    font-size: 0.875rem;
+    border-radius: 0.5rem;
+    text-align: center;
+}
+
+/* Improved container transitions */
+.container {
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.4s ease-out, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.container.loaded {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Mobile only/desktop only display helpers */
+@media (hover: hover) {
+    .mobile-only {
+        display: none;
+    }
+}
+
+@media (hover: none) {
+    .desktop-only {
+        display: none;
+    }
+}
+
+/* Optimized list styles for better rendering */
+.prose ul,
+.prose ol {
+    list-style-position: outside;
+    padding-left: 1.5rem;
+    margin: 0.75rem 0;
+}
+
+.prose ul {
+    list-style-type: disc;
+}
+
+.prose ol {
+    list-style-type: decimal;
+}
+
+.prose li {
+    margin: 0.375rem 0;
+    padding-left: 0.25rem;
+    line-height: 1.6;
+    position: relative;
+}
+
+.prose li::marker {
+    color: var(--text-tertiary);
+}
+
+.prose .nested-list {
+    margin: 0.375rem 0 0.375rem 1.25rem;
+}
+
+.prose .nested-content {
+    margin-top: 0.375rem;
+    margin-bottom: 0.375rem;
+}
+
+/* Mobile optimizations */
+@media (max-width: 640px) {
+    .container.mx-auto {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    .bg-white {
+        border-radius: 0.5rem;
+    }
+    
+    .p-6 {
+        padding: 1rem;
+    }
+    
+    .loading-progress {
+        width: 85%;
+        max-width: 280px;
+    }
+    
+    .prose h1 {
+        font-size: 1.75rem;
+        line-height: 1.3;
+    }
+    
+    .prose h2 {
+        font-size: 1.5rem;
+    }
+    
+    .prose h3 {
+        font-size: 1.25rem;
+    }
+    
+    .prose p {
+        font-size: 1rem;
+        line-height: 1.6;
+    }
+    
+    .image-modal img {
+        max-width: 95%;
+    }
+}
+
+/* Better touch focus styles on mobile */
+@media (hover: none) {
+    .toggle-header:active {
+        background-color: var(--hover-bg);
+    }
+    
+    .prose a:active {
+        color: var(--link-hover-color);
+    }
+}
+
+/* Fix potential dark mode issues */
+@media (prefers-color-scheme: dark) {
+    .image-placeholder {
+        background-color: var(--hover-bg);
+    }
+    
+    .animate-pulse {
+        background: linear-gradient(90deg, 
+            var(--hover-bg) 0%, 
+            var(--bg-secondary) 50%, 
+            var(--hover-bg) 100%);
+    }
+    
+    .image-error {
+        background-color: rgba(239, 68, 68, 0.2);
+    }
+}
+
+/* Optimized toggle block styles */
+.toggle-block {
+    border-radius: 0.375rem;
+    margin: 0.75rem 0;
+    font-size: inherit;
+    position: relative;
+}
+
+.toggle-header {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 0.5rem 0.375rem;
+    border-radius: 0.375rem;
+    transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    min-height: 1.5em;
+    color: inherit;
+    user-select: none;
+}
+
+.toggle-header:hover {
+    background-color: var(--hover-bg);
+}
+
+.toggle-icon {
+    width: 1rem;
+    height: 1rem;
+    margin-right: 0.5rem;
+    flex-shrink: 0;
+    opacity: 0.5;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.toggle-text {
+    flex: 1;
+    white-space: pre-wrap;
+    word-break: break-word;
+    caret-color: rgb(55, 53, 47);
+    padding: 3px 2px;
+    min-height: 1.5em;
+    color: inherit;
+}
+
+.toggle-content {
+    margin-left: 1.5rem;
+    overflow: hidden;
+    height: 0;
+    opacity: 0;
+    transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: height, opacity;
+}
+
+.toggle-content-inner {
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+}
+
+.toggle-block.open .toggle-icon {
+    transform: rotate(90deg);
+    opacity: 0.8;
+}
+
+.toggle-block.open .toggle-content {
+    opacity: 1;
 } 

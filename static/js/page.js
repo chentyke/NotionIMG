@@ -272,7 +272,7 @@ function openImageModal(originalUrl) {
 
 function closeImageModal(event) {
     // If this is a direct click event and not on the modal background, ignore it
-    if (event && event.target && !event.target.classList.contains('image-modal') && 
+    if (event && event.target && !event.target.classList.contains('modal-backdrop') && 
         !event.target.classList.contains('close-button')) {
         return;
     }
@@ -552,22 +552,13 @@ function initImageModalControls() {
         }
     }
     
-    // Correct handling of modal clicks
+    // Correct handling of modal backdrop clicks
     modal.onclick = function(e) {
         // Close only if clicking directly on modal background, not on image or controls
-        if (e.target === modal) {
+        if (e.target.classList.contains('modal-backdrop')) {
             closeImageModal();
         }
     };
-    
-    // Close button handler
-    const closeButton = modal.querySelector('.close-button');
-    if (closeButton) {
-        closeButton.onclick = function(e) {
-            e.stopPropagation();
-            closeImageModal();
-        };
-    }
     
     // Attach event listeners
     img.addEventListener('dblclick', handleDoubleClick);
@@ -823,7 +814,7 @@ async function renderBlock(block) {
                     data-src="${block.image_url}" 
                     alt="${block.caption || 'Page image'}" 
                     onclick="openImageModal('${block.image_url}')"
-                    title="Click to view full size">
+                    title="点击查看大图">
                 ${block.caption ? `<figcaption class="text-sm text-gray-500 mt-1">${block.caption}</figcaption>` : ''}
             </figure>`;
         case 'divider':
@@ -2193,4 +2184,26 @@ window.addEventListener('load', () => {
         TableOfContents.init();
         TableOfContents.build();
     }, 500);
+});
+
+// Initialize image modal controls
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize the close button
+    const closeButton = document.querySelector('.close-button');
+    if (closeButton) {
+        closeButton.onclick = function(e) {
+            e.stopPropagation();
+            closeImageModal();
+        };
+    }
+    
+    // Initialize the download button
+    const modalDownloadButton = document.getElementById('modalDownloadButton');
+    if (modalDownloadButton) {
+        modalDownloadButton.onclick = function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            downloadModalImage(event);
+        };
+    }
 }); 
