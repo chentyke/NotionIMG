@@ -1039,6 +1039,16 @@ const TableOfContents = {
             this.container.classList.add('collapsed');
         }
         
+        // Check floating header visibility and adjust TOC position accordingly
+        if (window.innerWidth >= 1201) {
+            const floatingHeader = document.getElementById('floatingHeader');
+            if (floatingHeader && floatingHeader.classList.contains('visible')) {
+                this.container.style.top = '4rem';
+            } else {
+                this.container.style.top = '2rem';
+            }
+        }
+        
         // Create intersection observer for headings
         this.setupIntersectionObserver();
     },
@@ -1735,6 +1745,16 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             // 当主标题在视口内时，立即隐藏
             floatingHeader.classList.remove('visible');
+        }
+        
+        // 动态调整目录位置，避免被浮动标题栏遮挡
+        const tocContainer = document.getElementById('tableOfContents');
+        if (tocContainer && window.innerWidth >= 1201) {
+            if (floatingHeader.classList.contains('visible')) {
+                tocContainer.style.top = '4rem';
+            } else {
+                tocContainer.style.top = '2rem'; // 恢复默认位置
+            }
         }
         
         // 更新滚动位置

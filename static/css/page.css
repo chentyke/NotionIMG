@@ -1756,10 +1756,11 @@ body {
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1), top 0.25s ease-out;
     z-index: 90; /* Lower than floating header (1000) */
     opacity: 0;
     transform: translateX(20px);
+    will-change: opacity, transform, top;
 }
 
 .toc-container:hover {
@@ -1928,6 +1929,13 @@ body {
 @media (min-width: 1201px) {
     .floating-header.visible ~ .container .toc-container {
         top: 4rem; /* Push TOC down when floating header is visible */
+    }
+}
+
+/* Fixed rule for better positioning of the TOC when floating header is visible */
+@media (min-width: 1201px) {
+    body .floating-header.visible ~ .toc-container {
+        top: 4rem !important; /* Push TOC down when floating header is visible */
     }
 }
 
