@@ -1750,13 +1750,24 @@ const TableOfContents = {
                         this.container.classList.add('expanded');
                         this.container.style.animation = 'slideInTocMobile 0.35s cubic-bezier(0.25, 1, 0.5, 1)';
                         
-                        // 确保内容可见 - 重复调用确保生效
+                        // 检查目录是否有内容
+                        this.checkTocContent();
+                        
+                        // 立即确保内容可见
                         this.ensureTocContentVisible();
                         
-                        // 稍后再次确保内容可见，避免动画过程中的问题
+                        // 再次调用确保内容可见 - 连续调用多次以确保生效
                         setTimeout(() => {
                             this.ensureTocContentVisible();
                         }, 50);
+                        
+                        setTimeout(() => {
+                            this.ensureTocContentVisible();
+                        }, 150);
+                        
+                        setTimeout(() => {
+                            this.ensureTocContentVisible();
+                        }, 300);
                         
                         // 动画结束后再次确保内容可见
                         this.container.addEventListener('animationend', () => {
@@ -1784,13 +1795,24 @@ const TableOfContents = {
                     this.container.classList.add('expanded');
                     this.container.style.animation = 'slideInTocMobile 0.35s cubic-bezier(0.25, 1, 0.5, 1)';
                     
-                    // 确保内容可见 - 重复调用确保生效
+                    // 检查目录是否有内容
+                    this.checkTocContent();
+                    
+                    // 立即确保内容可见
                     this.ensureTocContentVisible();
                     
-                    // 稍后再次确保内容可见，避免动画过程中的问题
+                    // 再次调用确保内容可见 - 连续调用多次以确保生效
                     setTimeout(() => {
                         this.ensureTocContentVisible();
                     }, 50);
+                    
+                    setTimeout(() => {
+                        this.ensureTocContentVisible();
+                    }, 150);
+                    
+                    setTimeout(() => {
+                        this.ensureTocContentVisible();
+                    }, 300);
                     
                     // 动画结束后再次确保内容可见
                     this.container.addEventListener('animationend', () => {
@@ -1841,24 +1863,45 @@ const TableOfContents = {
     ensureTocContentVisible: function() {
         if (!this.tocList) return;
         
-        // 确保目录列表可见
-        this.tocList.style.opacity = '1';
-        this.tocList.style.visibility = 'visible';
-        this.tocList.style.display = 'block';
+        console.log('Ensuring TOC content visibility');
         
-        // 确保所有目录项可见
-        const tocItems = this.tocList.querySelectorAll('.toc-item, .toc-link');
-        tocItems.forEach(item => {
-            item.style.opacity = '1';
-            item.style.visibility = 'visible';
-            item.style.display = 'block';
-            item.style.color = ''; // Clear any inline color that might be overriding
-            item.style.textAlign = 'left'; // Ensure text alignment
-            item.style.margin = '0.5rem 0'; // Add consistent margins
-        });
-        
-        // 确保目录内容区域可滚动
+        // 查找TOC头部和内容区域
+        const tocHeader = document.querySelector('.toc-header');
         const tocContent = document.querySelector('.toc-content');
+        
+        // 先确保容器本身的样式正确
+        if (this.container) {
+            this.container.style.opacity = '1';
+            this.container.style.visibility = 'visible';
+            this.container.style.display = 'flex';
+            this.container.style.flexDirection = 'column';
+            this.container.style.zIndex = '999';
+            this.container.style.backgroundColor = 'var(--bg-secondary)';
+            
+            // 对于移动设备，固定位置
+            if (this.isMobile) {
+                this.container.style.position = 'fixed';
+                this.container.style.bottom = '0';
+                this.container.style.left = '0';
+                this.container.style.width = '100vw';
+                this.container.style.height = '50vh';
+            }
+        }
+        
+        // 确保头部可见
+        if (tocHeader) {
+            tocHeader.style.opacity = '1';
+            tocHeader.style.visibility = 'visible';
+            tocHeader.style.display = 'flex';
+            tocHeader.style.width = '100%';
+            tocHeader.style.zIndex = '1000';
+            tocHeader.style.justifyContent = 'space-between';
+            tocHeader.style.alignItems = 'center';
+            tocHeader.style.backgroundColor = 'var(--bg-secondary)';
+            tocHeader.style.borderBottom = '1px solid var(--border-color)';
+        }
+        
+        // 确保内容区域可见且可滚动
         if (tocContent) {
             tocContent.style.opacity = '1';
             tocContent.style.visibility = 'visible';
@@ -1867,9 +1910,91 @@ const TableOfContents = {
             tocContent.style.maxHeight = this.isMobile ? 'calc(50vh - 60px)' : '';
             tocContent.style.height = 'auto';
             tocContent.style.width = '100%';
+            tocContent.style.flex = '1';
+            tocContent.style.zIndex = '1000';
+            tocContent.style.backgroundColor = 'var(--bg-secondary)';
         }
         
-        console.log('TOC content visibility ensured');
+        // 确保目录列表可见
+        if (this.tocList) {
+            this.tocList.style.opacity = '1';
+            this.tocList.style.visibility = 'visible';
+            this.tocList.style.display = 'block';
+            this.tocList.style.width = '100%';
+            this.tocList.style.listStyle = 'none';
+            this.tocList.style.padding = '0.5rem';
+            this.tocList.style.margin = '0';
+            this.tocList.style.zIndex = '1001';
+            this.tocList.style.backgroundColor = 'var(--bg-secondary)';
+        }
+        
+        // 确保所有目录项可见 - 更彻底的处理
+        const tocItems = this.tocList.querySelectorAll('.toc-item, .toc-link');
+        tocItems.forEach(item => {
+            item.style.opacity = '1';
+            item.style.visibility = 'visible';
+            item.style.display = 'block';
+            item.style.color = 'var(--text-primary)';
+            item.style.textAlign = 'left';
+            item.style.margin = '0.5rem 0';
+            item.style.zIndex = '1002';
+            
+            // 如果是链接元素，添加更多样式
+            if (item.classList.contains('toc-link')) {
+                item.style.padding = '0.75rem 1.5rem';
+                item.style.fontSize = '0.95rem';
+                item.style.lineHeight = '1.4';
+                item.style.borderLeft = '3px solid transparent';
+                item.style.backgroundColor = 'transparent';
+                item.style.textDecoration = 'none';
+            }
+            
+            // 处理不同级别的标题
+            if (item.classList.contains('toc-level-1')) {
+                item.style.fontWeight = '600';
+            } else if (item.classList.contains('toc-level-2')) {
+                item.style.paddingLeft = '2rem';
+            } else if (item.classList.contains('toc-level-3')) {
+                item.style.paddingLeft = '3rem';
+            }
+        });
+        
+        console.log('TOC content visibility forced - total items:', tocItems.length);
+    },
+    
+    // 添加 debug 检查，在展开 TOC 前确认是否有内容
+    checkTocContent: function() {
+        // 检查是否有目录项
+        const items = this.tocList?.querySelectorAll('.toc-item') || [];
+        const itemsCount = items.length;
+        console.log(`TOC items count: ${itemsCount}`);
+        
+        if (itemsCount === 0) {
+            console.log('No TOC items found, attempting to rebuild TOC');
+            this.build(); // 尝试重新构建 TOC
+            
+            // 再次检查
+            const newItems = this.tocList?.querySelectorAll('.toc-item') || [];
+            console.log(`Rebuilt TOC items count: ${newItems.length}`);
+            
+            if (newItems.length === 0) {
+                console.warn('Still no TOC items, setting placeholder content');
+                
+                // 如果仍然没有内容，添加一个临时项
+                const noItemsMessage = document.createElement('li');
+                noItemsMessage.className = 'toc-item';
+                noItemsMessage.style.padding = '1rem';
+                noItemsMessage.style.textAlign = 'center';
+                noItemsMessage.style.color = 'var(--text-secondary)';
+                noItemsMessage.textContent = '未检测到页面标题';
+                
+                if (this.tocList) {
+                    this.tocList.appendChild(noItemsMessage);
+                }
+            }
+        }
+        
+        return itemsCount > 0;
     }
 };
 
