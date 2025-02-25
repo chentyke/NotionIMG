@@ -1140,12 +1140,26 @@ const TableOfContents = {
         // Set initial state based on device type
         if (this.isMobile) {
             this.isCollapsed = true;
+            
+            // 先隐藏容器，避免闪烁
+            this.container.style.opacity = '0';
+            
+            // 添加折叠类
             this.container.classList.add('collapsed');
             this.container.classList.remove('expanded');
             
             // Remove any desktop-specific classes
             this.container.classList.remove('expanding');
             this.container.classList.remove('collapsing');
+            
+            // 延迟显示并添加动画效果
+            setTimeout(() => {
+                // 恢复可见性
+                this.container.style.opacity = '';
+                
+                // 添加从右向左滑入的动画
+                this.container.style.animation = 'slideInButtonFromRight 0.5s cubic-bezier(0.25, 1, 0.5, 1)';
+            }, 500);
         } else {
             // For desktop, default to expanded unless explicitly saved as collapsed
             const savedCollapsed = localStorage.getItem('tocCollapsed');
@@ -1580,7 +1594,16 @@ const TableOfContents = {
                 setTimeout(() => {
                     this.container.classList.remove('expanded');
                     this.container.classList.add('collapsed');
+                    
+                    // 确保移除之前的动画
                     this.container.style.animation = '';
+                    
+                    // 强制重排，确保新动画能够正常开始
+                    this.container.offsetHeight;
+                    
+                    // 添加从右向左滑入的动画
+                    this.container.style.animation = 'slideInButtonFromRight 0.35s cubic-bezier(0.25, 1, 0.5, 1)';
+                    
                     this.container.classList.remove('collapsing');
                 }, 350);
                 
@@ -1629,25 +1652,34 @@ const TableOfContents = {
             
             // Handle mobile-specific expand
             if (this.isMobile) {
-                // Remove any existing animation
-                this.container.style.animation = '';
+                // 先添加按钮隐藏动画
+                this.container.classList.add('button-hiding');
                 
-                // First remove collapsed class
-                this.container.classList.remove('collapsed');
-                
-                // Force reflow to ensure animation starts fresh
-                this.container.offsetHeight;
-                
-                // Then add expanded class with animation
-                this.container.classList.add('expanded');
-                this.container.style.animation = 'slideInTocMobile 0.35s cubic-bezier(0.25, 1, 0.5, 1)';
-                
-                // Add haptic feedback if available
-                if (window.navigator && window.navigator.vibrate) {
-                    window.navigator.vibrate(50); // Subtle feedback
-                }
-                
-                console.log('Mobile TOC expanded');
+                // 等待按钮隐藏动画完成后再显示目录
+                setTimeout(() => {
+                    // 移除按钮隐藏动画类
+                    this.container.classList.remove('button-hiding');
+                    
+                    // Remove any existing animation
+                    this.container.style.animation = '';
+                    
+                    // First remove collapsed class
+                    this.container.classList.remove('collapsed');
+                    
+                    // Force reflow to ensure animation starts fresh
+                    this.container.offsetHeight;
+                    
+                    // Then add expanded class with animation
+                    this.container.classList.add('expanded');
+                    this.container.style.animation = 'slideInTocMobile 0.35s cubic-bezier(0.25, 1, 0.5, 1)';
+                    
+                    // Add haptic feedback if available
+                    if (window.navigator && window.navigator.vibrate) {
+                        window.navigator.vibrate(50); // Subtle feedback
+                    }
+                    
+                    console.log('Mobile TOC expanded');
+                }, 350); // 与按钮隐藏动画时长一致
             } else {
                 // Desktop expand animation
                 // Remove collapsed class first

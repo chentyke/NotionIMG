@@ -1690,6 +1690,36 @@ body {
         min-height: 48px;
         transform: translateX(0); /* Reset position */
         transition: transform 0.3s ease-out, width 0.3s ease, height 0.3s ease;
+        animation: slideInButtonFromRight 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+    
+    /* 按钮从右向左滑入动画 */
+    @keyframes slideInButtonFromRight {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 0.95;
+        }
+    }
+    
+    /* 按钮向左滑出动画 */
+    @keyframes slideOutButtonToLeft {
+        from {
+            transform: translateX(0);
+            opacity: 0.95;
+        }
+        to {
+            transform: translateX(-100%);
+            opacity: 0;
+        }
+    }
+    
+    /* 按钮点击后向左滑出 */
+    .toc-container.button-hiding {
+        animation: slideOutButtonToLeft 0.35s cubic-bezier(0.25, 1, 0.5, 1) forwards;
     }
     
     /* Button animation when expanding/collapsing */
