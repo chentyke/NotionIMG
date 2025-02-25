@@ -593,6 +593,11 @@ const PageTransition = {
             transition.classList.remove('active');
             this.isTransitioning = false;
             
+            // Reinitialize TOC after transition
+            TableOfContents.init();
+            TableOfContents.build();
+            TableOfContents.updatePosition();
+            
             // Restore scroll position if needed
             if (sessionStorage.getItem('lastScrollPos')) {
                 setTimeout(() => {
@@ -608,6 +613,12 @@ const PageTransition = {
 async function loadChildPage(pageId, title) {
     // Start page transition
     PageTransition.start(async () => {
+        // Hide TOC during transition
+        const tocContainer = document.getElementById('tableOfContents');
+        if (tocContainer) {
+            tocContainer.classList.remove('visible');
+        }
+        
         // Update browser history
         window.history.pushState({}, "", `/static/page.html?id=${pageId}`);
         
@@ -659,17 +670,20 @@ async function renderBlock(block) {
             const h1Text = block.heading_1?.rich_text 
                 ? processRichText(block.heading_1.rich_text)
                 : '';
-            return `<h1 class="${blockColor}">${h1Text}</h1>`;
+            const h1Id = `heading-${block.id || generateHeadingId(h1Text)}`;
+            return `<h1 id="${h1Id}" class="${blockColor}">${h1Text}</h1>`;
         case 'heading_2':
             const h2Text = block.heading_2?.rich_text 
                 ? processRichText(block.heading_2.rich_text)
                 : '';
-            return `<h2 class="${blockColor}">${h2Text}</h2>`;
+            const h2Id = `heading-${block.id || generateHeadingId(h2Text)}`;
+            return `<h2 id="${h2Id}" class="${blockColor}">${h2Text}</h2>`;
         case 'heading_3':
             const h3Text = block.heading_3?.rich_text 
                 ? processRichText(block.heading_3.rich_text)
                 : '';
-            return `<h3 class="${blockColor}">${h3Text}</h3>`;
+            const h3Id = `heading-${block.id || generateHeadingId(h3Text)}`;
+            return `<h3 id="${h3Id}" class="${blockColor}">${h3Text}</h3>`;
         case 'bulleted_list_item':
         case 'numbered_list_item':
             console.log('Processing list item:', block); // 调试日志
@@ -985,7 +999,299 @@ async function renderBlock(block) {
     }
 }
 
-// Optimize page loading
+// Add helper function to generate heading IDs from text
+function generateHeadingId(text) {
+    // Remove HTML tags if any
+    const plainText = text.replace(/<[^>]*>/g, '');
+    // Convert to lowercase, replace spaces with hyphens, remove special characters
+    return plainText
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^\w\-]/g, '')
+        .replace(/\-+/g, '-')
+        .substring(0, 50) + '-' + Math.random().toString(36).substring(2, 7);
+}
+
+// Add Table of Contents functionality
+const TableOfContents = {
+    container: null,
+    tocList: null,
+    headings: [],
+    isCollapsed: false,
+    activeHeadingId: null,
+    observer: null,
+    
+    // Initialize the TOC module
+    init: function() {
+        this.container = document.getElementById('tableOfContents');
+        this.tocList = document.getElementById('tocList');
+        if (!this.container || !this.tocList) return;
+        
+        // Set up collapse button
+        const collapseBtn = document.getElementById('tocCollapseBtn');
+        if (collapseBtn) {
+            collapseBtn.addEventListener('click', () => this.toggleCollapse());
+        }
+        
+        // Check if TOC should start collapsed based on user preference
+        const tocCollapsed = localStorage.getItem('tocCollapsed');
+        if (tocCollapsed === 'true') {
+            this.isCollapsed = true;
+            this.container.classList.add('collapsed');
+        }
+        
+        // Create intersection observer for headings
+        this.setupIntersectionObserver();
+    },
+    
+    // Build the TOC from page headings
+    build: function() {
+        // Reset state
+        this.headings = [];
+        this.tocList.innerHTML = '';
+        
+        // Collect all heading elements
+        const pageContent = document.getElementById('pageContent');
+        if (!pageContent) return;
+        
+        // Get all headings
+        const h1Elements = pageContent.querySelectorAll('h1');
+        const h2Elements = pageContent.querySelectorAll('h2');
+        const h3Elements = pageContent.querySelectorAll('h3');
+        
+        // No headings found, hide TOC
+        if (h1Elements.length + h2Elements.length + h3Elements.length === 0) {
+            this.container.style.display = 'none';
+            return;
+        }
+        
+        // Collect and sort headings
+        this.collectHeadings(h1Elements, 1);
+        this.collectHeadings(h2Elements, 2);
+        this.collectHeadings(h3Elements, 3);
+        
+        // Sort headings by their position in the document
+        this.headings.sort((a, b) => {
+            return a.position - b.position;
+        });
+        
+        // Generate TOC HTML
+        this.generateTocHtml();
+        
+        // Show TOC with animation
+        this.container.style.display = 'flex';
+        setTimeout(() => {
+            this.container.classList.add('visible');
+        }, 100);
+        
+        // Start observing headings
+        this.observeHeadings();
+    },
+    
+    // Collect headings from the page
+    collectHeadings: function(elements, level) {
+        elements.forEach(element => {
+            // Get text and ID
+            const text = element.textContent.trim();
+            let id = element.id;
+            
+            // If no ID exists, create one
+            if (!id) {
+                id = `heading-${generateHeadingId(text)}`;
+                element.id = id;
+            }
+            
+            // Calculate position in document
+            const position = element.getBoundingClientRect().top + window.scrollY;
+            
+            // Add to headings array
+            this.headings.push({
+                id,
+                text,
+                level,
+                position
+            });
+            
+            // Set up intersection observer for this heading
+            if (this.observer) {
+                this.observer.observe(element);
+            }
+        });
+    },
+    
+    // Generate the HTML for the TOC
+    generateTocHtml: function() {
+        this.headings.forEach(heading => {
+            const li = document.createElement('li');
+            li.className = `toc-item toc-level-${heading.level}`;
+            
+            const a = document.createElement('a');
+            a.href = `#${heading.id}`;
+            a.className = 'toc-link';
+            a.dataset.id = heading.id;
+            
+            // Add indicator dot for level 2 and 3
+            if (heading.level > 1) {
+                const indicator = document.createElement('span');
+                indicator.className = 'toc-indicator';
+                a.appendChild(indicator);
+            }
+            
+            a.appendChild(document.createTextNode(heading.text));
+            
+            // Add click event to scroll to section
+            a.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.scrollToHeading(heading.id);
+            });
+            
+            li.appendChild(a);
+            this.tocList.appendChild(li);
+        });
+    },
+    
+    // Scroll to a heading with smooth animation
+    scrollToHeading: function(id) {
+        const element = document.getElementById(id);
+        if (!element) return;
+        
+        // Get the heading's position
+        const elementPosition = element.getBoundingClientRect().top + window.scrollY;
+        
+        // Account for fixed header height if needed
+        const headerOffset = 80; // Adjust based on your header height
+        const offsetPosition = elementPosition - headerOffset;
+        
+        // Smoothly scroll to the heading
+        window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth'
+        });
+        
+        // Update active heading
+        this.setActiveHeading(id);
+        
+        // Update URL hash without triggering scroll
+        history.replaceState(null, null, `#${id}`);
+    },
+    
+    // Set up intersection observer for headings
+    setupIntersectionObserver: function() {
+        // Create options for the observer
+        const options = {
+            root: null, // Use viewport as root
+            rootMargin: '-80px 0px -70% 0px', // Top offset for header, bottom margin to trigger earlier
+            threshold: 0 // Trigger as soon as any part of the element is visible
+        };
+        
+        // Create the observer
+        this.observer = new IntersectionObserver(entries => {
+            let visibleHeadings = entries
+                .filter(entry => entry.isIntersecting)
+                .map(entry => ({
+                    id: entry.target.id,
+                    position: entry.boundingClientRect.top
+                }));
+            
+            if (visibleHeadings.length > 0) {
+                // Find the heading closest to the top
+                visibleHeadings.sort((a, b) => Math.abs(a.position) - Math.abs(b.position));
+                this.setActiveHeading(visibleHeadings[0].id);
+            }
+        }, options);
+    },
+    
+    // Start observing all headings
+    observeHeadings: function() {
+        if (!this.observer) return;
+        
+        // Disconnect previous observations
+        this.observer.disconnect();
+        
+        // Observe each heading
+        this.headings.forEach(heading => {
+            const element = document.getElementById(heading.id);
+            if (element) {
+                this.observer.observe(element);
+            }
+        });
+    },
+    
+    // Set active heading in TOC
+    setActiveHeading: function(id) {
+        if (this.activeHeadingId === id) return;
+        
+        // Update active state
+        this.activeHeadingId = id;
+        
+        // Remove active class from all links
+        const links = this.tocList.querySelectorAll('.toc-link');
+        links.forEach(link => link.classList.remove('active'));
+        
+        // Add active class to current link
+        const activeLink = this.tocList.querySelector(`.toc-link[data-id="${id}"]`);
+        if (activeLink) {
+            activeLink.classList.add('active');
+            
+            // Scroll active item into view within TOC if needed
+            this.scrollActiveIntoView(activeLink);
+        }
+    },
+    
+    // Scroll active item into view within TOC content
+    scrollActiveIntoView: function(activeLink) {
+        if (!activeLink || this.isCollapsed) return;
+        
+        const tocContent = document.querySelector('.toc-content');
+        if (!tocContent) return;
+        
+        const linkRect = activeLink.getBoundingClientRect();
+        const contentRect = tocContent.getBoundingClientRect();
+        
+        // Check if the active link is outside the visible area
+        if (linkRect.top < contentRect.top || linkRect.bottom > contentRect.bottom) {
+            activeLink.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
+        }
+    },
+    
+    // Toggle collapse state
+    toggleCollapse: function() {
+        this.isCollapsed = !this.isCollapsed;
+        
+        if (this.isCollapsed) {
+            this.container.classList.add('collapsed');
+        } else {
+            this.container.classList.remove('collapsed');
+        }
+        
+        // Save preference
+        localStorage.setItem('tocCollapsed', this.isCollapsed);
+    },
+    
+    // Update TOC position based on scroll
+    updatePosition: function() {
+        if (!this.container) return;
+        
+        const scrollTop = window.scrollY;
+        
+        // Get container position
+        const rect = this.container.getBoundingClientRect();
+        
+        // Adjust top position to keep it in view
+        const minTop = 80; // Min distance from top (adjust for header)
+        const maxTop = window.innerHeight - rect.height - 20; // Max top position
+        
+        let newTop = Math.max(minTop, Math.min(2 + scrollTop, maxTop));
+        
+        // Apply new position
+        this.container.style.top = `${newTop}px`;
+    }
+};
+
+// Update loadPage function to initialize TOC after content is loaded
 async function loadPage(pageId = null) {
     const urlParams = new URLSearchParams(window.location.search);
     const targetPageId = pageId || urlParams.get('id');
@@ -1178,6 +1484,18 @@ async function loadPage(pageId = null) {
         document.querySelectorAll('img[data-src]').forEach(img => {
             imageObserver.observe(img);
         });
+        
+        // Initialize TOC after content is rendered
+        TableOfContents.init();
+        TableOfContents.build();
+        
+        // Update TOC position on scroll
+        window.addEventListener('scroll', () => {
+            TableOfContents.updatePosition();
+        });
+        
+        // Initial update of TOC position
+        TableOfContents.updatePosition();
         
         // Show container with animation when everything is loaded
         updateLoadingProgress(90);
@@ -1397,6 +1715,9 @@ document.addEventListener('DOMContentLoaded', () => {
     mainHeader = document.querySelector('.page-header');
     floatingTitle = document.getElementById('floatingTitle');
     
+    // Initialize Table of Contents
+    TableOfContents.init();
+    
     // Set up scroll event listener
     window.addEventListener('scroll', () => {
         const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
@@ -1426,6 +1747,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // 更新滚动位置
         lastScrollTop = scrollTop;
+        
+        // Update TOC position on scroll
+        TableOfContents.updatePosition();
     });
     
     // Initial check on page load
