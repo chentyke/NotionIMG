@@ -23,9 +23,43 @@ document.addEventListener('touchmove', function(e) {
     }
 }, { passive: false });
 
+// Setter functions
+function setTotalBlocks(count) {
+    totalBlocks = count;
+}
+
+function setLoadedBlocks(count) {
+    loadedBlocks = count;
+}
+
+function incrementLoadedBlocks() {
+    loadedBlocks++;
+}
+
+function setParentPageId(id) {
+    parentPageId = id;
+}
+
+// Getter functions
+function getTotalBlocks() {
+    return totalBlocks;
+}
+
+function getLoadedBlocks() {
+    return loadedBlocks;
+}
+
+function getParentPageId() {
+    return parentPageId;
+}
+
 // Export variables and functions
 export {
-    totalBlocks,
-    loadedBlocks,
-    parentPageId
+    getTotalBlocks,
+    getLoadedBlocks,
+    getParentPageId,
+    setTotalBlocks,
+    setLoadedBlocks,
+    incrementLoadedBlocks,
+    setParentPageId
 }; 

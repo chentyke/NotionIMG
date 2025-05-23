@@ -2,7 +2,15 @@
 import { updateLoadingProgress } from './loader.js';
 import { imageObserver } from './imageHandler.js';
 import { processRichText, generateHeadingId, updatePageTitle } from './utils.js';
-import { totalBlocks, loadedBlocks, parentPageId } from './core.js';
+import { 
+    getTotalBlocks, 
+    getLoadedBlocks, 
+    getParentPageId,
+    setTotalBlocks,
+    setLoadedBlocks,
+    incrementLoadedBlocks,
+    setParentPageId
+} from './core.js';
 
 // Table of Contents module
 const TableOfContents = {
@@ -167,8 +175,8 @@ async function loadChildPage(pageId, title) {
  * @returns {string} - HTML representation of the block
  */
 async function renderBlock(block) {
-    loadedBlocks++;
-    updateLoadingProgress((loadedBlocks / totalBlocks) * 100);
+    incrementLoadedBlocks();
+    updateLoadingProgress((getLoadedBlocks() / getTotalBlocks()) * 100);
     
     let content = '';
     const blockColor = block.color && block.color !== 'default' 
@@ -494,7 +502,7 @@ async function loadPage(pageId = null) {
         }
         
         // Update back button based on parent page and show_back property
-        parentPageId = data.page.parent_id;
+        setParentPageId(data.page.parent_id);
         const backButtonContainer = document.querySelector('.mt-8');
         const pageTitle = document.getElementById('pageTitle');
         
@@ -534,8 +542,8 @@ async function loadPage(pageId = null) {
         TableOfContents.init();
         
         // Reset block counters
-        totalBlocks = data.blocks.length;
-        loadedBlocks = 0;
+        setTotalBlocks(data.blocks.length);
+        setLoadedBlocks(0);
         
         updateLoadingProgress(50);
         
