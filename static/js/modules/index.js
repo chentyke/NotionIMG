@@ -413,21 +413,28 @@ function showFloatingToc() {
 }
 
 /**
- * Hide floating TOC
+ * Hide floating TOC with enhanced closing animation
  */
 function hideFloatingToc() {
     const floatingToc = document.getElementById('floatingToc');
-    if (!floatingToc) return;
+    if (!floatingToc || !floatingTocVisible) return;
     
-    // 恢复页面滚动
-    document.body.style.overflow = '';
+    // 添加关闭动画类
+    floatingToc.classList.add('closing');
     
-    floatingToc.classList.remove('visible');
-    floatingTocVisible = false;
+    // 延迟移除可见性，让关闭动画完成
+    setTimeout(() => {
+        floatingToc.classList.remove('visible');
+        floatingToc.classList.remove('closing');
+        floatingTocVisible = false;
+        
+        // 恢复页面滚动
+        document.body.style.overflow = '';
+    }, 300); // 与CSS动画时间匹配
 }
 
 /**
- * Scroll to specific heading
+ * Scroll to specific heading with enhanced animation
  */
 function scrollToHeading(headingId) {
     console.log('Scrolling to heading:', headingId);
@@ -445,44 +452,78 @@ function scrollToHeading(headingId) {
             
             console.log('Target scroll position:', targetPosition);
             
-            window.scrollTo({
-                top: Math.max(0, targetPosition), // 确保不会滚动到负数位置
-                behavior: 'smooth'
-            });
+            // 使用更平滑的缓动函数进行滚动
+            const startPosition = window.pageYOffset;
+            const distance = Math.max(0, targetPosition) - startPosition;
+            const duration = Math.min(1000, Math.max(500, Math.abs(distance) * 0.5)); // 动态计算时长
+            let startTime = null;
             
-            // 更新URL hash
-            window.history.replaceState(null, null, `#${headingId}`);
+            function easeInOutCubic(t) {
+                return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+            }
             
-            // 强制更新当前活跃标题
-            setTimeout(() => {
-                currentActiveHeading = headingId;
+            function animateScroll(currentTime) {
+                if (startTime === null) startTime = currentTime;
+                const timeElapsed = currentTime - startTime;
+                const progress = Math.min(timeElapsed / duration, 1);
+                const easedProgress = easeInOutCubic(progress);
                 
-                // 更新 TOC 中的活跃状态
-                const tocLinks = document.querySelectorAll('#floatingTocList a');
-                tocLinks.forEach(link => {
-                    if (link.getAttribute('href') === `#${headingId}`) {
-                        link.classList.add('active');
-                    } else {
-                        link.classList.remove('active');
-                    }
-                });
+                window.scrollTo(0, startPosition + distance * easedProgress);
                 
-                // 更新面包屑
-                if (floatingHeaderVisible) {
-                    const floatingBreadcrumb = document.getElementById('floatingBreadcrumb');
-                    if (floatingBreadcrumb) {
-                        const heading = floatingTocHeadings.find(h => h.id === headingId);
-                        if (heading) {
-                            const breadcrumbPath = buildBreadcrumbPath(heading);
-                            floatingBreadcrumb.innerHTML = breadcrumbPath;
-                        }
-                    }
+                if (progress < 1) {
+                    requestAnimationFrame(animateScroll);
+                } else {
+                    // 动画完成后的处理
+                    completeScrollAnimation(headingId);
                 }
-            }, 300);
+            }
+            
+            requestAnimationFrame(animateScroll);
         }, 200);
     } else {
         console.warn('Heading not found:', headingId);
     }
+}
+
+/**
+ * Complete scroll animation and update UI
+ */
+function completeScrollAnimation(headingId) {
+    // 更新URL hash
+    window.history.replaceState(null, null, `#${headingId}`);
+    
+    // 强制更新当前活跃标题
+    setTimeout(() => {
+        currentActiveHeading = headingId;
+        
+        // 更新 TOC 中的活跃状态
+        const tocLinks = document.querySelectorAll('#floatingTocList a');
+        tocLinks.forEach(link => {
+            const linkClass = link.className;
+            if (link.getAttribute('href') === `#${headingId}`) {
+                link.classList.add('active');
+                // 添加短暂的高亮效果
+                link.style.transform = 'translateY(-2px) scale(1.02)';
+                setTimeout(() => {
+                    link.style.transform = '';
+                }, 300);
+            } else {
+                link.classList.remove('active');
+            }
+        });
+        
+        // 更新面包屑
+        if (floatingHeaderVisible) {
+            const floatingBreadcrumb = document.getElementById('floatingBreadcrumb');
+            if (floatingBreadcrumb) {
+                const heading = floatingTocHeadings.find(h => h.id === headingId);
+                if (heading) {
+                    const breadcrumbPath = buildBreadcrumbPath(heading);
+                    floatingBreadcrumb.innerHTML = breadcrumbPath;
+                }
+            }
+        }
+    }, 100);
 }
 
 /**
