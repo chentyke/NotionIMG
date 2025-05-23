@@ -236,12 +236,110 @@ async function renderBlock(block) {
         case 'bulleted_list_item':
             // Use the processed text from our API response
             const bulletText = block.text || '';
-            return `<li ${blockColorStyle ? `style="${blockColorStyle}"` : ''}>${bulletText}</li>`;
+            let listItemContent = `<li ${blockColorStyle ? `style="${blockColorStyle}"` : ''}>${bulletText}`;
+            
+            // Handle nested children if present
+            if (block.children && block.children.length > 0) {
+                try {
+                    // Group nested list items by type
+                    let nestedLists = '';
+                    let currentNestedList = null;
+                    
+                    for (const child of block.children) {
+                        if (child.type === 'bulleted_list_item' || child.type === 'numbered_list_item') {
+                            const nestedListTag = child.type === 'bulleted_list_item' ? 'ul' : 'ol';
+                            
+                            // Start a new nested list if needed
+                            if (!currentNestedList || currentNestedList.tag !== nestedListTag) {
+                                // Close previous nested list if exists
+                                if (currentNestedList) {
+                                    nestedLists += `</${currentNestedList.tag}>`;
+                                }
+                                
+                                // Start new nested list
+                                nestedLists += `<${nestedListTag} class="my-2 ${nestedListTag === 'ul' ? 'list-disc' : 'list-decimal'} ml-6">`;
+                                currentNestedList = { tag: nestedListTag };
+                            }
+                            
+                            // Render the nested list item
+                            nestedLists += await renderBlock(child);
+                        } else {
+                            // For non-list items, close any open nested list and render the item
+                            if (currentNestedList) {
+                                nestedLists += `</${currentNestedList.tag}>`;
+                                currentNestedList = null;
+                            }
+                            nestedLists += await renderBlock(child);
+                        }
+                    }
+                    
+                    // Close any remaining open nested list
+                    if (currentNestedList) {
+                        nestedLists += `</${currentNestedList.tag}>`;
+                    }
+                    
+                    listItemContent += nestedLists;
+                } catch (error) {
+                    console.error('Error rendering nested list items:', error);
+                }
+            }
+            
+            listItemContent += '</li>';
+            return listItemContent;
         
         case 'numbered_list_item':
             // Use the processed text from our API response
             const numberedText = block.text || '';
-            return `<li ${blockColorStyle ? `style="${blockColorStyle}"` : ''}>${numberedText}</li>`;
+            let numberedListItemContent = `<li ${blockColorStyle ? `style="${blockColorStyle}"` : ''}>${numberedText}`;
+            
+            // Handle nested children if present (same logic as bulleted_list_item)
+            if (block.children && block.children.length > 0) {
+                try {
+                    // Group nested list items by type
+                    let nestedLists = '';
+                    let currentNestedList = null;
+                    
+                    for (const child of block.children) {
+                        if (child.type === 'bulleted_list_item' || child.type === 'numbered_list_item') {
+                            const nestedListTag = child.type === 'bulleted_list_item' ? 'ul' : 'ol';
+                            
+                            // Start a new nested list if needed
+                            if (!currentNestedList || currentNestedList.tag !== nestedListTag) {
+                                // Close previous nested list if exists
+                                if (currentNestedList) {
+                                    nestedLists += `</${currentNestedList.tag}>`;
+                                }
+                                
+                                // Start new nested list
+                                nestedLists += `<${nestedListTag} class="my-2 ${nestedListTag === 'ul' ? 'list-disc' : 'list-decimal'} ml-6">`;
+                                currentNestedList = { tag: nestedListTag };
+                            }
+                            
+                            // Render the nested list item
+                            nestedLists += await renderBlock(child);
+                        } else {
+                            // For non-list items, close any open nested list and render the item
+                            if (currentNestedList) {
+                                nestedLists += `</${currentNestedList.tag}>`;
+                                currentNestedList = null;
+                            }
+                            nestedLists += await renderBlock(child);
+                        }
+                    }
+                    
+                    // Close any remaining open nested list
+                    if (currentNestedList) {
+                        nestedLists += `</${currentNestedList.tag}>`;
+                    }
+                    
+                    numberedListItemContent += nestedLists;
+                } catch (error) {
+                    console.error('Error rendering nested numbered list items:', error);
+                }
+            }
+            
+            numberedListItemContent += '</li>';
+            return numberedListItemContent;
         
         case 'to_do':
             try {
