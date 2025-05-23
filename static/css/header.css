@@ -239,7 +239,7 @@
     color: white;
 }
 
-/* 全屏浮动目录样式 - 统一毛玻璃效果 */
+/* 全屏浮动目录样式 - 逐级展开效果 */
 .floating-toc-fullscreen {
     position: fixed;
     top: 0;
@@ -249,7 +249,7 @@
     z-index: 1500;
     opacity: 0;
     visibility: hidden;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .floating-toc-fullscreen.visible {
@@ -263,45 +263,48 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.25);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    background: rgba(0, 0, 0, 0.3); /* 暗色毛玻璃背景 */
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .floating-toc-panel {
     position: absolute;
     top: 0;
     left: 50%;
-    transform: translateX(-50%) translateY(-100%);
+    transform: translateX(-50%);
     width: min(800px, calc(100vw - 32px));
     height: 100vh;
-    background: rgba(17, 24, 39, 0.85); /* 统一的半透明暗色背景 */
-    backdrop-filter: blur(40px); /* 增强毛玻璃效果 */
-    -webkit-backdrop-filter: blur(40px);
-    border-radius: 0 0 32px 32px;
-    border: none; /* 保持无边框 */
-    box-shadow: 
-        0 25px 80px rgba(0, 0, 0, 0.4),
-        0 10px 40px rgba(0, 0, 0, 0.3),
-        inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    background: transparent; /* 保持透明 */
+    border: none;
+    box-shadow: none;
+    transition: none; /* 面板本身不需要动画 */
     overflow: hidden;
     display: flex;
     flex-direction: column;
 }
 
 .floating-toc-fullscreen.visible .floating-toc-panel {
-    transform: translateX(-50%) translateY(0);
+    transform: translateX(-50%);
 }
 
 .floating-toc-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 40px 40px 30px; /* 增加顶部和底部间距 */
-    border-bottom: none; /* 移除分割线 */
-    background: transparent; /* 统一背景 */
+    padding: 40px 40px 30px;
+    border-bottom: none;
+    background: transparent;
     flex-shrink: 0;
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.1s; /* 延迟0.1s */
+}
+
+.floating-toc-fullscreen.visible .floating-toc-header {
+    opacity: 1;
+    transform: translateY(0);
 }
 
 .floating-toc-header h2 {
@@ -310,14 +313,14 @@
     color: var(--text-primary);
     margin: 0;
     letter-spacing: -0.025em;
-    opacity: 0.95;
+    opacity: 0.9;
 }
 
 .floating-toc-close {
-    width: 44px; /* 稍微增大 */
+    width: 44px;
     height: 44px;
     border: none;
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.06);
     border-radius: 14px;
     display: flex;
     align-items: center;
@@ -331,13 +334,13 @@
 }
 
 .floating-toc-close:hover {
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(0, 0, 0, 0.1);
     color: var(--text-primary);
     transform: scale(1.05);
 }
 
 .floating-toc-content {
-    padding: 0 40px 50px; /* 增加底部间距 */
+    padding: 0 40px 50px;
     flex: 1;
     overflow-y: auto;
     display: flex;
@@ -351,52 +354,73 @@
     flex: 1;
     display: grid;
     grid-template-columns: 1fr;
-    gap: 12px; /* 增加间距让布局更舒展 */
+    gap: 12px;
     align-content: start;
 }
 
 .floating-toc-list li {
     margin: 0;
     padding: 0;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* 逐级出现动画 */
+.floating-toc-fullscreen.visible .floating-toc-list li {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.floating-toc-fullscreen.visible .floating-toc-list li:nth-child(1) { transition-delay: 0.2s; }
+.floating-toc-fullscreen.visible .floating-toc-list li:nth-child(2) { transition-delay: 0.25s; }
+.floating-toc-fullscreen.visible .floating-toc-list li:nth-child(3) { transition-delay: 0.3s; }
+.floating-toc-fullscreen.visible .floating-toc-list li:nth-child(4) { transition-delay: 0.35s; }
+.floating-toc-fullscreen.visible .floating-toc-list li:nth-child(5) { transition-delay: 0.4s; }
+.floating-toc-fullscreen.visible .floating-toc-list li:nth-child(6) { transition-delay: 0.45s; }
+.floating-toc-fullscreen.visible .floating-toc-list li:nth-child(7) { transition-delay: 0.5s; }
+.floating-toc-fullscreen.visible .floating-toc-list li:nth-child(8) { transition-delay: 0.55s; }
+.floating-toc-fullscreen.visible .floating-toc-list li:nth-child(9) { transition-delay: 0.6s; }
+.floating-toc-fullscreen.visible .floating-toc-list li:nth-child(10) { transition-delay: 0.65s; }
+.floating-toc-fullscreen.visible .floating-toc-list li:nth-child(n+11) { transition-delay: 0.7s; }
 
 .floating-toc-list a {
     display: block;
-    padding: 20px 28px; /* 增加内边距让每项更高 */
+    padding: 20px 28px;
     color: var(--text-secondary);
     text-decoration: none;
-    border-radius: 18px; /* 更圆润 */
+    border-radius: 18px;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     font-size: 1rem;
     line-height: 1.6;
-    border-left: none; /* 移除左边框 */
+    border-left: none;
     position: relative;
-    background: rgba(17, 24, 39, 0.5); /* 统一的半透明背景 */
+    background: rgba(255, 255, 255, 0.4);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: none; /* 移除边框 */
+    border: none;
     box-shadow: 
-        0 2px 12px rgba(0, 0, 0, 0.2),
-        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        0 2px 12px rgba(0, 0, 0, 0.04),
+        inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
 .floating-toc-list a:hover {
-    background: rgba(59, 130, 246, 0.2);
+    background: rgba(59, 130, 246, 0.12);
     color: var(--text-primary);
-    transform: translateY(-2px) scale(1.01); /* 改为垂直移动 */
+    transform: translateY(-2px) scale(1.01);
     box-shadow: 
-        0 8px 24px rgba(59, 130, 246, 0.15),
-        0 4px 12px rgba(0, 0, 0, 0.3);
+        0 8px 24px rgba(59, 130, 246, 0.12),
+        0 4px 12px rgba(0, 0, 0, 0.06);
 }
 
 .floating-toc-list a.active {
-    background: rgba(59, 130, 246, 0.25);
+    background: rgba(59, 130, 246, 0.15);
     color: var(--primary-color);
     font-weight: 600;
     transform: translateY(-2px) scale(1.01);
     box-shadow: 
-        0 8px 24px rgba(59, 130, 246, 0.25),
-        0 4px 12px rgba(0, 0, 0, 0.4);
+        0 8px 24px rgba(59, 130, 246, 0.2),
+        0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .floating-toc-list a.active::before {
@@ -417,22 +441,22 @@
     padding-left: 28px;
     font-size: 1.125rem;
     font-weight: 700;
-    background: rgba(17, 24, 39, 0.7); /* 稍微深一点 */
+    background: rgba(255, 255, 255, 0.5);
 }
 
 .floating-toc-list .level-2 {
-    padding-left: 48px; /* 增加缩进 */
+    padding-left: 48px;
     font-size: 1.0625rem;
     font-weight: 600;
-    background: rgba(17, 24, 39, 0.6);
+    background: rgba(255, 255, 255, 0.45);
 }
 
 .floating-toc-list .level-3 {
-    padding-left: 68px; /* 进一步增加缩进 */
+    padding-left: 68px;
     font-size: 1rem;
     font-weight: 500;
     color: var(--text-secondary);
-    background: rgba(17, 24, 39, 0.5);
+    background: rgba(255, 255, 255, 0.4);
 }
 
 /* Mobile optimizations */
@@ -609,18 +633,15 @@
     }
     
     .floating-toc-backdrop {
-        background: rgba(0, 0, 0, 0.25);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
+        background: rgba(0, 0, 0, 0.3); /* 暗色毛玻璃背景 */
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
     }
     
     .floating-toc-panel {
-        background: rgba(17, 24, 39, 0.85); /* 统一的半透明暗色背景 */
-        border: none; /* 保持无边框 */
-        box-shadow: 
-            0 25px 80px rgba(0, 0, 0, 0.4),
-            0 10px 40px rgba(0, 0, 0, 0.3),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        background: transparent; /* 保持透明 */
+        border: none;
+        box-shadow: none;
     }
     
     .floating-toc-header {
@@ -641,8 +662,8 @@
     }
     
     .floating-toc-list a {
-        background: rgba(17, 24, 39, 0.5); /* 统一的半透明背景 */
-        border: none; /* 移除边框 */
+        background: rgba(17, 24, 39, 0.5);
+        border: none;
         box-shadow: 
             0 2px 12px rgba(0, 0, 0, 0.2),
             inset 0 1px 0 rgba(255, 255, 255, 0.08);
@@ -663,7 +684,7 @@
     }
     
     .floating-toc-list .level-1 {
-        background: rgba(17, 24, 39, 0.7); /* 稍微深一点 */
+        background: rgba(17, 24, 39, 0.7);
     }
     
     .floating-toc-list .level-2 {
