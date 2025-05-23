@@ -13,59 +13,26 @@ import {
     setParentPageId
 } from './core.js';
 
-// Table of Contents module
+// Table of Contents module - Disabled for right sidebar
 const TableOfContents = {
     headings: [],
     container: null,
     
     init: function() {
-        this.container = document.getElementById('tableOfContents');
+        // Disabled - no longer showing right sidebar TOC
+        this.container = null;
         this.headings = [];
     },
     
     addHeading: function(level, text, id) {
+        // Still collect headings for potential future use, but don't display
         this.headings.push({ level, text, id });
     },
     
     build: function() {
-        if (!this.container || this.headings.length === 0) return;
-        
-        let html = '<ul class="toc-list">';
-        let prevLevel = 0;
-        
-        this.headings.forEach((heading, index) => {
-            if (heading.level > prevLevel) {
-                // Start a new nested list
-                html += '<ul class="nested-list">';
-            } else if (heading.level < prevLevel) {
-                // Close previous lists
-                for (let i = 0; i < prevLevel - heading.level; i++) {
-                    html += '</ul>';
-                }
-            }
-            
-            html += `<li class="toc-item level-${heading.level}">
-                <a href="#${heading.id}" class="toc-link">${heading.text}</a>
-            </li>`;
-            
-            prevLevel = heading.level;
-            
-            // Close any open lists at the end
-            if (index === this.headings.length - 1) {
-                for (let i = 0; i < prevLevel; i++) {
-                    html += '</ul>';
-                }
-            }
-        });
-        
-        html += '</ul>';
-        
-        this.container.innerHTML = html;
-        
-        // Show TOC if it has content
-        if (this.headings.length > 0) {
-            this.container.classList.add('visible');
-        }
+        // Disabled - right sidebar TOC removed
+        // The floating TOC will handle navigation instead
+        return;
     }
 };
 

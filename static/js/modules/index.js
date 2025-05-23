@@ -126,12 +126,52 @@ function initFloatingHeader() {
 function buildBreadcrumbPath(currentHeading) {
     if (!currentHeading) return '';
     
-    // 简化面包屑显示，只显示当前标题
-    const separator = '<span class="breadcrumb-separator">/</span>';
-    const levelIndicator = currentHeading.level === 1 ? '章节' : 
-                          currentHeading.level === 2 ? '小节' : '段落';
+    // 获取页面标题
+    const pageTitle = document.querySelector('.page-title, #pageTitle');
+    const mainTitle = pageTitle ? pageTitle.textContent.trim() : '页面';
     
-    return `${separator}<span style="color: var(--text-secondary); font-size: 0.75rem;">${levelIndicator}</span>${separator}<span style="color: var(--primary-color);">${currentHeading.text.length > 20 ? currentHeading.text.substring(0, 20) + '...' : currentHeading.text}</span>`;
+    // 构建完整的层级路径
+    const separator = '<span class="breadcrumb-separator">/</span>';
+    let breadcrumbPath = `<span class="main-title">${mainTitle}</span>`;
+    
+    // 根据当前标题的级别，构建完整的路径
+    if (currentHeading.level >= 1) {
+        // 找到当前标题在列表中的位置
+        const currentIndex = floatingTocHeadings.findIndex(h => h.id === currentHeading.id);
+        if (currentIndex !== -1) {
+            // 构建层级路径数组
+            const pathHeadings = [];
+            
+            // 首先，找到所有可能的上级标题
+            for (let level = 1; level <= currentHeading.level; level++) {
+                // 从当前位置向前查找这个级别的最近标题
+                for (let i = currentIndex; i >= 0; i--) {
+                    const heading = floatingTocHeadings[i];
+                    if (heading.level === level) {
+                        // 如果是当前标题或者是上级标题，添加到路径中
+                        if (level === currentHeading.level && heading.id === currentHeading.id) {
+                            pathHeadings.push(heading);
+                            break;
+                        } else if (level < currentHeading.level) {
+                            pathHeadings.push(heading);
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            // 按级别排序确保顺序正确
+            pathHeadings.sort((a, b) => a.level - b.level);
+            
+            // 构建路径
+            pathHeadings.forEach(heading => {
+                const headingText = heading.text.length > 20 ? heading.text.substring(0, 20) + '...' : heading.text;
+                breadcrumbPath += `${separator}<span style="color: var(--primary-color);">${headingText}</span>`;
+            });
+        }
+    }
+    
+    return breadcrumbPath;
 }
 
 /**
