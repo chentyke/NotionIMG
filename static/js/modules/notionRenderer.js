@@ -255,13 +255,10 @@ async function renderBlock(block) {
         
         case 'to_do':
             try {
-                // 处理两种可能的数据格式
-                const todoText = block.to_do?.rich_text ? 
-                    processRichText(block.to_do.rich_text) : 
-                    block.text || 'Untitled todo item';
-                    
-                const isChecked = block.to_do?.checked || block.checked || false;
-                const color = block.to_do?.color || block.color || 'default';
+                // Use the processed text from our API response
+                const todoText = block.text || 'Untitled todo item';
+                const isChecked = block.checked || false;
+                const color = block.color || 'default';
                 
                 return `
                     <div class="todo-item">
@@ -324,10 +321,8 @@ async function renderBlock(block) {
             return '<hr class="my-6 border-gray-200">';
         
         case 'quote':
-            // Handle quote blocks
-            const quoteText = block.quote?.rich_text 
-                ? processRichText(block.quote.rich_text)
-                : '';
+            // Handle quote blocks - use processed text from API response
+            const quoteText = block.text || '';
             let quoteChildren = '';
             
             // Process children if present
@@ -517,11 +512,8 @@ async function renderBlock(block) {
             return '';
             
         case 'callout':
-            // Handle callout blocks
-            let calloutContent = '';
-            if (block.callout?.rich_text) {
-                calloutContent = processRichText(block.callout.rich_text);
-            }
+            // Handle callout blocks - use processed text from API response
+            const calloutContent = block.text || '';
             
             let icon = '💡';
             if (block.callout?.icon) {
