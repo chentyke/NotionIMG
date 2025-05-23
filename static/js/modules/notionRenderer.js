@@ -259,18 +259,30 @@ async function renderBlock(block) {
         case 'image':
             try {
                 let imgSrc = '';
-                if (block.image?.type === 'external') {
+                
+                // Handle different image data structures
+                if (block.image_url) {
+                    // Current API structure
+                    imgSrc = block.image_url;
+                } else if (block.image?.type === 'external') {
+                    // Standard Notion API structure
                     imgSrc = block.image.external.url;
                 } else if (block.image?.type === 'file') {
+                    // Standard Notion API structure
                     imgSrc = block.image.file.url;
                 }
                 
                 if (!imgSrc) return '';
                 
-                // Get caption if available
-                const caption = block.image?.caption 
-                    ? processRichText(block.image.caption)
-                    : '';
+                // Get caption if available - handle different structures
+                let caption = '';
+                if (block.caption) {
+                    // Current API structure - caption is a string
+                    caption = block.caption;
+                } else if (block.image?.caption) {
+                    // Standard Notion API structure - caption is rich text array
+                    caption = processRichText(block.image.caption);
+                }
                 
                 return `
                     <figure class="image-container my-4">
@@ -388,7 +400,199 @@ async function renderBlock(block) {
                     </div>
                 </div>`;
         
+        case 'column_list':
+            // Handle column list blocks
+            if (block.columns && block.columns.length > 0) {
+                const columnsHtml = await Promise.all(block.columns.map(async column => {
+                    if (column.children && column.children.length > 0) {
+                        const columnContent = await Promise.all(column.children.map(async child => {
+                            return await renderBlock(child);
+                        }));
+                        return `<div class="column flex-1 px-2">${columnContent.join('')}</div>`;
+                    }
+                    return '<div class="column flex-1 px-2"></div>';
+                }));
+                
+                return `
+                    <div class="column-list flex gap-4 my-4">
+                        ${columnsHtml.join('')}
+                    </div>`;
+            }
+            return '';
+            
+        case 'column':
+            // Individual columns are handled by column_list
+            if (block.children && block.children.length > 0) {
+                const content = await Promise.all(block.children.map(async child => {
+                    return await renderBlock(child);
+                }));
+                return content.join('');
+            }
+            return '';
+            
+        case 'table':
+            // Handle table blocks
+            if (block.rows && block.rows.length > 0) {
+                const hasColumnHeader = block.has_column_header || false;
+                const hasRowHeader = block.has_row_header || false;
+                
+                let tableHtml = '<table class="table-auto w-full border-collapse border border-gray-300 my-4">';
+                
+                block.rows.forEach((row, rowIndex) => {
+                    const isHeaderRow = hasColumnHeader && rowIndex === 0;
+                    const tag = isHeaderRow ? 'th' : 'td';
+                    const rowClass = isHeaderRow ? 'bg-gray-100 font-semibold' : '';
+                    
+                    tableHtml += `<tr class="${rowClass}">`;
+                    
+                    if (row.cells && row.cells.length > 0) {
+                        row.cells.forEach((cell, cellIndex) => {
+                            const isHeaderCell = hasRowHeader && cellIndex === 0 && !isHeaderRow;
+                            const cellTag = isHeaderCell ? 'th' : tag;
+                            const cellClass = isHeaderCell ? 'bg-gray-50 font-semibold' : '';
+                            
+                            // Process rich text in cell
+                            let cellContent = '';
+                            if (Array.isArray(cell)) {
+                                cellContent = processRichText(cell);
+                            } else if (typeof cell === 'string') {
+                                cellContent = cell;
+                            }
+                            
+                            tableHtml += `<${cellTag} class="border border-gray-300 px-3 py-2 ${cellClass}">${cellContent}</${cellTag}>`;
+                        });
+                    }
+                    
+                    tableHtml += '</tr>';
+                });
+                
+                tableHtml += '</table>';
+                return tableHtml;
+            }
+            return '';
+            
+        case 'callout':
+            // Handle callout blocks
+            let calloutContent = '';
+            if (block.callout?.rich_text) {
+                calloutContent = processRichText(block.callout.rich_text);
+            }
+            
+            let icon = '💡';
+            if (block.callout?.icon) {
+                if (block.callout.icon.type === 'emoji') {
+                    icon = block.callout.icon.emoji;
+                } else if (block.callout.icon.type === 'external') {
+                    icon = `<img src="${block.callout.icon.external.url}" alt="icon" class="w-5 h-5">`;
+                } else if (block.callout.icon.type === 'file') {
+                    icon = `<img src="${block.callout.icon.file.url}" alt="icon" class="w-5 h-5">`;
+                }
+            }
+            
+            return `
+                <div class="callout border-l-4 border-blue-400 bg-blue-50 p-4 my-4 ${blockColor}">
+                    <div class="flex items-start gap-3">
+                        <div class="callout-icon text-lg">${icon}</div>
+                        <div class="callout-content flex-1">${calloutContent}</div>
+                    </div>
+                </div>`;
+                
+        case 'embed':
+            // Handle embed blocks
+            if (block.embed?.url) {
+                return `
+                    <div class="embed-block my-4">
+                        <iframe src="${block.embed.url}" 
+                                class="w-full h-96 border rounded-lg"
+                                frameborder="0" 
+                                allowfullscreen>
+                        </iframe>
+                        ${block.embed.caption ? 
+                            `<div class="text-center text-sm text-gray-500 mt-2">${block.embed.caption}</div>` 
+                            : ''}
+                    </div>`;
+            }
+            return '';
+            
+        case 'video':
+            // Handle video blocks
+            if (block.video?.url) {
+                const videoUrl = block.video.url;
+                
+                // Check if it's a YouTube video
+                if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
+                    let embedUrl = videoUrl;
+                    if (videoUrl.includes('watch?v=')) {
+                        const videoId = videoUrl.split('watch?v=')[1]?.split('&')[0];
+                        embedUrl = `https://www.youtube.com/embed/${videoId}`;
+                    } else if (videoUrl.includes('youtu.be/')) {
+                        const videoId = videoUrl.split('youtu.be/')[1]?.split('?')[0];
+                        embedUrl = `https://www.youtube.com/embed/${videoId}`;
+                    }
+                    
+                    return `
+                        <div class="video-block my-4">
+                            <iframe src="${embedUrl}" 
+                                    class="w-full h-96 rounded-lg"
+                                    frameborder="0" 
+                                    allowfullscreen>
+                            </iframe>
+                            ${block.video.caption ? 
+                                `<div class="text-center text-sm text-gray-500 mt-2">${block.video.caption}</div>` 
+                                : ''}
+                        </div>`;
+                } else {
+                    // Regular video file
+                    return `
+                        <div class="video-block my-4">
+                            <video controls class="w-full rounded-lg">
+                                <source src="${videoUrl}" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                            ${block.video.caption ? 
+                                `<div class="text-center text-sm text-gray-500 mt-2">${block.video.caption}</div>` 
+                                : ''}
+                        </div>`;
+                }
+            }
+            return '';
+            
+        case 'equation':
+            // Handle equation blocks
+            if (block.equation?.expression) {
+                return `
+                    <div class="equation-block my-4 text-center">
+                        <div class="bg-gray-50 p-4 rounded-lg inline-block">
+                            <code class="text-lg">${block.equation.expression}</code>
+                        </div>
+                    </div>`;
+            }
+            return '';
+            
+        case 'file':
+            // Handle file blocks
+            if (block.file?.url) {
+                const fileName = block.file.name || 'Download File';
+                return `
+                    <div class="file-block border rounded-lg p-4 my-4 hover:bg-gray-50 transition-colors">
+                        <a href="${block.file.url}" target="_blank" rel="noopener noreferrer" 
+                           class="flex items-center gap-3 text-blue-600 hover:text-blue-700">
+                            <i class="fas fa-file text-2xl"></i>
+                            <div class="flex-1">
+                                <div class="font-medium">${fileName}</div>
+                                ${block.file.caption ? 
+                                    `<div class="text-sm text-gray-500">${block.file.caption}</div>` 
+                                    : ''}
+                            </div>
+                            <i class="fas fa-download"></i>
+                        </a>
+                    </div>`;
+            }
+            return '';
+        
         default:
+            // Log unhandled block types for debugging
+            console.warn(`Unhandled block type: ${block.type}`, block);
             return '';
     }
 }
