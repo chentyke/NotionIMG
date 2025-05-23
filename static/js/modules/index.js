@@ -11,8 +11,9 @@ let floatingHeaderVisible = false;
 let lastScrollTop = 0;
 
 // Floating TOC management
-let fullscreenTocVisible = false;
+let floatingTocVisible = false;
 let floatingTocHeadings = [];
+let currentActiveHeading = null;
 
 /**
  * Initialize floating header scroll behavior
@@ -20,7 +21,7 @@ let floatingTocHeadings = [];
 function initFloatingHeader() {
     const floatingHeader = document.getElementById('floatingHeader');
     const floatingTitle = document.getElementById('floatingTitle');
-    const floatingTocIsland = document.getElementById('floatingTocIsland');
+    const floatingBreadcrumb = document.getElementById('floatingBreadcrumb');
     const pageTitle = document.getElementById('pageTitle');
     
     if (!floatingHeader || !floatingTitle) return;
@@ -32,11 +33,45 @@ function initFloatingHeader() {
         }
     };
     
+    // Update breadcrumb based on current heading
+    const updateBreadcrumb = () => {
+        if (!floatingBreadcrumb) return;
+        
+        if (floatingTocHeadings.length === 0) {
+            // 没有标题时，隐藏面包屑
+            floatingBreadcrumb.style.display = 'none';
+            floatingHeader.style.cursor = 'default';
+            floatingHeader.removeAttribute('title');
+            floatingHeader.removeAttribute('aria-label');
+        } else {
+            // 有标题时，显示面包屑和启用点击
+            floatingBreadcrumb.style.display = 'block';
+            floatingHeader.style.cursor = 'pointer';
+            floatingHeader.setAttribute('title', '点击查看目录');
+            floatingHeader.setAttribute('aria-label', '点击查看目录');
+            
+            if (currentActiveHeading) {
+                const heading = floatingTocHeadings.find(h => h.id === currentActiveHeading);
+                if (heading) {
+                    // 构建面包屑路径
+                    const breadcrumbPath = buildBreadcrumbPath(heading);
+                    floatingBreadcrumb.innerHTML = breadcrumbPath;
+                }
+            } else {
+                floatingBreadcrumb.innerHTML = '<span class="breadcrumb-separator">/</span><span style="color: var(--text-tertiary);">选择章节...</span>';
+            }
+        }
+    };
+    
     // Initial update
     updateFloatingTitle();
     
     // Watch for page title changes
-    const observer = new MutationObserver(updateFloatingTitle);
+    const observer = new MutationObserver(() => {
+        updateFloatingTitle();
+        // 延迟更新面包屑，确保TOC已初始化
+        setTimeout(updateBreadcrumb, 100);
+    });
     if (pageTitle) {
         observer.observe(pageTitle, { childList: true, characterData: true, subtree: true });
     }
@@ -53,20 +88,11 @@ function initFloatingHeader() {
             if (shouldShow && !floatingHeaderVisible) {
                 floatingHeader.classList.add('visible');
                 floatingHeaderVisible = true;
-                
-                // Show TOC island if headings exist
-                if (floatingTocHeadings.length > 0 && floatingTocIsland) {
-                    floatingTocIsland.classList.add('visible');
-                }
+                updateBreadcrumb(); // 显示时更新面包屑
             } else if (!shouldShow && floatingHeaderVisible) {
                 floatingHeader.classList.remove('visible');
                 floatingHeaderVisible = false;
-                
-                // Hide TOC island and close TOC modal
-                if (floatingTocIsland) {
-                    floatingTocIsland.classList.remove('visible');
-                }
-                hideFullscreenToc();
+                hideFloatingToc(); // 隐藏时关闭目录
             }
         }
         
@@ -83,7 +109,24 @@ function initFloatingHeader() {
     }, { passive: true });
     
     // Initial check
-    setTimeout(handleScroll, 100);
+    setTimeout(() => {
+        handleScroll();
+        updateBreadcrumb();
+    }, 100);
+}
+
+/**
+ * Build breadcrumb path for current heading
+ */
+function buildBreadcrumbPath(currentHeading) {
+    if (!currentHeading) return '';
+    
+    // 简化面包屑显示，只显示当前标题
+    const separator = '<span class="breadcrumb-separator">/</span>';
+    const levelIndicator = currentHeading.level === 1 ? '章节' : 
+                          currentHeading.level === 2 ? '小节' : '段落';
+    
+    return `${separator}<span style="color: var(--text-secondary); font-size: 0.75rem;">${levelIndicator}</span>${separator}<span style="color: var(--primary-color);">${currentHeading.text.length > 20 ? currentHeading.text.substring(0, 20) + '...' : currentHeading.text}</span>`;
 }
 
 /**
@@ -91,6 +134,7 @@ function initFloatingHeader() {
  */
 function initFloatingToc() {
     floatingTocHeadings = [];
+    currentActiveHeading = null;
     
     // Collect all headings (h1, h2, h3) from the page content
     const pageContent = document.getElementById('pageContent');
@@ -111,68 +155,87 @@ function initFloatingToc() {
         floatingTocHeadings.push({ level, text, id });
     });
     
-    // Build fullscreen TOC HTML
-    buildFullscreenToc();
+    // Build floating TOC HTML
+    buildFloatingToc();
     
     // Update scroll spy
-    updateFullscreenTocScrollSpy();
+    updateFloatingTocScrollSpy();
 }
 
 /**
- * Build fullscreen TOC HTML structure
+ * Build floating TOC HTML structure
  */
-function buildFullscreenToc() {
-    const fullscreenTocList = document.getElementById('fullscreenTocList');
-    if (!fullscreenTocList || floatingTocHeadings.length === 0) return;
+function buildFloatingToc() {
+    const floatingTocList = document.getElementById('floatingTocList');
+    if (!floatingTocList) return;
+    
+    if (floatingTocHeadings.length === 0) {
+        floatingTocList.innerHTML = '<li><p style="text-align: center; color: var(--text-tertiary); padding: 20px;">此页面没有标题</p></li>';
+        return;
+    }
     
     let html = '';
     floatingTocHeadings.forEach(heading => {
         html += `
             <li>
-                <a class="level-${heading.level}" onclick="scrollToHeading('${heading.id}'); return false;">
+                <a href="#${heading.id}" class="level-${heading.level}" onclick="scrollToHeading('${heading.id}'); return false;">
                     ${heading.text}
                 </a>
             </li>
         `;
     });
     
-    fullscreenTocList.innerHTML = html;
+    floatingTocList.innerHTML = html;
 }
 
 /**
- * Update fullscreen TOC scroll spy to highlight current section
+ * Update floating TOC scroll spy to highlight current section
  */
-function updateFullscreenTocScrollSpy() {
+function updateFloatingTocScrollSpy() {
     if (floatingTocHeadings.length === 0) return;
     
     const handleScrollSpy = () => {
         const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-        let currentHeading = null;
+        let newActiveHeading = null;
         
         // Find the current heading based on scroll position
         for (let i = floatingTocHeadings.length - 1; i >= 0; i--) {
             const heading = document.getElementById(floatingTocHeadings[i].id);
             if (heading) {
                 const headingTop = heading.getBoundingClientRect().top + scrollTop;
-                if (scrollTop >= headingTop - 100) {
-                    currentHeading = floatingTocHeadings[i].id;
+                if (scrollTop >= headingTop - 150) {
+                    newActiveHeading = floatingTocHeadings[i].id;
                     break;
                 }
             }
         }
         
-        // Update active states
-        const tocLinks = document.querySelectorAll('#fullscreenTocList a');
-        tocLinks.forEach(link => {
-            const linkText = link.textContent.trim();
-            const matchingHeading = floatingTocHeadings.find(h => h.text === linkText);
+        // Update active states only if changed
+        if (newActiveHeading !== currentActiveHeading) {
+            currentActiveHeading = newActiveHeading;
             
-            if (currentHeading && matchingHeading && matchingHeading.id === currentHeading) {
-                link.classList.add('active');
-            } else {
-                link.classList.remove('active');
+            // Update active states in TOC
+            const tocLinks = document.querySelectorAll('#floatingTocList a');
+            tocLinks.forEach(link => {
+                if (currentActiveHeading && link.getAttribute('href') === `#${currentActiveHeading}`) {
+                    link.classList.add('active');
+                } else {
+                    link.classList.remove('active');
+                }
+            });
+            
+            // Update breadcrumb if floating header is visible
+            if (floatingHeaderVisible) {
+                const floatingBreadcrumb = document.getElementById('floatingBreadcrumb');
+                if (floatingBreadcrumb && currentActiveHeading) {
+                    const heading = floatingTocHeadings.find(h => h.id === currentActiveHeading);
+                    if (heading) {
+                        const breadcrumbPath = buildBreadcrumbPath(heading);
+                        floatingBreadcrumb.innerHTML = breadcrumbPath;
+                    }
+                }
             }
-        });
+        }
     };
     
     // Add scroll listener for scroll spy
@@ -189,51 +252,59 @@ function updateFullscreenTocScrollSpy() {
 }
 
 /**
- * Toggle fullscreen TOC visibility
+ * Toggle floating TOC visibility
  */
-function toggleFullscreenToc() {
-    if (fullscreenTocVisible) {
-        hideFullscreenToc();
+function toggleFloatingToc() {
+    // 如果没有标题，不显示目录
+    if (floatingTocHeadings.length === 0) {
+        return;
+    }
+    
+    const floatingToc = document.getElementById('floatingToc');
+    if (!floatingToc) return;
+    
+    if (floatingTocVisible) {
+        hideFloatingToc();
     } else {
-        showFullscreenToc();
+        showFloatingToc();
     }
 }
 
 /**
- * Show fullscreen TOC
+ * Show floating TOC
  */
-function showFullscreenToc() {
-    const fullscreenToc = document.getElementById('fullscreenToc');
-    if (!fullscreenToc) return;
+function showFloatingToc() {
+    const floatingToc = document.getElementById('floatingToc');
+    if (!floatingToc) return;
     
-    fullscreenToc.classList.add('visible');
-    fullscreenTocVisible = true;
-    
-    // Prevent body scroll
+    // 禁用页面滚动
     document.body.style.overflow = 'hidden';
     
-    // Close on Escape key
-    const handleEscape = (e) => {
+    floatingToc.classList.add('visible');
+    floatingTocVisible = true;
+    
+    // 添加键盘事件监听
+    const handleKeyDown = (e) => {
         if (e.key === 'Escape') {
-            hideFullscreenToc();
-            document.removeEventListener('keydown', handleEscape);
+            hideFloatingToc();
+            document.removeEventListener('keydown', handleKeyDown);
         }
     };
-    document.addEventListener('keydown', handleEscape);
+    document.addEventListener('keydown', handleKeyDown);
 }
 
 /**
- * Hide fullscreen TOC
+ * Hide floating TOC
  */
-function hideFullscreenToc() {
-    const fullscreenToc = document.getElementById('fullscreenToc');
-    if (!fullscreenToc) return;
+function hideFloatingToc() {
+    const floatingToc = document.getElementById('floatingToc');
+    if (!floatingToc) return;
     
-    fullscreenToc.classList.remove('visible');
-    fullscreenTocVisible = false;
-    
-    // Restore body scroll
+    // 恢复页面滚动
     document.body.style.overflow = '';
+    
+    floatingToc.classList.remove('visible');
+    floatingTocVisible = false;
 }
 
 /**
@@ -242,17 +313,19 @@ function hideFullscreenToc() {
 function scrollToHeading(headingId) {
     const heading = document.getElementById(headingId);
     if (heading) {
-        const offset = 100; // Account for floating header
-        const top = heading.getBoundingClientRect().top + window.pageYOffset - offset;
+        // 先隐藏目录
+        hideFloatingToc();
         
-        // Hide TOC first
-        hideFullscreenToc();
-        
-        // Smooth scroll to heading
-        window.scrollTo({
-            top: top,
-            behavior: 'smooth'
-        });
+        // 延迟滚动，让目录动画完成
+        setTimeout(() => {
+            const offset = 120; // Account for floating header
+            const top = heading.getBoundingClientRect().top + window.pageYOffset - offset;
+            
+            window.scrollTo({
+                top: top,
+                behavior: 'smooth'
+            });
+        }, 200);
     }
 }
 
@@ -304,7 +377,8 @@ document.addEventListener('DOMContentLoaded', function() {
     window.copyPageLink = NotionRenderer.copyPageLink;
     window.openImageModal = Modal.openImageModal;
     window.closeImageModal = Modal.closeImageModal;
-    window.toggleFullscreenToc = toggleFullscreenToc;
+    window.toggleFloatingToc = toggleFloatingToc;
+    window.hideFloatingToc = hideFloatingToc;
     window.scrollToHeading = scrollToHeading;
 });
 

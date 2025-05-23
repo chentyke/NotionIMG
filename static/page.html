@@ -52,34 +52,30 @@
     </div>
     
     <!-- Floating header with glass effect -->
-    <div id="floatingHeader" class="floating-header">
+    <div id="floatingHeader" class="floating-header" onclick="toggleFloatingToc()" title="点击查看目录" aria-label="点击查看目录">
         <div class="content-wrapper">
-            <h1 id="floatingTitle"></h1>
-            <button class="copy-link-button" onclick="copyPageLink()" title="复制页面链接" aria-label="复制页面链接">
+            <div class="floating-breadcrumb">
+                <span id="floatingTitle" class="main-title"></span>
+                <span id="floatingBreadcrumb" class="breadcrumb-trail"></span>
+            </div>
+            <button class="copy-link-button" onclick="event.stopPropagation(); copyPageLink()" title="复制页面链接" aria-label="复制页面链接">
                 <i class="fas fa-link"></i>
             </button>
         </div>
     </div>
     
-    <!-- Independent Floating TOC Button -->
-    <button id="floatingTocIsland" class="floating-toc-island" onclick="toggleFullscreenToc()" title="目录" aria-label="打开目录" style="display: none;">
-        <i class="fas fa-list"></i>
-    </button>
-    
-    <!-- Fullscreen Table of Contents Modal -->
-    <div id="fullscreenToc" class="fullscreen-toc">
-        <div class="fullscreen-toc-backdrop" onclick="toggleFullscreenToc()"></div>
-        <div class="fullscreen-toc-container">
-            <div class="fullscreen-toc-content">
-                <div class="fullscreen-toc-header">
-                    <h2>目录</h2>
-                    <button onclick="toggleFullscreenToc()" class="fullscreen-toc-close" aria-label="关闭目录">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <div class="fullscreen-toc-list-container">
-                    <ul id="fullscreenTocList" class="fullscreen-toc-list"></ul>
-                </div>
+    <!-- Full-screen Floating Table of Contents -->
+    <div id="floatingToc" class="floating-toc-fullscreen">
+        <div class="floating-toc-backdrop" onclick="hideFloatingToc()"></div>
+        <div class="floating-toc-panel">
+            <div class="floating-toc-header">
+                <h2>目录</h2>
+                <button onclick="hideFloatingToc()" class="floating-toc-close" aria-label="关闭目录">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="floating-toc-content">
+                <ul id="floatingTocList" class="floating-toc-list"></ul>
             </div>
         </div>
     </div>
