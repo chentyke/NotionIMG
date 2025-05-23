@@ -1035,24 +1035,10 @@ async function loadMoreContentInBackground(pageId, cursor, pageContent) {
         loadingIndicator.id = 'background-loading';
         loadingIndicator.className = 'loading-indicator-container';
         loadingIndicator.innerHTML = `
-            <div class="loading-indicator">
-                <div class="loading-spinner">
-                    <div class="spinner-dot"></div>
-                    <div class="spinner-dot"></div>
-                    <div class="spinner-dot"></div>
-                </div>
-                <div class="loading-text">
-                    <span class="loading-message">正在加载更多内容</span>
-                    <div class="loading-dots">
-                        <span>.</span><span>.</span><span>.</span>
-                    </div>
-                </div>
-                <div class="loading-progress">
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="progress-fill"></div>
-                    </div>
-                    <span class="progress-text" id="loading-progress"></span>
-                </div>
+            <div class="loading-spinner">
+                <div class="spinner-dot"></div>
+                <div class="spinner-dot"></div>
+                <div class="spinner-dot"></div>
             </div>
         `;
         pageContent.appendChild(loadingIndicator);
@@ -1068,32 +1054,11 @@ async function loadMoreContentInBackground(pageId, cursor, pageContent) {
         const maxBatches = 100; // 大幅增加批次限制，支持超长文档
         let consecutiveTimeouts = 0; // 跟踪连续超时次数
         
-        // 更新进度指示器
+        // 简化的进度更新（不显示UI，只记录关键日志）
         const updateProgress = (current, failed = 0) => {
-            const progressElement = document.getElementById('loading-progress');
-            const progressFill = document.getElementById('progress-fill');
-            
-            if (progressElement && progressFill) {
-                const percentage = Math.min(Math.round((current / maxBatches) * 100), 100);
-                
-                // 更新进度条
-                progressFill.style.width = `${percentage}%`;
-                
-                // 简化进度文本
-                if (failed > 0) {
-                    progressElement.textContent = `${percentage}% (${failed} 项失败)`;
-                } else {
-                    progressElement.textContent = `${percentage}%`;
-                }
-                
-                // 移除原来的详细状态信息显示
-                const loadingIndicator = document.getElementById('background-loading');
-                if (loadingIndicator) {
-                    const existingStatus = loadingIndicator.querySelector('.loading-status');
-                    if (existingStatus) {
-                        existingStatus.remove();
-                    }
-                }
+            // 只在重要节点记录日志
+            if (current % 20 === 0 || failed > 0) {
+                console.log(`Loading: batch ${current}${failed > 0 ? ` (${failed} failed)` : ''}`);
             }
         };
         
@@ -1287,38 +1252,21 @@ async function loadMoreContentInBackground(pageId, cursor, pageContent) {
         
         // 处理加载完成的情况
         if (batchCount >= maxBatches) {
-            console.warn(`Reached maximum batch limit (${maxBatches}). There might be more content available.`);
+            console.warn(`Reached maximum batch limit (${maxBatches}). Loaded ${totalBlocksCollected} blocks.`);
             const indicator = document.getElementById('background-loading');
             if (indicator) {
-                indicator.innerHTML = `
-                    <div class="loading-indicator">
-                        <div class="text-amber-600">
-                            <i class="fas fa-exclamation-triangle"></i>
-                            <div>
-                                <div class="font-medium">内容加载已达到限制</div>
-                                <div class="text-sm mt-1">已成功加载 ${totalBlocksCollected} 个内容块，可能还有更多内容。</div>
-                                <button onclick="window.location.reload()" 
-                                        class="mt-2 px-3 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded text-sm transition-colors">
-                                    刷新页面查看完整内容
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
+                indicator.style.opacity = '0';
                 setTimeout(() => {
                     if (indicator && indicator.parentNode) {
-                        indicator.style.opacity = '0';
-                        indicator.style.transform = 'translateY(-20px)';
-                        setTimeout(() => indicator.remove(), 300);
+                        indicator.remove();
                     }
-                }, 8000);
+                }, 300);
             }
         } else {
             // Remove loading indicator if all content loaded successfully
             const indicator = document.getElementById('background-loading');
             if (indicator) {
                 indicator.style.opacity = '0';
-                indicator.style.transform = 'translateY(-20px)';
                 setTimeout(() => {
                     if (indicator && indicator.parentNode) {
                         indicator.remove();
@@ -1333,28 +1281,12 @@ async function loadMoreContentInBackground(pageId, cursor, pageContent) {
         console.error('Error in background loading:', error);
         const indicator = document.getElementById('background-loading');
         if (indicator) {
-            indicator.innerHTML = `
-                <div class="loading-indicator">
-                    <div class="text-red-500">
-                        <i class="fas fa-exclamation-circle"></i>
-                        <div>
-                            <div class="font-medium">加载更多内容时出错</div>
-                            <div class="text-sm mt-1">部分内容可能未能完全加载</div>
-                            <button onclick="window.location.reload()" 
-                                    class="mt-2 px-3 py-1 bg-red-100 hover:bg-red-200 text-red-800 rounded text-sm transition-colors">
-                                重新加载页面
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
+            indicator.style.opacity = '0';
             setTimeout(() => {
                 if (indicator && indicator.parentNode) {
-                    indicator.style.opacity = '0';
-                    indicator.style.transform = 'translateY(-20px)';
-                    setTimeout(() => indicator.remove(), 300);
+                    indicator.remove();
                 }
-            }, 8000);
+            }, 300);
         }
     }
 }
