@@ -1033,12 +1033,26 @@ async function loadMoreContentInBackground(pageId, cursor, pageContent) {
         // Add a loading indicator at the bottom
         const loadingIndicator = document.createElement('div');
         loadingIndicator.id = 'background-loading';
-        loadingIndicator.className = 'text-center text-gray-500 py-8';
+        loadingIndicator.className = 'loading-indicator-container';
         loadingIndicator.innerHTML = `
-            <div class="flex items-center justify-center space-x-2">
-                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
-                <span>正在加载更多内容...</span>
-                <span id="loading-progress" class="text-sm"></span>
+            <div class="loading-indicator">
+                <div class="loading-spinner">
+                    <div class="spinner-dot"></div>
+                    <div class="spinner-dot"></div>
+                    <div class="spinner-dot"></div>
+                </div>
+                <div class="loading-text">
+                    <span class="loading-message">正在加载更多内容</span>
+                    <div class="loading-dots">
+                        <span>.</span><span>.</span><span>.</span>
+                    </div>
+                </div>
+                <div class="loading-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                    <span class="progress-text" id="loading-progress"></span>
+                </div>
             </div>
         `;
         pageContent.appendChild(loadingIndicator);
@@ -1057,24 +1071,27 @@ async function loadMoreContentInBackground(pageId, cursor, pageContent) {
         // 更新进度指示器
         const updateProgress = (current, failed = 0) => {
             const progressElement = document.getElementById('loading-progress');
-            if (progressElement) {
-                const percentage = Math.round((current / maxBatches) * 100);
-                const statusText = failed > 0 ? ` (失败: ${failed})` : '';
-                progressElement.textContent = `批次 ${current}/${maxBatches} (${percentage}%)${statusText}`;
+            const progressFill = document.getElementById('progress-fill');
+            
+            if (progressElement && progressFill) {
+                const percentage = Math.min(Math.round((current / maxBatches) * 100), 100);
                 
-                // 更新加载指示器的详细状态
+                // 更新进度条
+                progressFill.style.width = `${percentage}%`;
+                
+                // 简化进度文本
+                if (failed > 0) {
+                    progressElement.textContent = `${percentage}% (${failed} 项失败)`;
+                } else {
+                    progressElement.textContent = `${percentage}%`;
+                }
+                
+                // 移除原来的详细状态信息显示
                 const loadingIndicator = document.getElementById('background-loading');
                 if (loadingIndicator) {
-                    const statusDiv = loadingIndicator.querySelector('.loading-status') || document.createElement('div');
-                    statusDiv.className = 'loading-status text-xs text-gray-400 mt-2';
-                    statusDiv.innerHTML = `
-                        <div>已收集: ${totalBlocksCollected} 个块</div>
-                        ${failed > 0 ? `<div class="text-red-400">失败批次: ${failed}</div>` : ''}
-                        <div>预计剩余: ${hasMore ? '加载中...' : '完成'}</div>
-                    `;
-                    
-                    if (!loadingIndicator.querySelector('.loading-status')) {
-                        loadingIndicator.appendChild(statusDiv);
+                    const existingStatus = loadingIndicator.querySelector('.loading-status');
+                    if (existingStatus) {
+                        existingStatus.remove();
                     }
                 }
             }
@@ -1122,15 +1139,15 @@ async function loadMoreContentInBackground(pageId, cursor, pageContent) {
                     console.log(`Loading batch ${batchCount + 1} with ${batchSize} blocks limit (retry ${retryCount + 1}/${maxRetries})`);
                     
                     const response = await fetch(`/api/page/${pageId}/more?cursor=${nextCursor}&limit=${batchSize}`);
-                    
-                    if (!response.ok) {
+                
+                if (!response.ok) {
                         // 特殊处理不同的HTTP错误
                         if (response.status === 504 || response.status === 503) {
                             throw new Error(`Function timeout (${response.status}): Reducing batch size for next attempt`);
                         }
-                        throw new Error(`Server returned ${response.status}: ${response.statusText}`);
-                    }
-                    
+                    throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+                }
+                
                     const responseText = await response.text();
                     
                     // 检查是否是Vercel的错误页面
@@ -1155,8 +1172,8 @@ async function loadMoreContentInBackground(pageId, cursor, pageContent) {
                             throw new Error(`Server error: ${moreData.error}`);
                         }
                     }
-                    
-                    if (moreData.blocks && moreData.blocks.length > 0) {
+                
+                if (moreData.blocks && moreData.blocks.length > 0) {
                         // 按顺序添加到临时数组中
                         for (const block of moreData.blocks) {
                             block._sequence = totalBlocksCollected;
@@ -1167,22 +1184,14 @@ async function loadMoreContentInBackground(pageId, cursor, pageContent) {
                             
                             // 每收集到renderThreshold个块就渲染一次
                             if (blocksToRender.length >= renderThreshold) {
-                                console.log(`Rendering ${blocksToRender.length} blocks incrementally...`);
                                 await renderIncrementalBlocks(blocksToRender, pageContent, loadingIndicator);
                                 blocksToRender.length = 0; // 清空已渲染的块
                             }
                         }
                         
-                        console.log(`✓ Collected batch ${batchCount + 1}: ${moreData.blocks.length} blocks (total collected: ${totalBlocksCollected})`);
-                        
-                        // Log debug information if available
-                        if (moreData.debug_info) {
-                            console.log(`Batch ${batchCount + 1} Debug Info:`, moreData.debug_info);
-                            
-                            // 检查是否有错误块
-                            if (moreData.debug_info.error_blocks > 0) {
-                                console.warn(`Batch ${batchCount + 1} contains ${moreData.debug_info.error_blocks} error blocks`);
-                            }
+                        // 成功加载时只在控制台显示简要信息
+                        if (batchCount % 5 === 0 || moreData.blocks.length < batchSize) {
+                            console.log(`✓ Loaded batch ${batchCount + 1}: ${moreData.blocks.length} blocks (total: ${totalBlocksCollected})`);
                         }
                     } else {
                         console.log(`Batch ${batchCount + 1} returned no blocks`);
@@ -1273,7 +1282,6 @@ async function loadMoreContentInBackground(pageId, cursor, pageContent) {
         
         // 渲染剩余的块（如果有不足renderThreshold的块）
         if (blocksToRender.length > 0) {
-            console.log(`Rendering final ${blocksToRender.length} blocks...`);
             await renderIncrementalBlocks(blocksToRender, pageContent, loadingIndicator);
         }
         
@@ -1283,23 +1291,39 @@ async function loadMoreContentInBackground(pageId, cursor, pageContent) {
             const indicator = document.getElementById('background-loading');
             if (indicator) {
                 indicator.innerHTML = `
-                    <div class="text-amber-600 text-center">
-                        <i class="fas fa-exclamation-triangle mr-2"></i>
-                        <span>内容过长，已加载 ${totalBlocksCollected} 个块。可能还有更多内容。</span>
-                        <button onclick="window.location.reload()" class="ml-2 text-blue-600 underline">刷新查看完整内容</button>
+                    <div class="loading-indicator">
+                        <div class="text-amber-600">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <div>
+                                <div class="font-medium">内容加载已达到限制</div>
+                                <div class="text-sm mt-1">已成功加载 ${totalBlocksCollected} 个内容块，可能还有更多内容。</div>
+                                <button onclick="window.location.reload()" 
+                                        class="mt-2 px-3 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded text-sm transition-colors">
+                                    刷新页面查看完整内容
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 `;
                 setTimeout(() => {
                     if (indicator && indicator.parentNode) {
-                        indicator.remove();
+                        indicator.style.opacity = '0';
+                        indicator.style.transform = 'translateY(-20px)';
+                        setTimeout(() => indicator.remove(), 300);
                     }
-                }, 10000);
+                }, 8000);
             }
         } else {
             // Remove loading indicator if all content loaded successfully
             const indicator = document.getElementById('background-loading');
             if (indicator) {
-                indicator.remove();
+                indicator.style.opacity = '0';
+                indicator.style.transform = 'translateY(-20px)';
+                setTimeout(() => {
+                    if (indicator && indicator.parentNode) {
+                        indicator.remove();
+                    }
+                }, 300);
             }
         }
         
@@ -1310,17 +1334,27 @@ async function loadMoreContentInBackground(pageId, cursor, pageContent) {
         const indicator = document.getElementById('background-loading');
         if (indicator) {
             indicator.innerHTML = `
-                <div class="text-red-500 text-center">
-                    <i class="fas fa-exclamation-circle mr-2"></i>
-                    <span>加载更多内容时出错</span>
-                    <button onclick="window.location.reload()" class="ml-2 text-blue-600 underline">重新加载</button>
+                <div class="loading-indicator">
+                    <div class="text-red-500">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <div>
+                            <div class="font-medium">加载更多内容时出错</div>
+                            <div class="text-sm mt-1">部分内容可能未能完全加载</div>
+                            <button onclick="window.location.reload()" 
+                                    class="mt-2 px-3 py-1 bg-red-100 hover:bg-red-200 text-red-800 rounded text-sm transition-colors">
+                                重新加载页面
+                            </button>
+                        </div>
+                    </div>
                 </div>
             `;
             setTimeout(() => {
                 if (indicator && indicator.parentNode) {
-                    indicator.remove();
+                    indicator.style.opacity = '0';
+                    indicator.style.transform = 'translateY(-20px)';
+                    setTimeout(() => indicator.remove(), 300);
                 }
-            }, 10000);
+            }, 8000);
         }
     }
 }
@@ -1384,9 +1418,7 @@ async function renderIncrementalBlocks(blocks, pageContent, loadingIndicator) {
     if (blocks.length === 0) return;
     
     try {
-        console.log(`Rendering ${blocks.length} blocks incrementally...`);
-        
-        // Validate and sort blocks by sequence
+        // 验证和排序块
         validateBlockOrder(blocks, "Incremental blocks - before sorting");
         
         if (blocks[0]._sequence !== undefined) {
@@ -1401,10 +1433,6 @@ async function renderIncrementalBlocks(blocks, pageContent, loadingIndicator) {
         if (currentList && currentList.tag === 'ol') {
             // 只有当最后一个元素确实是有序列表时才继续编号
             orderedListStart = currentList.nextNumber;
-            console.log(`Last element is ordered list starting from ${currentList.startValue} with ${currentList.itemCount} items, next should start from ${orderedListStart}`);
-        } else {
-            // 如果最后一个元素不是有序列表，或者没有找到列表，则从1开始
-            console.log(`Last element is not an ordered list, new ordered lists will start from 1`);
         }
         
         // 渲染块
@@ -1486,11 +1514,24 @@ async function renderIncrementalBlocks(blocks, pageContent, loadingIndicator) {
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = processedContent;
             
-            // 按顺序插入新内容到加载指示器之前
+            // 为新内容添加动画类
             const fragment = document.createDocumentFragment();
             while (tempDiv.firstChild) {
-                fragment.appendChild(tempDiv.firstChild);
+                const element = tempDiv.firstChild;
+                
+                // 添加新内容动画类
+                if (element.nodeType === Node.ELEMENT_NODE) {
+                    element.classList.add('new-content-block');
+                    
+                    // 延迟添加显示动画，创建交错效果
+                    setTimeout(() => {
+                        element.classList.add('new-content-show');
+                    }, 50);
+                }
+                
+                fragment.appendChild(element);
             }
+            
             pageContent.insertBefore(fragment, loadingIndicator);
             
             // Post-process the new content
