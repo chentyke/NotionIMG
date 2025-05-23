@@ -9,7 +9,7 @@
     overflow: hidden;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
     transition: box-shadow 0.2s ease;
-    border: 3px solid #ff0000 !important; /* 临时红色边框测试 */
+    border: 1px solid #e9ecef;
 }
 
 .code-block:hover {
@@ -80,9 +80,9 @@
 
 /* Code content area */
 .code-block pre {
-    background: #ffff00 !important; /* 临时黄色背景测试 */
+    background: #ffffff !important;
     margin: 0 !important;
-    padding: 32px 48px 36px 48px !important;
+    padding: 36px 56px 40px 56px !important;
     overflow-x: auto !important;
     border: none !important;
     font-family: inherit;
@@ -297,7 +297,7 @@
 
     .code-block pre {
         background: #1e1e1e !important;
-        padding: 32px 48px 36px 48px !important;
+        padding: 36px 56px 40px 56px !important;
         line-height: 1.7 !important;
         min-height: 80px !important;
     }
@@ -462,7 +462,7 @@
     }
 
     .code-block pre {
-        padding: 24px 32px 28px 32px !important;
+        padding: 28px 40px 32px 40px !important;
         min-height: 70px !important;
         line-height: 1.6 !important;
     }
