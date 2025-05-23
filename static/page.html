@@ -42,13 +42,53 @@
     <!-- Page transition overlay -->
     <div id="pageTransition" class="page-transition"></div>
     
-    <!-- Loading overlay with improved progress indicator -->
+    <!-- Loading overlay with enhanced creative elements -->
     <div id="loadingOverlay" class="loading-overlay">
-        <div class="loading-spinner"></div>
+        <!-- Floating particles for visual appeal -->
+        <div class="loading-particles">
+            <div class="loading-particle"></div>
+            <div class="loading-particle"></div>
+            <div class="loading-particle"></div>
+            <div class="loading-particle"></div>
+            <div class="loading-particle"></div>
+            <div class="loading-particle"></div>
+            <div class="loading-particle"></div>
+            <div class="loading-particle"></div>
+            <div class="loading-particle"></div>
+        </div>
+        
+        <!-- Enhanced spinner container with orbital elements -->
+        <div class="loading-spinner-container">
+            <div class="loading-spinner"></div>
+            <div class="loading-orbital">
+                <div class="loading-orbital-dot"></div>
+                <div class="loading-orbital-dot"></div>
+                <div class="loading-orbital-dot"></div>
+            </div>
+        </div>
+        
+        <!-- Loading stage indicator -->
+        <div class="loading-stage" id="loadingStage">初始化应用</div>
+        
+        <!-- Enhanced loading text with typewriter effect -->
+        <div class="loading-text" id="loadingText">正在加载页面内容...</div>
+        
+        <!-- Creative progress bar with wave effect -->
         <div class="loading-progress" id="loadingProgress">
             <div id="loadingProgressBar" class="loading-progress-bar" style="width: 0%"></div>
         </div>
-        <div class="loading-text">正在加载页面内容...</div>
+        
+        <!-- Progress percentage display -->
+        <div class="loading-percentage" id="loadingPercentage">0%</div>
+        
+        <!-- Loading status icons for different stages -->
+        <div class="loading-status-icons" id="loadingStatusIcons">
+            <div class="loading-status-icon" data-stage="init" title="初始化">🚀</div>
+            <div class="loading-status-icon" data-stage="fetch" title="获取数据">📡</div>
+            <div class="loading-status-icon" data-stage="render" title="渲染内容">🎨</div>
+            <div class="loading-status-icon" data-stage="optimize" title="优化显示">⚡</div>
+            <div class="loading-status-icon" data-stage="complete" title="完成">✅</div>
+        </div>
     </div>
     
     <!-- Floating header with glass effect -->

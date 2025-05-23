@@ -436,9 +436,6 @@ function showFloatingToc() {
     floatingToc.classList.add('visible');
     floatingTocVisible = true;
     
-    // 初始化滚动监听器以控制毛玻璃遮罩
-    setupTocScrollListener();
-    
     // 添加键盘事件监听
     const handleKeyDown = (e) => {
         if (e.key === 'Escape') {
@@ -453,63 +450,11 @@ function showFloatingToc() {
 }
 
 /**
- * Setup scroll listener for TOC content to control gradient masks
- */
-function setupTocScrollListener() {
-    const tocContent = document.querySelector('.floating-toc-content');
-    if (!tocContent) return;
-    
-    // 检查滚动状态并更新遮罩显示
-    const updateScrollMasks = () => {
-        const scrollTop = tocContent.scrollTop;
-        const scrollHeight = tocContent.scrollHeight;
-        const clientHeight = tocContent.clientHeight;
-        const scrollBottom = scrollHeight - scrollTop - clientHeight;
-        
-        // 顶部遮罩：滚动超过20px时显示
-        if (scrollTop > 20) {
-            tocContent.classList.add('scrolled');
-        } else {
-            tocContent.classList.remove('scrolled');
-        }
-        
-        // 底部遮罩：距离底部20px以上时显示
-        if (scrollBottom > 20) {
-            tocContent.classList.add('scrolled-bottom');
-        } else {
-            tocContent.classList.remove('scrolled-bottom');
-        }
-    };
-    
-    // 初始检查
-    setTimeout(updateScrollMasks, 100);
-    
-    // 添加滚动监听器
-    const scrollHandler = () => {
-        requestAnimationFrame(updateScrollMasks);
-    };
-    
-    tocContent.addEventListener('scroll', scrollHandler, { passive: true });
-    
-    // 存储监听器引用以便清理
-    tocContent._scrollHandler = scrollHandler;
-}
-
-/**
  * Hide floating TOC with enhanced closing animation
  */
 function hideFloatingToc() {
     const floatingToc = document.getElementById('floatingToc');
     if (!floatingToc || !floatingTocVisible) return;
-    
-    // 清理滚动监听器
-    const tocContent = document.querySelector('.floating-toc-content');
-    if (tocContent && tocContent._scrollHandler) {
-        tocContent.removeEventListener('scroll', tocContent._scrollHandler);
-        delete tocContent._scrollHandler;
-        // 重置遮罩状态
-        tocContent.classList.remove('scrolled', 'scrolled-bottom');
-    }
     
     // 添加关闭动画类
     floatingToc.classList.add('closing');

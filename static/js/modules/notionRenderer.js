@@ -1,5 +1,11 @@
 // Notion page rendering functionality
-import { updateLoadingProgress } from './loader.js';
+import { 
+    initLoadingSystem, 
+    updateLoadingProgress, 
+    setLoadingStage, 
+    updateLoadingWithMessage,
+    LOADING_STAGES 
+} from './loader.js';
 import { imageObserver } from './imageHandler.js';
 import { processRichText, generateHeadingId, updatePageTitle } from './utils.js';
 import { codeHighlighter, CodeHighlighter } from './codeHighlight.js';
@@ -87,13 +93,13 @@ const PageTransition = {
                     <div class="loading-spinner"></div>
                 </div>`;
             
-            // Show loading overlay
+            // Show loading overlay with enhanced system
             const loadingOverlay = document.getElementById('loadingOverlay');
             loadingOverlay.style.display = 'flex';
             loadingOverlay.style.opacity = '1';
             
-            // Reset loading progress
-            updateLoadingProgress(10);
+            // Initialize the enhanced loading system for transition
+            initLoadingSystem();
             
             setTimeout(() => {
                 if (callback && typeof callback === 'function') {
@@ -651,11 +657,14 @@ async function loadPage(pageId = null) {
     }
 
     try {
+        // Initialize the enhanced loading system
+        console.log('🚀 Starting enhanced page loading for:', targetPageId);
+        initLoadingSystem();
+        
         // Reset page state
         const container = document.querySelector('.container');
         const pageCover = document.getElementById('pageCover');
         const backButton = document.querySelector('.mt-8');
-        const loadingText = document.querySelector('.loading-text');
         
         // Hide container and back button
         container.classList.remove('loaded');
@@ -674,9 +683,12 @@ async function loadPage(pageId = null) {
             }
         }
         
-        // Start loading data - Initial load with limit=15
-        updateLoadingProgress(10);
-        loadingText.textContent = '正在获取页面数据...';
+        // Stage 1: Initialize and fetch data
+        setLoadingStage('init', 5);
+        await new Promise(resolve => setTimeout(resolve, 200)); // Brief pause for visual effect
+        
+        setLoadingStage('fetch', 15);
+        updateLoadingWithMessage(20, '正在连接服务器...', '建立连接');
         
         // Initial load with only 15 blocks to avoid rate limiting
         const response = await fetch(`/api/page/${targetPageId}?limit=15`);
@@ -687,11 +699,11 @@ async function loadPage(pageId = null) {
         }
         
         const data = await response.json();
+        console.log('📥 Initial data received:', data.blocks?.length || 0, 'blocks');
         
-        updateLoadingProgress(30);
-        loadingText.textContent = '正在处理页面内容...';
+        updateLoadingProgress(35, '数据获取成功，正在解析...');
         
-        // Render page cover and basic info
+        // Stage 2: Process page metadata
         if (data.page) {
             // Update document title
             updatePageTitle(data.page.title);
@@ -711,7 +723,7 @@ async function loadPage(pageId = null) {
                 const img = pageCover.querySelector('img');
                 if (img) {
                     img.onload = () => {
-                        updateLoadingProgress(40);
+                        updateLoadingProgress(45, '封面图片加载完成');
                         pageCover.style.display = 'block';
                         setTimeout(() => {
                             pageCover.classList.add('loaded');
@@ -720,7 +732,7 @@ async function loadPage(pageId = null) {
                     img.src = data.page.cover;
                 }
             } else {
-                updateLoadingProgress(40);
+                updateLoadingProgress(45);
             }
             
             // Update page header
@@ -743,96 +755,98 @@ async function loadPage(pageId = null) {
             }
         }
         
-        // Initial render of the first 15 blocks
-        updateLoadingProgress(50);
-        loadingText.textContent = '正在渲染内容...';
+        // Stage 3: Render content
+        setLoadingStage('render', 50);
+        updateLoadingWithMessage(55, '正在渲染页面元素...', '构建内容');
         
-        console.log('Starting to render blocks...', data.blocks?.length || 0, 'blocks');
+        console.log('🎨 Starting to render blocks...', data.blocks?.length || 0, 'blocks');
         const content = await renderBlocks(data.blocks);
-        console.log('Blocks rendered successfully, content length:', content.length);
+        console.log('✅ Blocks rendered successfully, content length:', content.length);
         
-        updateLoadingProgress(80);
-        loadingText.textContent = '正在完成加载...';
+        updateLoadingProgress(70, '内容渲染完成');
         
         // Display initial content
-        console.log('Setting page content...');
+        console.log('📄 Setting page content...');
         const pageContent = document.getElementById('pageContent');
         pageContent.innerHTML = content;
-        console.log('Page content set successfully');
+        console.log('✅ Page content set successfully');
+        
+        // Stage 4: Optimize and finalize
+        setLoadingStage('optimize', 75);
+        updateLoadingWithMessage(80, '正在优化显示效果...', '最后润色');
         
         // Initialize image lazy loading for the initial content
-        console.log('Initializing image observer...');
+        console.log('🖼️ Initializing image observer...');
         try {
             imageObserver.init();
-            console.log('Image observer initialized');
+            console.log('✅ Image observer initialized');
         } catch (error) {
-            console.error('Error initializing image observer:', error);
+            console.error('❌ Error initializing image observer:', error);
         }
         
         // Initialize table of contents
-        console.log('Initializing table of contents...');
+        console.log('📋 Initializing table of contents...');
         try {
             TableOfContents.init();
-            console.log('Table of contents initialized');
+            console.log('✅ Table of contents initialized');
         } catch (error) {
-            console.error('Error initializing table of contents:', error);
+            console.error('❌ Error initializing table of contents:', error);
         }
         
         // Post-process the initial content
-        console.log('Post-processing content...');
+        console.log('🔧 Post-processing content...');
         try {
             postProcessContent(pageContent);
-            console.log('Content post-processed successfully');
+            console.log('✅ Content post-processed successfully');
         } catch (error) {
-            console.error('Error post-processing content:', error);
+            console.error('❌ Error post-processing content:', error);
         }
         
-        // Show the container
-        console.log('Finishing loading...');
-        updateLoadingProgress(90);
+        // Stage 5: Complete
+        updateLoadingProgress(90, '即将完成...');
         
         // Set up a fallback timer to ensure page shows even if something goes wrong
         const fallbackTimer = setTimeout(() => {
-            console.warn('Fallback timer triggered - forcing page to show');
+            console.warn('⚠️ Fallback timer triggered - forcing page to show');
             const container = document.querySelector('.container');
             if (!container.classList.contains('loaded')) {
                 container.classList.add('loaded');
-                updateLoadingProgress(100);
-                console.log('Page forced to show via fallback mechanism');
+                setLoadingStage('complete', 100);
+                console.log('🚨 Page forced to show via fallback mechanism');
             }
-        }, 5000); // 5 second fallback
+        }, 5000);
         
         setTimeout(() => {
-            console.log('Adding loaded class to container...');
+            console.log('🎯 Adding loaded class to container...');
             container.classList.add('loaded');
-            updateLoadingProgress(100);
-            console.log('Page loading completed successfully');
+            setLoadingStage('complete', 100);
+            console.log('🎉 Page loading completed successfully');
             
             // Clear the fallback timer since we completed successfully
             clearTimeout(fallbackTimer);
             
             // Initialize floating TOC for the initial content
-            console.log('Initializing floating TOC after page load...');
+            console.log('🧭 Initializing floating TOC after page load...');
             try {
                 if (window.initFloatingToc && typeof window.initFloatingToc === 'function') {
                     window.initFloatingToc();
-                    console.log('Floating TOC initialized successfully after page load');
+                    console.log('✅ Floating TOC initialized successfully after page load');
                 } else {
-                    console.warn('initFloatingToc function not available after page load');
+                    console.warn('⚠️ initFloatingToc function not available after page load');
                 }
             } catch (error) {
-                console.error('Error initializing floating TOC after page load:', error);
+                console.error('❌ Error initializing floating TOC after page load:', error);
             }
             
             // Start loading remaining content in background if there's more
             if (data.has_more && data.next_cursor) {
-                console.log('Starting background loading for remaining content...');
+                console.log('🔄 Starting background loading for remaining content...');
                 loadMoreContentInBackground(targetPageId, data.next_cursor, pageContent);
             }
-        }, 200);
+        }, 400);
         
     } catch (error) {
-        console.error('Error loading page:', error);
+        console.error('❌ Error loading page:', error);
         
         // Clear any existing fallback timer
         if (typeof fallbackTimer !== 'undefined') {

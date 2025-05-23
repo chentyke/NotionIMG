@@ -1,93 +1,444 @@
-/* Loading spinner animation */
+/* Enhanced Creative Loading Animations */
+
+/* Keyframe animations */
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
 
-/* Loading spinner styles */
-.loading-spinner {
-    border: 3px solid var(--border-color);
-    border-top: 3px solid var(--link-color);
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    animation: spin 1s linear infinite;
+@keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.8; }
 }
 
-/* Add improved loading overlay styles */
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+}
+
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+@keyframes typewriter {
+    from { width: 0; }
+    to { width: 100%; }
+}
+
+@keyframes blink {
+    0%, 50% { border-color: transparent; }
+    51%, 100% { border-color: var(--link-color); }
+}
+
+@keyframes orbit {
+    0% { transform: rotate(0deg) translateX(30px) rotate(0deg); }
+    100% { transform: rotate(360deg) translateX(30px) rotate(-360deg); }
+}
+
+@keyframes waveProgress {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+@keyframes breathe {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+@keyframes slideUpFade {
+    0% { 
+        opacity: 0; 
+        transform: translateY(20px); 
+    }
+    100% { 
+        opacity: 1; 
+        transform: translateY(0); 
+    }
+}
+
+/* Loading Overlay with Enhanced Background */
 .loading-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: var(--bg-primary);
+    background: linear-gradient(135deg, 
+        var(--bg-primary) 0%, 
+        rgba(59, 130, 246, 0.02) 25%,
+        rgba(168, 85, 247, 0.02) 50%,
+        rgba(236, 72, 153, 0.02) 75%,
+        var(--bg-primary) 100%);
+    background-size: 400% 400%;
+    animation: gradientShift 8s ease infinite;
     z-index: 2000;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     opacity: 1;
-    transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(2px);
+}
+
+@keyframes gradientShift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
 }
 
 .loading-overlay.fade-out {
     opacity: 0;
 }
 
-.loading-overlay .loading-spinner {
-    width: 32px;
-    height: 32px;
+/* Enhanced Loading Spinner Container */
+.loading-spinner-container {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    margin-bottom: 2rem;
 }
 
-.loading-overlay .loading-text {
+/* Main Creative Spinner */
+.loading-spinner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60px;
+    height: 60px;
+    border: 3px solid transparent;
+    border-radius: 50%;
+    position: relative;
+    animation: breathe 2s ease-in-out infinite;
+}
+
+.loading-spinner::before {
+    content: '';
+    position: absolute;
+    top: -3px;
+    left: -3px;
+    right: -3px;
+    bottom: -3px;
+    border: 3px solid var(--border-color);
+    border-top: 3px solid var(--link-color);
+    border-radius: 50%;
+    animation: spin 1.2s linear infinite;
+}
+
+.loading-spinner::after {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    border: 2px solid transparent;
+    border-top: 2px solid var(--link-color);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite reverse;
+}
+
+/* Orbital Dots */
+.loading-orbital {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80px;
+    height: 80px;
+}
+
+.loading-orbital-dot {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--link-color);
+    animation: orbit 3s linear infinite;
+    transform-origin: -30px center;
+}
+
+.loading-orbital-dot:nth-child(2) {
+    animation-delay: -1s;
+    background: rgba(168, 85, 247, 0.8);
+}
+
+.loading-orbital-dot:nth-child(3) {
+    animation-delay: -2s;
+    background: rgba(236, 72, 153, 0.8);
+}
+
+/* Enhanced Loading Text with Typewriter Effect */
+.loading-text {
     color: var(--text-secondary);
-    font-size: 0.875rem;
-    margin-top: 1rem;
-    opacity: 0.8;
-    font-weight: 500;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    opacity: 0.9;
+    position: relative;
+    overflow: hidden;
+    white-space: nowrap;
+    border-right: 2px solid transparent;
+    max-width: 300px;
+    animation: typewriter 2s steps(40) infinite alternate, blink 1s step-end infinite;
 }
 
+/* Loading Stage Indicator */
+.loading-stage {
+    font-size: 0.875rem;
+    color: var(--text-tertiary);
+    margin-bottom: 1.5rem;
+    opacity: 0.8;
+    animation: slideUpFade 0.5s ease-out;
+}
+
+/* Creative Progress Bar */
 .loading-progress {
-    width: 220px;
-    height: 3px;
+    width: 280px;
+    height: 6px;
     background-color: var(--border-color);
-    border-radius: 1.5px;
+    border-radius: 3px;
     overflow: hidden;
-    margin-top: 1rem;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    position: relative;
+    box-shadow: 
+        0 1px 3px rgba(0, 0, 0, 0.1),
+        inset 0 1px 2px rgba(0, 0, 0, 0.05);
+    margin-bottom: 1rem;
+}
+
+.loading-progress::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(255, 255, 255, 0.2) 50%, 
+        transparent 100%);
+    animation: waveProgress 2s linear infinite;
 }
 
 .loading-progress-bar {
     height: 100%;
-    background-color: var(--link-color);
-    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    will-change: width;
+    background: linear-gradient(135deg, 
+        var(--link-color) 0%, 
+        rgba(168, 85, 247, 0.8) 50%,
+        rgba(236, 72, 153, 0.8) 100%);
+    background-size: 200% 100%;
+    animation: gradientShift 3s ease infinite;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 3px;
+    position: relative;
+    overflow: hidden;
 }
 
-/* Add page transition styles */
+.loading-progress-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(255, 255, 255, 0.3) 50%, 
+        transparent 100%);
+    animation: shimmer 1.5s infinite;
+}
+
+/* Progress Percentage */
+.loading-percentage {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin-top: 0.5rem;
+    opacity: 0.8;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Loading Status Icons */
+.loading-status-icons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    opacity: 0.6;
+}
+
+.loading-status-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.loading-status-icon.active {
+    background: var(--link-color);
+    color: white;
+    animation: pulse 2s infinite;
+}
+
+.loading-status-icon.completed {
+    background: var(--success-color);
+    color: white;
+    animation: none;
+}
+
+.loading-status-icon::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border: 2px solid transparent;
+    border-radius: 50%;
+    transition: border-color 0.3s ease;
+}
+
+.loading-status-icon.active::after {
+    border-color: var(--link-color);
+    animation: spin 2s linear infinite;
+}
+
+/* Floating particles for extra visual appeal */
+.loading-particles {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.loading-particle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: var(--link-color);
+    border-radius: 50%;
+    opacity: 0.3;
+    animation: float 4s ease-in-out infinite;
+}
+
+.loading-particle:nth-child(1) { left: 10%; animation-delay: -0.5s; }
+.loading-particle:nth-child(2) { left: 20%; animation-delay: -1s; }
+.loading-particle:nth-child(3) { left: 30%; animation-delay: -1.5s; }
+.loading-particle:nth-child(4) { left: 40%; animation-delay: -2s; }
+.loading-particle:nth-child(5) { left: 50%; animation-delay: -2.5s; }
+.loading-particle:nth-child(6) { left: 60%; animation-delay: -3s; }
+.loading-particle:nth-child(7) { left: 70%; animation-delay: -3.5s; }
+.loading-particle:nth-child(8) { left: 80%; animation-delay: -4s; }
+.loading-particle:nth-child(9) { left: 90%; animation-delay: -4.5s; }
+
+/* Page Transition Overlay */
 .page-transition {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: var(--bg-primary);
+    background: linear-gradient(135deg, var(--bg-primary), rgba(59, 130, 246, 0.05));
     z-index: 1999;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .page-transition.active {
-    opacity: 0.9;
+    opacity: 0.95;
     pointer-events: auto;
 }
 
-/* Mobile optimizations */
+/* Success Animation when loading completes */
+.loading-progress.complete .loading-progress-bar {
+    background: linear-gradient(135deg, 
+        var(--success-color) 0%, 
+        rgba(34, 197, 94, 0.8) 100%);
+    animation: pulse 1s ease-out;
+}
+
+.loading-progress.complete::after {
+    content: '✓';
+    position: absolute;
+    right: -30px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--success-color);
+    font-weight: bold;
+    font-size: 18px;
+    animation: slideUpFade 0.5s ease-out;
+}
+
+/* Mobile Optimizations */
 @media (max-width: 640px) {
     .loading-progress {
         width: 85%;
-        max-width: 280px;
+        max-width: 300px;
+    }
+    
+    .loading-spinner-container {
+        width: 70px;
+        height: 70px;
+        margin-bottom: 1.5rem;
+    }
+    
+    .loading-spinner {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .loading-orbital {
+        width: 70px;
+        height: 70px;
+    }
+    
+    .loading-text {
+        font-size: 0.9rem;
+        max-width: 250px;
+    }
+    
+    .loading-status-icons {
+        gap: 0.75rem;
+        margin-top: 1rem;
+    }
+    
+    .loading-status-icon {
+        width: 20px;
+        height: 20px;
+        font-size: 10px;
+    }
+}
+
+/* Dark Theme Adjustments */
+@media (prefers-color-scheme: dark) {
+    .loading-overlay {
+        background: linear-gradient(135deg, 
+            var(--bg-primary) 0%, 
+            rgba(59, 130, 246, 0.05) 25%,
+            rgba(168, 85, 247, 0.05) 50%,
+            rgba(236, 72, 153, 0.05) 75%,
+            var(--bg-primary) 100%);
+    }
+    
+    .loading-particle {
+        background: rgba(156, 163, 175, 0.6);
+    }
+    
+    .loading-progress {
+        box-shadow: 
+            0 1px 3px rgba(0, 0, 0, 0.3),
+            inset 0 1px 2px rgba(0, 0, 0, 0.2);
     }
 } 
