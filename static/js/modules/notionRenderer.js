@@ -356,17 +356,18 @@ async function renderBlock(block) {
                 const codeContainerStyle = blockColorStyle ? ` style="${blockColorStyle}"` : '';
                 
                 return `
-                    <div class="code-block relative my-4"${codeContainerStyle}>
-                        <div class="flex justify-between items-center bg-gray-800 text-white px-4 py-2 text-sm rounded-t-lg">
-                            <span>${language}</span>
+                    <div class="code-block"${codeContainerStyle}>
+                        <div class="code-header">
+                            <span class="code-language">${language}</span>
                             <button onclick="copyCode(this)" data-code-id="${codeId}" class="copy-code-btn">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
                                           d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
                                 </svg>
+                                Copy
                             </button>
                         </div>
-                        <pre class="bg-gray-900 text-gray-100 p-4 rounded-b-lg overflow-x-auto text-sm leading-relaxed"><code id="${codeId}">${codeText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>
+                        <pre><code id="${codeId}">${codeText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>
                     </div>`;
             } catch (error) {
                 console.error('Error rendering code block:', error);
@@ -520,18 +521,22 @@ async function renderBlock(block) {
                 if (block.callout.icon.type === 'emoji') {
                     icon = block.callout.icon.emoji;
                 } else if (block.callout.icon.type === 'external') {
-                    icon = `<img src="${block.callout.icon.external.url}" alt="icon" class="w-5 h-5">`;
+                    icon = `<img src="${block.callout.icon.external.url}" alt="icon">`;
                 } else if (block.callout.icon.type === 'file') {
-                    icon = `<img src="${block.callout.icon.file.url}" alt="icon" class="w-5 h-5">`;
+                    icon = `<img src="${block.callout.icon.file.url}" alt="icon">`;
                 }
             }
             
+            // Determine callout color class
+            let colorClass = '';
+            if (block.color && block.color !== 'default') {
+                colorClass = ` callout-${block.color}`;
+            }
+            
             return `
-                <div class="callout border-l-4 border-blue-400 bg-blue-50 p-4 my-4" ${blockColorStyle ? `style="${blockColorStyle}"` : ''}>
-                    <div class="flex items-start gap-3">
-                        <div class="callout-icon text-lg">${icon}</div>
-                        <div class="callout-content flex-1">${calloutContent}</div>
-                    </div>
+                <div class="callout${colorClass}">
+                    <div class="callout-icon">${icon}</div>
+                    <div class="callout-content">${calloutContent}</div>
                 </div>`;
                 
         case 'embed':

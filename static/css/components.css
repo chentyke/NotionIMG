@@ -273,4 +273,289 @@
     .file-block .text-sm {
         font-size: 0.75rem;
     }
+}
+
+/* Notion-like Callout Styles */
+.callout {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    margin: 12px 0;
+    border-radius: 8px;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    position: relative;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.callout:hover {
+    border-color: #dee2e6;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.callout-icon {
+    flex-shrink: 0;
+    font-size: 18px;
+    line-height: 1;
+    margin-top: 2px;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.callout-icon img {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+}
+
+.callout-content {
+    flex: 1;
+    min-width: 0;
+    color: #37352f;
+    word-wrap: break-word;
+}
+
+.callout-content p {
+    margin: 0;
+}
+
+.callout-content p:not(:last-child) {
+    margin-bottom: 8px;
+}
+
+/* Callout color variants - matching Notion's color system */
+.callout.callout-gray {
+    background: #f8f9fa;
+    border-color: #e9ecef;
+}
+
+.callout.callout-brown {
+    background: #fdf8f6;
+    border-color: #e9c46a;
+}
+
+.callout.callout-orange {
+    background: #fff4e6;
+    border-color: #fd7e14;
+}
+
+.callout.callout-yellow {
+    background: #fffbf0;
+    border-color: #ffc107;
+}
+
+.callout.callout-green {
+    background: #f0f9ff;
+    border-color: #20c997;
+}
+
+.callout.callout-blue {
+    background: #e7f3ff;
+    border-color: #0d6efd;
+}
+
+.callout.callout-purple {
+    background: #f4f0ff;
+    border-color: #6f42c1;
+}
+
+.callout.callout-pink {
+    background: #fdf2f8;
+    border-color: #e91e63;
+}
+
+.callout.callout-red {
+    background: #fff5f5;
+    border-color: #dc3545;
+}
+
+/* Background variants */
+.callout.callout-gray-background {
+    background: #f1f3f4;
+    border-color: #d0d7de;
+    color: #37352f;
+}
+
+.callout.callout-brown-background {
+    background: #f6f2ed;
+    border-color: #d4a574;
+    color: #6b4423;
+}
+
+.callout.callout-orange-background {
+    background: #faebdd;
+    border-color: #d9730d;
+    color: #8b4513;
+}
+
+.callout.callout-yellow-background {
+    background: #fbf3db;
+    border-color: #dfab01;
+    color: #7d6608;
+}
+
+.callout.callout-green-background {
+    background: #ddedea;
+    border-color: #4d8076;
+    color: #0f5132;
+}
+
+.callout.callout-blue-background {
+    background: #ddebf1;
+    border-color: #73b3d0;
+    color: #055160;
+}
+
+.callout.callout-purple-background {
+    background: #eae4f2;
+    border-color: #9373bd;
+    color: #432874;
+}
+
+.callout.callout-pink-background {
+    background: #f2ddec;
+    border-color: #c06497;
+    color: #801650;
+}
+
+.callout.callout-red-background {
+    background: #ffe2e2;
+    border-color: #ff9999;
+    color: #721c24;
+}
+
+/* Dark theme callout styles */
+@media (prefers-color-scheme: dark) {
+    .callout {
+        background: #2d2d2d;
+        border-color: #404040;
+        color: #e4e4e7;
+    }
+
+    .callout:hover {
+        border-color: #525252;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+
+    .callout-content {
+        color: #e4e4e7;
+    }
+
+    /* Dark theme color variants */
+    .callout.callout-gray {
+        background: #2d2d2d;
+        border-color: #404040;
+    }
+
+    .callout.callout-brown {
+        background: #3a2e2a;
+        border-color: #8b4513;
+    }
+
+    .callout.callout-orange {
+        background: #3a2a1a;
+        border-color: #d2691e;
+    }
+
+    .callout.callout-yellow {
+        background: #3a3420;
+        border-color: #daa520;
+    }
+
+    .callout.callout-green {
+        background: #1a3a2e;
+        border-color: #20c997;
+    }
+
+    .callout.callout-blue {
+        background: #1a2e3a;
+        border-color: #0d6efd;
+    }
+
+    .callout.callout-purple {
+        background: #2a1a3a;
+        border-color: #6f42c1;
+    }
+
+    .callout.callout-pink {
+        background: #3a1a2e;
+        border-color: #e91e63;
+    }
+
+    .callout.callout-red {
+        background: #3a1a1a;
+        border-color: #dc3545;
+    }
+
+    /* Dark background variants */
+    .callout.callout-gray-background {
+        background: #1a1a1a;
+        border-color: #2d2d2d;
+    }
+
+    .callout.callout-brown-background {
+        background: #2d1f1a;
+        border-color: #5d3a1a;
+    }
+
+    .callout.callout-orange-background {
+        background: #2d1a0d;
+        border-color: #5d3000;
+    }
+
+    .callout.callout-yellow-background {
+        background: #2d2a0d;
+        border-color: #5d5500;
+    }
+
+    .callout.callout-green-background {
+        background: #0d2d1a;
+        border-color: #1a5d30;
+    }
+
+    .callout.callout-blue-background {
+        background: #0d1a2d;
+        border-color: #1a3a5d;
+    }
+
+    .callout.callout-purple-background {
+        background: #1a0d2d;
+        border-color: #3a1a5d;
+    }
+
+    .callout.callout-pink-background {
+        background: #2d0d1a;
+        border-color: #5d1a3a;
+    }
+
+    .callout.callout-red-background {
+        background: #2d0d0d;
+        border-color: #5d1a1a;
+    }
+}
+
+/* Mobile optimizations for callouts */
+@media (max-width: 640px) {
+    .callout {
+        padding: 12px;
+        gap: 10px;
+        font-size: 14px;
+    }
+
+    .callout-icon {
+        font-size: 16px;
+        width: 18px;
+        height: 18px;
+    }
+
+    .callout-icon img {
+        width: 16px;
+        height: 16px;
+    }
 } 
