@@ -350,10 +350,11 @@ async function renderBlock(block) {
         
         case 'code':
             try {
-                const codeText = block.code?.rich_text 
-                    ? block.code.rich_text.map(text => text.plain_text).join('')
-                    : '';
-                const language = block.code?.language || 'plain text';
+                // Use the rich_text from our API response
+                const codeText = block.rich_text 
+                    ? block.rich_text.map(text => text.plain_text).join('')
+                    : block.text || '';
+                const language = block.language || 'plain text';
                 const codeId = `code-${Math.random().toString(36).substr(2, 9)}`;
                 
                 // Apply color to the code block container if specified
@@ -910,10 +911,11 @@ function toggleBlock(id) {
     const content = block.querySelector('.toggle-content');
     const icon = block.querySelector('.toggle-icon');
     
-    if (content.style.maxHeight) {
+    if (block.classList.contains('open')) {
         // Collapse
-        content.style.maxHeight = null;
-        block.classList.remove('expanded');
+        content.style.height = '0';
+        content.style.opacity = '0';
+        block.classList.remove('open');
         
         // Rotate icon back
         if (icon) {
@@ -921,9 +923,10 @@ function toggleBlock(id) {
         }
     } else {
         // Expand
-        block.classList.add('expanded');
+        block.classList.add('open');
         const contentHeight = content.scrollHeight;
-        content.style.maxHeight = contentHeight + 'px';
+        content.style.height = contentHeight + 'px';
+        content.style.opacity = '1';
         
         // Rotate icon
         if (icon) {
@@ -932,10 +935,10 @@ function toggleBlock(id) {
         
         // Handle animation completion
         content.addEventListener('transitionend', function handler(e) {
-            if (e.propertyName === 'max-height') {
-                // If still expanded after animation, set to "none" to allow flexible height
-                if (block.classList.contains('expanded')) {
-                    content.style.maxHeight = 'none';
+            if (e.propertyName === 'height') {
+                // If still expanded after animation, set to "auto" to allow flexible height
+                if (block.classList.contains('open')) {
+                    content.style.height = 'auto';
                 }
                 content.removeEventListener('transitionend', handler);
             }
