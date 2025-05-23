@@ -1,9 +1,11 @@
-/* Import all CSS files */
+/* Import all CSS modules */
 @import 'base.css';
-@import 'loading.css';
 @import 'typography.css';
-@import 'code.css';
-@import 'header.css';
-@import 'images.css';
 @import 'components.css';
-@import 'toc.css'; 
+@import 'loading.css';
+@import 'header.css';
+@import 'toc.css';
+@import 'code.css';
+@import 'images.css';
+@import 'styles.css';
+@import 'mobile.css'; 

@@ -60,28 +60,261 @@ body {
 
 /* Mobile optimizations */
 @media (max-width: 640px) {
+    /* 移动端容器优化 */
     .container.mx-auto {
-        padding-left: 1rem;
-        padding-right: 1rem;
+        padding-left: 0.75rem; /* 减少横向内边距以最大化内容空间 */
+        padding-right: 0.75rem;
+        padding-top: 1rem; /* 减少顶部内边距 */
+        padding-bottom: 1rem;
     }
     
     .bg-white {
-        border-radius: 0.5rem;
+        border-radius: 1rem; /* 增大圆角以适应移动端设计趋势 */
+        margin-bottom: 1rem; /* 底部留白 */
+        box-shadow: 
+            0 4px 12px rgba(0, 0, 0, 0.05),
+            0 1px 3px rgba(0, 0, 0, 0.1); /* 增强阴影层次感 */
+    }
+    
+    .p-6 {
+        padding: 1.25rem; /* 适中的内边距平衡内容密度和可读性 */
+    }
+    
+    /* 移动端页面头部优化 */
+    .page-header {
+        margin-bottom: 1.5rem; /* 增加底部间距 */
+    }
+    
+    .page-title {
+        font-size: 1.875rem; /* 适中的标题大小 */
+        line-height: 1.3; /* 优化行高 */
+        margin-bottom: 0.5rem;
+        word-break: break-word; /* 处理超长标题 */
+        hyphens: auto; /* 自动断词 */
+    }
+    
+    /* 移动端内容区域优化 */
+    .prose {
+        font-size: 1rem; /* 确保移动端可读性 */
+        line-height: 1.65; /* 增加行高提升可读性 */
+        max-width: none; /* 移除最大宽度限制 */
+    }
+    
+    .prose p {
+        margin-bottom: 1.25rem; /* 增加段落间距 */
+    }
+    
+    .prose h1, .prose h2, .prose h3 {
+        margin-top: 2rem; /* 增加标题上方间距 */
+        margin-bottom: 1rem;
+        line-height: 1.4; /* 优化标题行高 */
+    }
+    
+    .prose h1 {
+        font-size: 1.75rem; /* 移动端标题大小 */
+    }
+    
+    .prose h2 {
+        font-size: 1.5rem;
+    }
+    
+    .prose h3 {
+        font-size: 1.25rem;
+    }
+    
+    /* 移动端列表优化 */
+    .prose ul, .prose ol {
+        padding-left: 1.25rem; /* 减少缩进以节省空间 */
+        margin-bottom: 1.25rem;
+    }
+    
+    .prose li {
+        margin-bottom: 0.5rem; /* 增加列表项间距 */
+        line-height: 1.6;
+    }
+    
+    /* 移动端代码块优化 */
+    .prose pre {
+        padding: 1rem; /* 减少内边距 */
+        border-radius: 0.75rem;
+        font-size: 0.875rem; /* 适中的代码字体大小 */
+        line-height: 1.5;
+        overflow-x: auto; /* 确保横向滚动 */
+        -webkit-overflow-scrolling: touch; /* iOS 平滑滚动 */
+    }
+    
+    .prose code {
+        font-size: 0.875rem;
+        padding: 0.125rem 0.375rem;
+        border-radius: 0.375rem;
+    }
+    
+    /* 移动端表格优化 */
+    .prose table {
+        font-size: 0.875rem;
+        margin: 1.5rem 0;
+    }
+    
+    .prose th, .prose td {
+        padding: 0.75rem 0.5rem; /* 减少单元格内边距 */
+        font-size: 0.875rem;
+    }
+    
+    /* 移动端引用块优化 */
+    .prose blockquote {
+        margin: 1.5rem 0;
+        padding: 1rem 1.25rem;
+        border-left-width: 4px;
+        font-size: 1rem;
+        line-height: 1.6;
+        border-radius: 0 0.5rem 0.5rem 0;
+    }
+    
+    /* 移动端图片优化 */
+    .prose img {
+        border-radius: 0.75rem; /* 增加图片圆角 */
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* 添加阴影 */
+    }
+    
+    /* 移动端按钮和链接优化 */
+    .prose a {
+        word-break: break-word; /* 处理长链接 */
+    }
+    
+    /* 移动端回到顶部按钮等操作元素的触摸优化 */
+    button, .copy-link-button, [role="button"] {
+        min-height: 44px; /* iOS HIG 推荐的最小触摸目标 */
+        min-width: 44px;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent; /* 移除 WebKit 的点击高亮 */
+    }
+    
+    /* 移动端页面过渡优化 */
+    .container {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .container.loaded {
+        animation: slideInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+    
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+}
+
+/* 针对更小屏幕的特殊优化 */
+@media (max-width: 375px) {
+    .container.mx-auto {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
     }
     
     .p-6 {
         padding: 1rem;
     }
+    
+    .page-title {
+        font-size: 1.75rem;
+    }
+    
+    .prose {
+        font-size: 0.9375rem;
+    }
+    
+    .prose h1 {
+        font-size: 1.625rem;
+    }
+    
+    .prose h2 {
+        font-size: 1.375rem;
+    }
+    
+    .prose h3 {
+        font-size: 1.125rem;
+    }
+}
+
+/* 移动端横屏模式优化 */
+@media (max-width: 640px) and (orientation: landscape) {
+    .container.mx-auto {
+        padding-top: 0.75rem;
+        padding-bottom: 0.75rem;
+    }
+    
+    .page-title {
+        font-size: 1.75rem;
+        margin-bottom: 0.375rem;
+    }
+    
+    .prose h1, .prose h2, .prose h3 {
+        margin-top: 1.5rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .prose p {
+        margin-bottom: 1rem;
+    }
 }
 
 /* Better touch focus styles on mobile */
 @media (hover: none) {
+    /* 移除原有的简单激活样式，替换为更丰富的触摸反馈 */
     .toggle-header:active {
         background-color: var(--hover-bg);
+        transform: scale(0.98); /* 轻微缩放反馈 */
+        transition: all 0.1s ease-out;
     }
     
     .prose a:active {
         color: var(--link-hover-color);
+        transform: scale(0.98);
+        transition: all 0.1s ease-out;
+    }
+    
+    button:active, .copy-link-button:active, [role="button"]:active {
+        transform: scale(0.95);
+        transition: all 0.1s ease-out;
+    }
+    
+    /* 触摸设备专用的视觉增强 */
+    .bg-white {
+        box-shadow: 
+            0 4px 16px rgba(0, 0, 0, 0.06),
+            0 2px 6px rgba(0, 0, 0, 0.08);
+    }
+    
+    /* 确保所有交互元素都有足够的触摸目标大小 */
+    .prose a {
+        min-height: 24px; /* 确保链接有足够的触摸目标 */
+        display: inline-block;
+        line-height: 1.5;
+    }
+    
+    /* 滚动条优化（WebKit浏览器） */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 4px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+        background: rgba(0, 0, 0, 0.3);
     }
 }
 
@@ -95,6 +328,36 @@ body {
 @media (hover: none) {
     .desktop-only {
         display: none;
+    }
+}
+
+/* 移动端安全区域适配（支持刘海屏等）*/
+@media (max-width: 640px) {
+    .container.mx-auto {
+        padding-left: max(0.75rem, env(safe-area-inset-left));
+        padding-right: max(0.75rem, env(safe-area-inset-right));
+        padding-top: max(1rem, env(safe-area-inset-top));
+        padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    }
+}
+
+/* 移动端性能优化 */
+@media (max-width: 640px) {
+    * {
+        /* 减少过渡动画以提升性能 */
+        transition-duration: 0.2s;
+    }
+    
+    .animate-pulse {
+        /* 移动端使用更简单的脉冲动画 */
+        animation-duration: 1.5s;
+    }
+    
+    /* 确保在移动端图片和媒体元素的优化加载 */
+    img, video, iframe {
+        max-width: 100%;
+        height: auto;
+        will-change: auto; /* 移除不必要的硬件加速 */
     }
 }
 

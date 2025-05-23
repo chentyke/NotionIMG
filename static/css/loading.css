@@ -279,29 +279,266 @@
     .loading-container {
         gap: 1.5rem;
         padding: 0 1rem;
+        transform: translateY(-5vh); /* 轻微上移以适应移动端视觉中心 */
+    }
+    
+    /* 移动端多阶段指示器优化 */
+    .loading-stages {
+        gap: 0.625rem; /* 稍微增大间距以适应手指触摸 */
+        margin-bottom: 1.25rem;
+    }
+    
+    .stage-dot {
+        width: 14px; /* 增大以便移动端查看 */
+        height: 14px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* 添加阴影增强立体感 */
+    }
+    
+    .stage-dot.active {
+        transform: scale(1.3); /* 增大缩放比例 */
+        box-shadow: 
+            0 0 0 5px rgba(var(--link-color-rgb), 0.2),
+            0 4px 8px rgba(0, 0, 0, 0.15); /* 更明显的视觉反馈 */
+    }
+    
+    /* 移动端加载旋转器优化 */
+    .loading-progress {
+        width: 90%; /* 更好地利用移动端屏幕宽度 */
+        max-width: 300px;
+        height: 6px; /* 增加高度便于查看 */
+        border-radius: 3px;
+        box-shadow: 
+            inset 0 1px 3px rgba(0, 0, 0, 0.12),
+            0 1px 2px rgba(0, 0, 0, 0.08); /* 增强立体感 */
+    }
+    
+    .loading-progress-bar {
+        border-radius: 3px;
+        box-shadow: 0 1px 2px rgba(var(--link-color-rgb), 0.3); /* 进度条阴影 */
+    }
+    
+    .loading-spinner {
+        width: 44px; /* 增大旋转器 */
+        height: 44px;
+        border-width: 4px; /* 增加边框宽度 */
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* 添加阴影 */
+    }
+    
+    .loading-spinner::after {
+        border-width: 3px;
+    }
+    
+    /* 移动端加载文字优化 */
+    .loading-text {
+        font-size: 1rem; /* 增大字体 */
+        font-weight: 600; /* 增加字重 */
+        margin-top: 0.75rem;
+        text-align: center;
+        color: var(--text-primary); /* 使用主要文字颜色增强可读性 */
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); /* 轻微文字阴影 */
+        min-height: 1.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+    
+    .loading-text::after {
+        width: 3px;
+        height: 1.2rem;
+        border-radius: 1.5px;
+        animation: blink 1.2s ease-in-out infinite; /* 稍微放慢动画 */
+    }
+    
+    /* 移动端状态指示器优化 */
+    .loading-status {
+        gap: 0.75rem; /* 增加间距 */
+        margin-top: 1.5rem;
+        opacity: 0.85;
+        max-width: 280px; /* 限制最大宽度避免过长 */
+    }
+    
+    .status-item {
+        font-size: 0.875rem; /* 增大字体 */
+        padding: 0.5rem 0; /* 增加垂直内边距便于触摸 */
+        border-radius: 8px; /* 添加圆角 */
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); /* 更流畅的过渡 */
+        position: relative;
+    }
+    
+    .status-item.active {
+        transform: translateX(6px) scale(1.02); /* 更明显的激活状态 */
+        background: rgba(var(--link-color-rgb), 0.05); /* 轻微背景色 */
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        margin: 0 -1rem; /* 负边距补偿内边距 */
+        box-shadow: 0 2px 8px rgba(var(--link-color-rgb), 0.15); /* 添加阴影 */
+    }
+    
+    .status-item.completed {
+        background: rgba(var(--success-color, 16, 185, 129), 0.05);
+        border-radius: 10px;
+        padding: 0.5rem 0.75rem;
+    }
+    
+    .status-icon {
+        width: 20px; /* 增大图标 */
+        height: 20px;
+        font-size: 0.875rem;
+        margin-right: 0.125rem;
+    }
+    
+    /* 移动端优化动画 */
+    @keyframes float {
+        0%, 100% { transform: translateY(-5vh); }
+        50% { transform: translateY(-6vh); } /* 更轻微的浮动 */
+    }
+    
+    /* 页面过渡优化 */
+    .page-transition {
+        backdrop-filter: blur(3px); /* 增强模糊效果 */
+        -webkit-backdrop-filter: blur(3px);
+    }
+    
+    /* 移动端加载覆盖层优化 */
+    .loading-overlay {
+        background: linear-gradient(135deg, 
+            var(--bg-primary) 0%, 
+            rgba(var(--bg-secondary-rgb, 249, 250, 251), 0.98) 70%,
+            var(--bg-primary) 100%); /* 更丰富的渐变 */
+        backdrop-filter: blur(2px);
+        -webkit-backdrop-filter: blur(2px);
+    }
+}
+
+/* 针对更小的移动设备（iPhone SE等）*/
+@media (max-width: 375px) {
+    .loading-container {
+        gap: 1.25rem;
+        padding: 0 0.75rem;
+        transform: translateY(-8vh); /* 更多上移以适应小屏幕 */
+    }
+    
+    .loading-progress {
+        width: 95%;
+        max-width: 280px;
+    }
+    
+    .loading-text {
+        font-size: 0.9375rem; /* 稍微减小字体避免换行 */
+    }
+    
+    .status-item {
+        font-size: 0.8125rem;
+    }
+    
+    .loading-stages {
+        gap: 0.5rem; /* 减少间距以适应小屏幕 */
+    }
+    
+    .loading-status {
+        max-width: 260px;
+    }
+}
+
+/* 针对大屏移动设备（iPhone Plus, iPad mini等）*/
+@media (min-width: 641px) and (max-width: 768px) {
+    .loading-container {
+        gap: 2rem;
+        transform: translateY(-3vh);
+    }
+    
+    .loading-spinner {
+        width: 48px;
+        height: 48px;
+    }
+    
+    .loading-text {
+        font-size: 1.125rem;
+    }
+    
+    .status-item {
+        font-size: 1rem;
     }
     
     .loading-progress {
         width: 85%;
-        max-width: 260px;
+        max-width: 400px;
+        height: 8px;
+    }
+}
+
+/* 触摸设备特有的优化 */
+@media (hover: none) and (pointer: coarse) {
+    .loading-container {
+        user-select: none; /* 防止意外选择文本 */
+        -webkit-user-select: none;
+        -webkit-touch-callout: none; /* 禁用iOS长按菜单 */
     }
     
-    .loading-spinner {
-        width: 36px;
-        height: 36px;
+    .status-item.active {
+        animation: gentlePulse 2s ease-in-out infinite; /* 添加脉冲动画增强反馈 */
     }
     
-    .stage-dot {
-        width: 10px;
-        height: 10px;
+    @keyframes gentlePulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.9; }
+    }
+    
+    /* 确保在触摸设备上有更好的视觉层次 */
+    .loading-overlay {
+        background: linear-gradient(135deg, 
+            var(--bg-primary) 0%, 
+            rgba(var(--bg-secondary-rgb, 249, 250, 251), 0.96) 50%,
+            rgba(var(--bg-primary-rgb, 249, 250, 251), 0.98) 100%);
+    }
+}
+
+/* 横屏模式优化 */
+@media (max-width: 640px) and (orientation: landscape) {
+    .loading-container {
+        gap: 1rem;
+        transform: translateY(-2vh); /* 横屏时减少上移 */
+        padding: 0 2rem; /* 增加横向内边距 */
     }
     
     .loading-text {
-        font-size: 0.85rem;
+        font-size: 0.9375rem; /* 横屏时减小字体节省空间 */
+    }
+    
+    .loading-status {
+        gap: 0.5rem; /* 减少间距节省垂直空间 */
+        margin-top: 1rem;
     }
     
     .status-item {
-        font-size: 0.75rem;
+        font-size: 0.8125rem;
+        padding: 0.375rem 0;
+    }
+    
+    .loading-stages {
+        margin-bottom: 1rem;
+    }
+}
+
+/* 高像素密度屏幕优化 */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .stage-dot {
+        box-shadow: 
+            0 1px 2px rgba(0, 0, 0, 0.1),
+            0 0 0 0.5px rgba(0, 0, 0, 0.05); /* 在高分辨率屏幕上的精细边框 */
+    }
+    
+    .loading-spinner {
+        box-shadow: 
+            0 2px 4px rgba(0, 0, 0, 0.1),
+            0 0 0 0.5px rgba(0, 0, 0, 0.05);
+    }
+    
+    .loading-progress {
+        box-shadow: 
+            inset 0 0.5px 1.5px rgba(0, 0, 0, 0.12),
+            0 0.5px 1px rgba(0, 0, 0, 0.08);
     }
 }
 
@@ -317,5 +554,38 @@
         background: linear-gradient(135deg, 
             var(--bg-primary) 0%, 
             rgba(17, 24, 39, 0.98) 100%);
+    }
+    
+    /* 暗黑模式下的移动端优化 */
+    @media (max-width: 640px) {
+        .stage-dot {
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .stage-dot.active {
+            box-shadow: 
+                0 0 0 5px rgba(var(--link-color-rgb), 0.3),
+                0 4px 8px rgba(0, 0, 0, 0.4);
+        }
+        
+        .loading-spinner {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .loading-text {
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+        
+        .status-item.active {
+            background: rgba(var(--link-color-rgb), 0.1);
+            box-shadow: 0 2px 8px rgba(var(--link-color-rgb), 0.2);
+        }
+        
+        .loading-overlay {
+            background: linear-gradient(135deg, 
+                var(--bg-primary) 0%, 
+                rgba(17, 24, 39, 0.96) 50%,
+                rgba(var(--bg-primary-rgb, 17, 24, 39), 0.98) 100%);
+        }
     }
 } 

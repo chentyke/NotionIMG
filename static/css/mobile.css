@@ -1,0 +1,363 @@
+/* Mobile-specific CSS optimizations for Notion API Reader */
+
+/* =================================================================
+   MOBILE LOADING EXPERIENCE ENHANCEMENTS
+   ================================================================= */
+
+/* 移动端加载页面振动反馈（如果支持） */
+@media (max-width: 640px) {
+    /* 移动端特定的加载状态管理 */
+    .loading-container {
+        /* 确保在移动端有足够的视觉吸引力 */
+        animation: mobileFloatEnhanced 4s ease-in-out infinite;
+    }
+    
+    @keyframes mobileFloatEnhanced {
+        0%, 100% { 
+            transform: translateY(-5vh) scale(1); 
+            filter: brightness(1);
+        }
+        25% { 
+            transform: translateY(-5.5vh) scale(1.005); 
+            filter: brightness(1.02);
+        }
+        50% { 
+            transform: translateY(-6vh) scale(1.01); 
+            filter: brightness(1.05);
+        }
+        75% { 
+            transform: translateY(-5.5vh) scale(1.005); 
+            filter: brightness(1.02);
+        }
+    }
+    
+    /* 移动端加载完成时的庆祝动画 */
+    .loading-progress.complete {
+        animation: completeCelebration 1s ease-out;
+    }
+    
+    @keyframes completeCelebration {
+        0% { transform: scale(1); }
+        25% { transform: scale(1.05); }
+        50% { transform: scale(0.95); }
+        75% { transform: scale(1.02); }
+        100% { transform: scale(1); }
+    }
+    
+    /* 移动端状态切换时的微交互 */
+    .status-item.active {
+        animation: mobileStatusActivate 0.6s ease-out;
+    }
+    
+    @keyframes mobileStatusActivate {
+        0% {
+            transform: translateX(0) scale(1);
+            background: transparent;
+        }
+        30% {
+            transform: translateX(3px) scale(1.05);
+            background: rgba(var(--link-color-rgb), 0.1);
+        }
+        60% {
+            transform: translateX(8px) scale(1.02);
+            background: rgba(var(--link-color-rgb), 0.08);
+        }
+        100% {
+            transform: translateX(6px) scale(1.02);
+            background: rgba(var(--link-color-rgb), 0.05);
+        }
+    }
+}
+
+/* =================================================================
+   ENHANCED MOBILE TYPOGRAPHY AND SPACING
+   ================================================================= */
+
+@media (max-width: 640px) {
+    /* 改进的移动端字体层次结构 */
+    .loading-text {
+        /* 渐变文字效果以增强视觉吸引力 */
+        background: linear-gradient(45deg, var(--text-primary), var(--link-color));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+    }
+    
+    /* 适应性字体大小，基于屏幕尺寸 */
+    .loading-text {
+        font-size: clamp(0.9375rem, 4vw, 1.125rem);
+    }
+    
+    .status-item {
+        font-size: clamp(0.8125rem, 3.5vw, 1rem);
+    }
+    
+    /* 改进的行高和间距 */
+    .status-item {
+        padding: clamp(0.5rem, 2vw, 0.75rem) 0;
+        line-height: 1.6;
+    }
+}
+
+/* =================================================================
+   MOBILE INTERACTION ENHANCEMENTS
+   ================================================================= */
+
+@media (hover: none) and (pointer: coarse) {
+    /* 触摸反馈增强 */
+    .loading-container *:active {
+        filter: brightness(0.95);
+        transition: filter 0.1s ease-out;
+    }
+    
+    /* 防止双击缩放 */
+    .loading-overlay {
+        touch-action: manipulation;
+        -ms-touch-action: manipulation;
+    }
+    
+    /* 优化触摸滚动 */
+    .loading-status {
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+    }
+    
+    /* 减少动画以节省电量和提升性能 */
+    @media (prefers-reduced-motion: reduce) {
+        .loading-container {
+            animation: none;
+            transform: translateY(-5vh);
+        }
+        
+        .loading-spinner {
+            animation: spin 2s linear infinite; /* 保留基本旋转但放慢速度 */
+        }
+        
+        .status-item.active {
+            animation: none;
+            transform: translateX(6px) scale(1.02);
+        }
+    }
+}
+
+/* =================================================================
+   MOBILE PERFORMANCE OPTIMIZATIONS
+   ================================================================= */
+
+@media (max-width: 640px) {
+    /* GPU加速优化 */
+    .loading-spinner,
+    .loading-progress-bar,
+    .stage-dot.active {
+        will-change: transform, opacity;
+        transform: translateZ(0); /* 启用硬件加速 */
+    }
+    
+    /* 减少重绘 */
+    .loading-container {
+        contain: layout style paint;
+    }
+    
+    .status-item {
+        contain: layout style;
+    }
+    
+    /* 优化渲染 */
+    .loading-overlay {
+        backface-visibility: hidden;
+        perspective: 1000px;
+    }
+}
+
+/* =================================================================
+   MOBILE ACCESSIBILITY ENHANCEMENTS
+   ================================================================= */
+
+@media (max-width: 640px) {
+    /* 更好的焦点指示器 */
+    .loading-container:focus-within {
+        outline: 2px solid var(--link-color);
+        outline-offset: 4px;
+        border-radius: 1rem;
+    }
+    
+    /* 高对比度模式支持 */
+    @media (prefers-contrast: high) {
+        .loading-text {
+            background: none;
+            -webkit-text-fill-color: initial;
+            color: var(--text-primary);
+            font-weight: 800;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+        }
+        
+        .stage-dot {
+            border: 2px solid var(--text-primary);
+        }
+        
+        .loading-progress {
+            border: 2px solid var(--text-primary);
+        }
+        
+        .status-item.active {
+            border: 1px solid var(--link-color);
+        }
+    }
+}
+
+/* =================================================================
+   MOBILE LANDSCAPE SPECIFIC OPTIMIZATIONS
+   ================================================================= */
+
+@media (max-width: 640px) and (orientation: landscape) {
+    .loading-container {
+        gap: 1rem;
+        transform: translateY(-2vh);
+        max-height: 100vh;
+        overflow-y: auto;
+    }
+    
+    .loading-stages {
+        margin-bottom: 0.75rem;
+    }
+    
+    .loading-status {
+        gap: 0.5rem;
+        margin-top: 1rem;
+        max-height: 40vh;
+        overflow-y: auto;
+    }
+    
+    .status-item {
+        padding: 0.375rem 0;
+        font-size: 0.8125rem;
+    }
+}
+
+/* =================================================================
+   MOBILE DARK MODE OPTIMIZATIONS
+   ================================================================= */
+
+@media (max-width: 640px) and (prefers-color-scheme: dark) {
+    .loading-text {
+        background: linear-gradient(45deg, var(--text-primary), var(--link-color));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+    }
+    
+    .loading-container {
+        filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
+    }
+    
+    .stage-dot {
+        box-shadow: 
+            0 2px 4px rgba(0, 0, 0, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+    
+    .loading-progress {
+        box-shadow: 
+            inset 0 1px 3px rgba(0, 0, 0, 0.3),
+            0 1px 2px rgba(255, 255, 255, 0.1);
+    }
+    
+    .status-item.active {
+        background: rgba(var(--link-color-rgb), 0.15);
+        box-shadow: 
+            0 2px 8px rgba(var(--link-color-rgb), 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+}
+
+/* =================================================================
+   MOBILE NOTCH AND SAFE AREA HANDLING
+   ================================================================= */
+
+@media (max-width: 640px) {
+    /* 适配刘海屏和其他异形屏 */
+    .loading-overlay {
+        padding-top: max(2rem, env(safe-area-inset-top, 2rem));
+        padding-bottom: max(2rem, env(safe-area-inset-bottom, 2rem));
+        padding-left: max(1rem, env(safe-area-inset-left, 1rem));
+        padding-right: max(1rem, env(safe-area-inset-right, 1rem));
+    }
+    
+    .loading-container {
+        max-width: calc(100vw - 2rem);
+        width: 100%;
+    }
+}
+
+/* =================================================================
+   MOBILE SPECIFIC UTILITY CLASSES
+   ================================================================= */
+
+@media (max-width: 640px) {
+    /* 移动端专用的隐藏/显示类 */
+    .mobile-hidden {
+        display: none !important;
+    }
+    
+    .mobile-only {
+        display: block !important;
+    }
+    
+    /* 移动端间距调整 */
+    .mobile-compact {
+        gap: 0.75rem !important;
+        padding: 1rem !important;
+    }
+    
+    .mobile-expanded {
+        gap: 1.5rem !important;
+        padding: 1.5rem !important;
+    }
+}
+
+/* =================================================================
+   PWA AND STANDALONE MODE OPTIMIZATIONS
+   ================================================================= */
+
+@media (display-mode: standalone) {
+    .loading-overlay {
+        /* PWA模式下的状态栏适配 */
+        padding-top: max(44px, env(safe-area-inset-top, 44px));
+    }
+    
+    .loading-container {
+        /* PWA模式下更紧凑的设计 */
+        gap: 1.25rem;
+    }
+}
+
+/* =================================================================
+   MOBILE NETWORK AWARENESS
+   ================================================================= */
+
+@media (max-width: 640px) {
+    /* 慢网络连接时的优化 */
+    @media (prefers-reduced-data: reduce) {
+        .loading-container {
+            animation: none;
+        }
+        
+        .stage-dot.active::before {
+            animation: none;
+        }
+        
+        .loading-progress-bar::after {
+            animation: none;
+        }
+        
+        /* 移除非必要的视觉效果 */
+        .loading-text {
+            background: none;
+            -webkit-text-fill-color: initial;
+            color: var(--text-primary);
+        }
+    }
+} 
