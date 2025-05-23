@@ -60,7 +60,7 @@ function initFloatingHeader() {
                     floatingBreadcrumb.innerHTML = breadcrumbPath;
                 }
             } else {
-                floatingBreadcrumb.innerHTML = '<span class="breadcrumb-separator">/</span><span style="color: var(--text-tertiary);">选择章节...</span>';
+                floatingBreadcrumb.innerHTML = '';
             }
         }
     };
@@ -126,13 +126,8 @@ function initFloatingHeader() {
 function buildBreadcrumbPath(currentHeading) {
     if (!currentHeading) return '';
     
-    // 获取页面标题
-    const pageTitle = document.querySelector('.page-title, #pageTitle');
-    const mainTitle = pageTitle ? pageTitle.textContent.trim() : '页面';
-    
-    // 构建完整的层级路径
+    // 构建层级路径，不包含页面标题（避免重复）
     const separator = '<span class="breadcrumb-separator">/</span>';
-    let breadcrumbPath = `<span class="main-title">${mainTitle}</span>`;
     
     // 根据当前标题的级别，构建完整的路径
     if (currentHeading.level >= 1) {
@@ -163,15 +158,56 @@ function buildBreadcrumbPath(currentHeading) {
             // 按级别排序确保顺序正确
             pathHeadings.sort((a, b) => a.level - b.level);
             
-            // 构建路径
-            pathHeadings.forEach(heading => {
+            // 优先保证靠后的显示 - 如果路径过长，从后往前截取
+            let displayHeadings = pathHeadings;
+            const maxLength = 60; // 最大字符长度
+            
+            // 计算总长度
+            let totalLength = displayHeadings.reduce((sum, heading) => sum + heading.text.length, 0);
+            
+            // 如果总长度超过限制，优先保留靠后的标题
+            if (totalLength > maxLength && displayHeadings.length > 1) {
+                // 从后往前保留标题，直到长度合适
+                let currentLength = 0;
+                const reversedHeadings = [...displayHeadings].reverse();
+                displayHeadings = [];
+                
+                for (const heading of reversedHeadings) {
+                    const headingLength = heading.text.length;
+                    if (currentLength + headingLength <= maxLength) {
+                        displayHeadings.unshift(heading);
+                        currentLength += headingLength;
+                    } else {
+                        // 如果还有空间且没有任何标题，至少显示当前标题的截断版本
+                        if (displayHeadings.length === 0) {
+                            const truncatedText = heading.text.substring(0, maxLength - 3) + '...';
+                            displayHeadings.unshift({ ...heading, text: truncatedText });
+                        }
+                        break;
+                    }
+                }
+                
+                // 如果截取了标题，在前面加上省略号
+                if (displayHeadings.length < pathHeadings.length) {
+                    displayHeadings.unshift({ text: '...', level: 0, id: 'ellipsis' });
+                }
+            }
+            
+            // 构建最终路径
+            let breadcrumbPath = '';
+            displayHeadings.forEach((heading, index) => {
+                if (index > 0) breadcrumbPath += separator;
+                
                 const headingText = heading.text.length > 20 ? heading.text.substring(0, 20) + '...' : heading.text;
-                breadcrumbPath += `${separator}<span style="color: var(--primary-color);">${headingText}</span>`;
+                const colorClass = heading.id === 'ellipsis' ? 'var(--text-tertiary)' : 'var(--primary-color)';
+                breadcrumbPath += `<span style="color: ${colorClass};">${headingText}</span>`;
             });
+            
+            return breadcrumbPath;
         }
     }
     
-    return breadcrumbPath;
+    return '';
 }
 
 /**
@@ -314,14 +350,7 @@ function updateFloatingTocScrollSpy() {
                             floatingBreadcrumb.innerHTML = breadcrumbPath;
                         }
                     } else {
-                        // 如果没有活跃标题，只显示页面标题
-                        const pageTitle = document.querySelector('.page-title');
-                        if (pageTitle) {
-                            const title = pageTitle.textContent.trim();
-                            floatingBreadcrumb.innerHTML = `<span class="main-title">${title}</span>`;
-                        } else {
-                            floatingBreadcrumb.innerHTML = '<span class="main-title">页面内容</span>';
-                        }
+                        floatingBreadcrumb.innerHTML = '';
                     }
                 }
             }
