@@ -902,16 +902,81 @@ async function loadMoreContentInBackground(pageId, cursor, pageContent) {
                 const moreData = await response.json();
                 
                 if (moreData.blocks && moreData.blocks.length > 0) {
-                    // Render the new blocks
-                    const newContent = await renderBlocks(moreData.blocks);
+                    // Check if we need to extend existing lists
+                    const lastElement = pageContent.children[pageContent.children.length - 2]; // -2 because last is loading indicator
                     
-                    // Create a temporary container for the new content
-                    const tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = newContent;
+                    // Process blocks and handle list continuation
+                    let processedContent = '';
+                    let currentList = null;
                     
-                    // Insert new content before the loading indicator
-                    while (tempDiv.firstChild) {
-                        pageContent.insertBefore(tempDiv.firstChild, loadingIndicator);
+                    // Check if the last element in the page is a list that we can extend
+                    if (lastElement && (lastElement.tagName === 'UL' || lastElement.tagName === 'OL')) {
+                        const firstBlock = moreData.blocks[0];
+                        if (firstBlock && 
+                            ((firstBlock.type === 'bulleted_list_item' && lastElement.tagName === 'UL') ||
+                             (firstBlock.type === 'numbered_list_item' && lastElement.tagName === 'OL'))) {
+                            // We can extend the existing list
+                            currentList = { 
+                                tag: lastElement.tagName.toLowerCase(), 
+                                type: firstBlock.type,
+                                element: lastElement 
+                            };
+                            console.log(`Extending existing ${currentList.tag} list`);
+                        }
+                    }
+                    
+                    // Render blocks with proper list handling
+                    for (const block of moreData.blocks) {
+                        try {
+                            // Special handling for list items to group them or extend existing lists
+                            if (block.type === 'bulleted_list_item' || block.type === 'numbered_list_item') {
+                                const listTag = block.type === 'bulleted_list_item' ? 'ul' : 'ol';
+                                
+                                if (currentList && currentList.tag === listTag && currentList.element) {
+                                    // Extend existing list - directly append to the DOM element
+                                    const listItem = await renderBlock(block);
+                                    currentList.element.insertAdjacentHTML('beforeend', listItem);
+                                } else {
+                                    // Start a new list
+                                    if (currentList && !currentList.element) {
+                                        processedContent += `</${currentList.tag}>`;
+                                    }
+                                    
+                                    processedContent += `<${listTag} class="my-4 ${listTag === 'ul' ? 'list-disc' : 'list-decimal'} ml-6">`;
+                                    processedContent += await renderBlock(block);
+                                    currentList = { tag: listTag, type: block.type, element: null };
+                                }
+                            } else {
+                                // For non-list items, close any open list
+                                if (currentList && !currentList.element) {
+                                    processedContent += `</${currentList.tag}>`;
+                                    currentList = null;
+                                }
+                                
+                                // Add the block content
+                                processedContent += await renderBlock(block);
+                            }
+                        } catch (error) {
+                            console.error(`Error rendering block ${block.id}:`, error);
+                            processedContent += `<div class="text-red-500">Error rendering a block: ${error.message}</div>`;
+                        }
+                    }
+                    
+                    // Close any remaining open list
+                    if (currentList && !currentList.element) {
+                        processedContent += `</${currentList.tag}>`;
+                    }
+                    
+                    // Only add non-empty processed content to avoid empty containers
+                    if (processedContent.trim()) {
+                        // Create a temporary container for the new content
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = processedContent;
+                        
+                        // Insert new content before the loading indicator
+                        while (tempDiv.firstChild) {
+                            pageContent.insertBefore(tempDiv.firstChild, loadingIndicator);
+                        }
                     }
                     
                     // Post-process the new content (this will also refresh the TOC)
