@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loading Animation Test</title>
+    <link rel="stylesheet" href="static/css/styles.css">
+</head>
+<body>
+    <h1>Loading Animation Test</h1>
+    
+    <h2>Expected: Three Bouncing Dots</h2>
+    <div class="loading-indicator-container">
+        <div class="loading-spinner">
+            <div class="spinner-dot"></div>
+            <div class="spinner-dot"></div>
+            <div class="spinner-dot"></div>
+        </div>
+    </div>
+    
+    <h2>Original Loading Spinner (should be a rotating ring)</h2>
+    <div class="loading-spinner"></div>
+    
+    <script>
+        // Add some debug info
+        console.log('Test page loaded');
+        
+        // Check if CSS is loaded
+        const testEl = document.querySelector('.loading-indicator-container .spinner-dot');
+        if (testEl) {
+            const styles = window.getComputedStyle(testEl);
+            console.log('Spinner dot styles:', {
+                animation: styles.animation,
+                background: styles.background,
+                width: styles.width,
+                height: styles.height
+            });
+        }
+    </script>
+</body>
+</html> 

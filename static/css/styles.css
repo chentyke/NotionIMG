@@ -203,11 +203,11 @@ body {
     }
 }
 
-/* 简化的加载指示器容器 */
+/* 简化的加载指示器容器 - Updated 2025-01-23 */
 .loading-indicator-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
     padding: 4rem 1rem;
     min-height: 120px;
     transition: opacity 0.3s ease;
@@ -215,30 +215,31 @@ body {
 
 /* 背景加载的三点跳跃动画 - 使用更具体的选择器避免冲突 */
 .loading-indicator-container .loading-spinner {
-    display: flex;
-    gap: 1rem;
-    align-items: flex-end;
-    height: 40px;
-    border: none;
-    animation: none;
+    display: flex !important;
+    gap: 1rem !important;
+    align-items: flex-end !important;
+    height: 40px !important;
+    border: none !important;
+    animation: none !important;
+    width: auto !important;
 }
 
 .loading-indicator-container .spinner-dot {
-    width: 14px;
-    height: 14px;
-    background: linear-gradient(135deg, var(--primary-color), #60a5fa);
-    border-radius: 50%;
+    width: 14px !important;
+    height: 14px !important;
+    background: linear-gradient(135deg, var(--primary-color), #60a5fa) !important;
+    border-radius: 50% !important;
     box-shadow: 
         0 0 20px rgba(59, 130, 246, 0.4),
         0 4px 8px rgba(59, 130, 246, 0.2),
-        inset 0 1px 0 rgba(255, 255, 255, 0.3);
-    animation: enhancedBounce 1.6s ease-in-out infinite both;
+        inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+    animation: enhancedBounce 1.6s ease-in-out infinite both !important;
     position: relative;
     
     /* 添加内光效果 */
     background-image: 
         linear-gradient(135deg, var(--primary-color), #60a5fa),
-        radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.4), transparent 50%);
+        radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.4), transparent 50%) !important;
 }
 
 .loading-indicator-container .spinner-dot:nth-child(1) { 
@@ -284,6 +285,72 @@ body {
     }
 }
 
+/* 深色模式下的跳跃动画 */
+@keyframes enhancedBounceDark {
+    0%, 80%, 100% {
+        transform: translateY(0) scale(0.8);
+        opacity: 0.7;
+        box-shadow: 
+            0 0 15px rgba(96, 165, 250, 0.4),
+            0 2px 4px rgba(96, 165, 250, 0.2);
+    }
+    20% {
+        transform: translateY(-8px) scale(0.9);
+        opacity: 0.85;
+        box-shadow: 
+            0 0 25px rgba(96, 165, 250, 0.6),
+            0 6px 12px rgba(96, 165, 250, 0.4);
+    }
+    40% {
+        transform: translateY(-16px) scale(1.1);
+        opacity: 1;
+        box-shadow: 
+            0 0 30px rgba(96, 165, 250, 0.7),
+            0 8px 16px rgba(96, 165, 250, 0.5),
+            0 16px 32px rgba(96, 165, 250, 0.3);
+    }
+    60% {
+        transform: translateY(-8px) scale(0.95);
+        opacity: 0.9;
+        box-shadow: 
+            0 0 25px rgba(96, 165, 250, 0.6),
+            0 6px 12px rgba(96, 165, 250, 0.4);
+    }
+}
+
+/* 移动端跳跃动画 */
+@keyframes enhancedBounceMobile {
+    0%, 80%, 100% {
+        transform: translateY(0) scale(0.8);
+        opacity: 0.7;
+        box-shadow: 
+            0 0 12px rgba(59, 130, 246, 0.3),
+            0 2px 4px rgba(59, 130, 246, 0.1);
+    }
+    20% {
+        transform: translateY(-6px) scale(0.9);
+        opacity: 0.85;
+        box-shadow: 
+            0 0 20px rgba(59, 130, 246, 0.5),
+            0 4px 8px rgba(59, 130, 246, 0.3);
+    }
+    40% {
+        transform: translateY(-12px) scale(1.05);
+        opacity: 1;
+        box-shadow: 
+            0 0 25px rgba(59, 130, 246, 0.6),
+            0 6px 12px rgba(59, 130, 246, 0.4),
+            0 12px 24px rgba(59, 130, 246, 0.2);
+    }
+    60% {
+        transform: translateY(-6px) scale(0.9);
+        opacity: 0.9;
+        box-shadow: 
+            0 0 20px rgba(59, 130, 246, 0.5),
+            0 4px 8px rgba(59, 130, 246, 0.3);
+    }
+}
+
 /* 深色模式下的增强效果 */
 @media (prefers-color-scheme: dark) {
     .loading-indicator-container {
@@ -300,38 +367,8 @@ body {
         background-image: 
             linear-gradient(135deg, #60a5fa, #93c5fd),
             radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.3), transparent 50%);
-    }
-    
-    @keyframes enhancedBounce {
-        0%, 80%, 100% {
-            transform: translateY(0) scale(0.8);
-            opacity: 0.7;
-            box-shadow: 
-                0 0 15px rgba(96, 165, 250, 0.4),
-                0 2px 4px rgba(96, 165, 250, 0.2);
-        }
-        20% {
-            transform: translateY(-8px) scale(0.9);
-            opacity: 0.85;
-            box-shadow: 
-                0 0 25px rgba(96, 165, 250, 0.6),
-                0 6px 12px rgba(96, 165, 250, 0.4);
-        }
-        40% {
-            transform: translateY(-16px) scale(1.1);
-            opacity: 1;
-            box-shadow: 
-                0 0 30px rgba(96, 165, 250, 0.7),
-                0 8px 16px rgba(96, 165, 250, 0.5),
-                0 16px 32px rgba(96, 165, 250, 0.3);
-        }
-        60% {
-            transform: translateY(-8px) scale(0.95);
-            opacity: 0.9;
-            box-shadow: 
-                0 0 25px rgba(96, 165, 250, 0.6),
-                0 6px 12px rgba(96, 165, 250, 0.4);
-        }
+        
+        animation: enhancedBounceDark 1.6s ease-in-out infinite both;
     }
 }
 
@@ -350,38 +387,7 @@ body {
     .loading-indicator-container .spinner-dot {
         width: 12px;
         height: 12px;
-    }
-    
-    @keyframes enhancedBounce {
-        0%, 80%, 100% {
-            transform: translateY(0) scale(0.8);
-            opacity: 0.7;
-            box-shadow: 
-                0 0 12px rgba(59, 130, 246, 0.3),
-                0 2px 4px rgba(59, 130, 246, 0.1);
-        }
-        20% {
-            transform: translateY(-6px) scale(0.9);
-            opacity: 0.85;
-            box-shadow: 
-                0 0 20px rgba(59, 130, 246, 0.5),
-                0 4px 8px rgba(59, 130, 246, 0.3);
-        }
-        40% {
-            transform: translateY(-12px) scale(1.05);
-            opacity: 1;
-            box-shadow: 
-                0 0 25px rgba(59, 130, 246, 0.6),
-                0 6px 12px rgba(59, 130, 246, 0.4),
-                0 12px 24px rgba(59, 130, 246, 0.2);
-        }
-        60% {
-            transform: translateY(-6px) scale(0.9);
-            opacity: 0.9;
-            box-shadow: 
-                0 0 20px rgba(59, 130, 246, 0.5),
-                0 4px 8px rgba(59, 130, 246, 0.3);
-        }
+        animation: enhancedBounceMobile 1.6s ease-in-out infinite both;
     }
 }
 

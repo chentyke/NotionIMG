@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Loading Animation</title>
+    <style>
+        :root {
+            --primary-color: #3b82f6;
+        }
+        
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+        
+        /* 调试专用的三点加载动画 */
+        .debug-loading-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 4rem 1rem;
+            min-height: 120px;
+            border: 2px solid red; /* 调试边框 */
+        }
+
+        .debug-loading-spinner {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-end;
+            height: 40px;
+            border: 2px solid blue; /* 调试边框 */
+        }
+
+        .debug-spinner-dot {
+            width: 14px;
+            height: 14px;
+            background: linear-gradient(135deg, #3b82f6, #60a5fa);
+            border-radius: 50%;
+            box-shadow: 
+                0 0 20px rgba(59, 130, 246, 0.4),
+                0 4px 8px rgba(59, 130, 246, 0.2);
+            animation: debugBounce 1.6s ease-in-out infinite both;
+            position: relative;
+        }
+
+        .debug-spinner-dot:nth-child(1) { 
+            animation-delay: -0.4s; 
+        }
+        .debug-spinner-dot:nth-child(2) { 
+            animation-delay: -0.2s; 
+        }
+        .debug-spinner-dot:nth-child(3) { 
+            animation-delay: 0s; 
+        }
+
+        @keyframes debugBounce {
+            0%, 80%, 100% {
+                transform: translateY(0) scale(0.8);
+                opacity: 0.7;
+                box-shadow: 
+                    0 0 15px rgba(59, 130, 246, 0.3),
+                    0 2px 4px rgba(59, 130, 246, 0.1);
+            }
+            20% {
+                transform: translateY(-8px) scale(0.9);
+                opacity: 0.85;
+                box-shadow: 
+                    0 0 25px rgba(59, 130, 246, 0.5),
+                    0 6px 12px rgba(59, 130, 246, 0.3);
+            }
+            40% {
+                transform: translateY(-16px) scale(1.1);
+                opacity: 1;
+                box-shadow: 
+                    0 0 30px rgba(59, 130, 246, 0.6),
+                    0 8px 16px rgba(59, 130, 246, 0.4),
+                    0 16px 32px rgba(59, 130, 246, 0.2);
+            }
+            60% {
+                transform: translateY(-8px) scale(0.95);
+                opacity: 0.9;
+                box-shadow: 
+                    0 0 25px rgba(59, 130, 246, 0.5),
+                    0 6px 12px rgba(59, 130, 246, 0.3);
+            }
+        }
+        
+        /* 原来的loading spinner */
+        .original-loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            margin: 20px 0;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <h1>Debug Loading Animation</h1>
+    
+    <h2>1. 内联CSS三点动画（应该有红蓝边框帮助调试）:</h2>
+    <div class="debug-loading-container">
+        <div class="debug-loading-spinner">
+            <div class="debug-spinner-dot"></div>
+            <div class="debug-spinner-dot"></div>
+            <div class="debug-spinner-dot"></div>
+        </div>
+    </div>
+    
+    <h2>2. 原始旋转动画（应该是一个旋转的圆圈）:</h2>
+    <div class="original-loading-spinner"></div>
+    
+    <script>
+        console.log('Debug page loaded');
+        
+        // 检查动画元素
+        const dots = document.querySelectorAll('.debug-spinner-dot');
+        console.log('Found dots:', dots.length);
+        
+        dots.forEach((dot, index) => {
+            const styles = window.getComputedStyle(dot);
+            console.log(`Dot ${index + 1}:`, {
+                animation: styles.animation,
+                animationName: styles.animationName,
+                animationDuration: styles.animationDuration,
+                animationDelay: styles.animationDelay,
+                background: styles.background,
+                width: styles.width,
+                height: styles.height
+            });
+        });
+    </script>
+</body>
+</html> 
