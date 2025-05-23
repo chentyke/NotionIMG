@@ -447,6 +447,34 @@ function showFloatingToc() {
     
     // 将键盘监听器存储到floatingToc元素上，以便后续移除
     floatingToc._handleKeyDown = handleKeyDown;
+    
+    // 添加TOC内容滚动监听器来控制顶部渐变遮罩
+    const tocContent = floatingToc.querySelector('.floating-toc-content');
+    if (tocContent) {
+        let scrollTimeout;
+        const handleTocScroll = () => {
+            if (scrollTimeout) clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(() => {
+                const scrollTop = tocContent.scrollTop;
+                // 当滚动超过20px时显示遮罩，提供更灵敏的响应
+                if (scrollTop > 20) {
+                    tocContent.classList.add('scrolled');
+                } else {
+                    tocContent.classList.remove('scrolled');
+                }
+            }, 16); // 约60fps的更新频率
+        };
+        
+        // 添加滚动监听器
+        tocContent.addEventListener('scroll', handleTocScroll, { passive: true });
+        
+        // 存储监听器函数以便后续移除
+        floatingToc._handleTocScroll = handleTocScroll;
+        floatingToc._tocContent = tocContent;
+        
+        // 初始检查滚动状态
+        handleTocScroll();
+    }
 }
 
 /**
@@ -478,6 +506,14 @@ function hideFloatingToc() {
         if (floatingToc._handleKeyDown) {
             document.removeEventListener('keydown', floatingToc._handleKeyDown);
             delete floatingToc._handleKeyDown;
+        }
+        
+        // 移除TOC滚动监听器
+        if (floatingToc._handleTocScroll && floatingToc._tocContent) {
+            floatingToc._tocContent.removeEventListener('scroll', floatingToc._handleTocScroll);
+            floatingToc._tocContent.classList.remove('scrolled'); // 清除滚动状态
+            delete floatingToc._handleTocScroll;
+            delete floatingToc._tocContent;
         }
         
         // 恢复页面滚动状态
