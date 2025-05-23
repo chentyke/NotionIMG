@@ -14,6 +14,8 @@ let lastScrollTop = 0;
 let floatingTocVisible = false;
 let floatingTocHeadings = [];
 let currentActiveHeading = null;
+let scrollPosition = 0; // 保存滚动位置
+let scrollSpyPaused = false; // 标记是否暂停scroll spy
 
 /**
  * Initialize floating header scroll behavior
@@ -286,6 +288,11 @@ function updateFloatingTocScrollSpy() {
     if (floatingTocHeadings.length === 0) return;
     
     const handleScrollSpy = () => {
+        // 如果scroll spy被暂停（目录展开时），不执行滚动监听
+        if (scrollSpyPaused) {
+            return;
+        }
+        
         const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
         let newActiveHeading = null;
         
@@ -396,8 +403,35 @@ function showFloatingToc() {
     const floatingToc = document.getElementById('floatingToc');
     if (!floatingToc) return;
     
-    // 禁用页面滚动
+    // 保存当前滚动位置
+    scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+    
+    // 暂停scroll spy逻辑
+    scrollSpyPaused = true;
+    
+    // 禁用页面滚动 - 多重机制确保在所有设备上生效
     document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollPosition}px`;
+    document.body.style.width = '100%';
+    
+    // 阻止触摸滚动（移动端）
+    const preventScroll = (e) => {
+        // 允许目录内部的滚动
+        if (e.target.closest('#floatingToc')) {
+            return;
+        }
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+    };
+    
+    // 添加触摸事件监听
+    document.addEventListener('touchmove', preventScroll, { passive: false });
+    document.addEventListener('wheel', preventScroll, { passive: false });
+    
+    // 将阻止函数存储到floatingToc元素上，以便后续移除
+    floatingToc._preventScroll = preventScroll;
     
     floatingToc.classList.add('visible');
     floatingTocVisible = true;
@@ -410,6 +444,9 @@ function showFloatingToc() {
         }
     };
     document.addEventListener('keydown', handleKeyDown);
+    
+    // 将键盘监听器存储到floatingToc元素上，以便后续移除
+    floatingToc._handleKeyDown = handleKeyDown;
 }
 
 /**
@@ -428,8 +465,30 @@ function hideFloatingToc() {
         floatingToc.classList.remove('closing');
         floatingTocVisible = false;
         
-        // 恢复页面滚动
+        // 恢复scroll spy逻辑
+        scrollSpyPaused = false;
+        
+        // 移除事件监听器
+        if (floatingToc._preventScroll) {
+            document.removeEventListener('touchmove', floatingToc._preventScroll);
+            document.removeEventListener('wheel', floatingToc._preventScroll);
+            delete floatingToc._preventScroll;
+        }
+        
+        if (floatingToc._handleKeyDown) {
+            document.removeEventListener('keydown', floatingToc._handleKeyDown);
+            delete floatingToc._handleKeyDown;
+        }
+        
+        // 恢复页面滚动状态
         document.body.style.overflow = '';
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        
+        // 恢复到之前的滚动位置
+        window.scrollTo(0, scrollPosition);
+        
     }, 300); // 与CSS动画时间匹配
 }
 
@@ -440,10 +499,10 @@ function scrollToHeading(headingId) {
     console.log('Scrolling to heading:', headingId);
     const heading = document.getElementById(headingId);
     if (heading) {
-        // 先隐藏目录
+        // 先隐藏目录（这会恢复滚动状态）
         hideFloatingToc();
         
-        // 延迟滚动，让目录动画完成
+        // 延迟滚动，让目录动画完成并且滚动状态恢复
         setTimeout(() => {
             // 使用 offsetTop 获取准确的位置
             const headingTop = heading.offsetTop;
@@ -451,6 +510,9 @@ function scrollToHeading(headingId) {
             const targetPosition = headingTop - offset;
             
             console.log('Target scroll position:', targetPosition);
+            
+            // 暂停scroll spy，避免在滚动动画期间的干扰
+            scrollSpyPaused = true;
             
             // 使用更平滑的缓动函数进行滚动
             const startPosition = window.pageYOffset;
@@ -474,12 +536,13 @@ function scrollToHeading(headingId) {
                     requestAnimationFrame(animateScroll);
                 } else {
                     // 动画完成后的处理
+                    scrollSpyPaused = false; // 恢复scroll spy
                     completeScrollAnimation(headingId);
                 }
             }
             
             requestAnimationFrame(animateScroll);
-        }, 200);
+        }, 350); // 稍微延长延迟，确保TOC关闭动画完全完成
     } else {
         console.warn('Heading not found:', headingId);
     }
