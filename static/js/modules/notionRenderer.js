@@ -429,7 +429,7 @@ async function loadPage(pageId = null) {
         // Start loading data
         updateLoadingProgress(10);
         loadingText.textContent = '正在获取页面数据...';
-        const response = await fetch(`/page/${targetPageId}`);
+        const response = await fetch(`/api/page/${targetPageId}`);
         
         // Check for errors
         if (!response.ok) {

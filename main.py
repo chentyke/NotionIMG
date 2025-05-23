@@ -196,7 +196,17 @@ async def init_pages():
 @app.on_event("startup")
 async def startup_event():
     """应用启动时的初始化函数"""
-    await init_pages()
+    try:
+        # Check if environment variables are set
+        if not os.environ.get("NOTION_TOKEN") or not os.environ.get("NOTION_DATABASE_ID"):
+            logger.warning("NOTION_TOKEN or NOTION_DATABASE_ID not set, skipping page initialization")
+            logger.warning("The app will run but may not function properly without proper configuration")
+            return
+        
+        await init_pages()
+    except Exception as e:
+        logger.error(f"Error during startup initialization: {str(e)}")
+        logger.warning("App will continue running but may not function properly")
 
 @app.get("/")
 async def root():
@@ -365,7 +375,7 @@ def process_block_content(block: dict) -> dict:
                     logger.info(f"Processed {len(processed_columns)} columns in column_list")
                 except Exception as e:
                     logger.error(f"Error processing column_list children: {e}")
-                    logger.error(f"Column list content: {block_content}")
+                    result["columns"] = []
 
         elif block_type == "column":
             # 处理单个列
@@ -382,40 +392,33 @@ def process_block_content(block: dict) -> dict:
                     logger.info(f"Processed {len(processed_blocks)} blocks in column")
                 except Exception as e:
                     logger.error(f"Error processing column children: {e}")
-                    logger.error(f"Column content: {block_content}")
+                    result["children"] = []
 
         elif block_type == "paragraph":
             result["paragraph"] = {
-                "rich_text": block_content["rich_text"],
+                "rich_text": block_content.get("rich_text", []),
                 "color": color
             }
-        elif block_type == "heading_1":
-            result["heading_1"] = {
-                "rich_text": block_content["rich_text"],
-                "color": color
-            }
-        elif block_type == "heading_2":
-            result["heading_2"] = {
-                "rich_text": block_content["rich_text"],
-                "color": color
-            }
-        elif block_type == "heading_3":
-            result["heading_3"] = {
-                "rich_text": block_content["rich_text"],
-                "color": color
+        elif block_type in ["heading_1", "heading_2", "heading_3"]:
+            result[block_type] = {
+                "rich_text": block_content.get("rich_text", []),
+                "color": color,
+                "is_toggleable": block_content.get("is_toggleable", False)
             }
         elif block_type == "image":
-            result["image_url"] = block_content.get("file", {}).get("url") or block_content.get("external", {}).get("url")
+            image_info = block_content.get("file") or block_content.get("external", {})
+            result["image_url"] = image_info.get("url", "")
             if "caption" in block_content and block_content["caption"]:
                 result["caption"] = process_rich_text(block_content["caption"])
         elif block_type == "code":
             result["language"] = block_content.get("language", "plain text")
+            result["rich_text"] = block_content.get("rich_text", [])
         elif block_type == "child_page":
             result["page_id"] = block["id"]
             result["title"] = block_content.get("title", "Untitled")
         elif block_type == "toggle":
             # For toggle blocks, we need to process the rich_text content
-            result["text"] = process_rich_text(block_content["rich_text"])
+            result["text"] = process_rich_text(block_content.get("rich_text", []))
             logger.info(f"Toggle block {block['id']}: text='{result['text']}'")
             
             # Process children if present
@@ -432,14 +435,13 @@ def process_block_content(block: dict) -> dict:
                     if children:
                         result["children"] = children
                         logger.info(f"Toggle block {block['id']}: processed {len(children)} children successfully")
-                    else:
-                        logger.warning(f"Toggle block {block['id']}: no valid children found")
                 except Exception as e:
                     logger.error(f"Error processing toggle children for {block['id']}: {e}")
-                    logger.error(f"Toggle block content: {block_content}")
+                    result["children"] = []
         elif block_type == "table":
             result["has_column_header"] = block_content.get("has_column_header", False)
             result["has_row_header"] = block_content.get("has_row_header", False)
+            result["table_width"] = block_content.get("table_width", 0)
             
             # Process table rows if present
             if block.get("has_children", False):
@@ -451,10 +453,10 @@ def process_block_content(block: dict) -> dict:
                             row_content = process_block_content(row_block)
                             if row_content:
                                 rows.append(row_content)
-                    if rows:
-                        result["rows"] = rows
+                    result["rows"] = rows
                 except Exception as e:
                     logger.error(f"Error processing table rows for {block['id']}: {e}")
+                    result["rows"] = []
         elif block_type == "table_row":
             cells = []
             for cell_array in block_content.get("cells", []):
@@ -464,37 +466,47 @@ def process_block_content(block: dict) -> dict:
         elif block_type == "file":
             # 处理文件块
             logger.info(f"Processing file block: {block_content}")
+            file_info = block_content.get("file") or block_content.get("external", {})
             result["file"] = {
                 "type": block_content.get("type", "file"),
                 "name": block_content.get("name", "Untitled"),
-                "file": {
-                    "url": block_content.get("file", {}).get("url", "")
-                },
+                "url": file_info.get("url", ""),
                 "caption": block_content.get("caption", [])
             }
             logger.info(f"Processed file block result: {result}")
         elif block_type == "to_do":
             # 处理待办事项块
-            logger.info(f"Processing to_do block: {block_content}")
             result.update({
                 "checked": block_content.get("checked", False),
                 "text": process_rich_text(block_content.get("rich_text", [])),
-                "color": block_content.get("color", "default")
+                "color": color
             })
-            logger.info(f"Processed to_do block result: {result}")
+            # Process children if present
+            if block.get("has_children", False):
+                try:
+                    child_blocks = notion.blocks.children.list(block_id=block["id"])["results"]
+                    children = []
+                    for child_block in child_blocks:
+                        child_content = process_block_content(child_block)
+                        if child_content:
+                            children.append(child_content)
+                    result["children"] = children
+                except Exception as e:
+                    logger.error(f"Error processing to_do children for {block['id']}: {e}")
+                    result["children"] = []
         elif block_type == "bookmark":
             result["bookmark"] = {
                 "url": block_content.get("url", ""),
                 "caption": process_rich_text(block_content.get("caption", [])) if block_content.get("caption") else ""
             }
-        elif block_type == "bulleted_list_item" or block_type == "numbered_list_item":
+        elif block_type in ["bulleted_list_item", "numbered_list_item"]:
             # 处理列表项的富文本内容
             result = {
                 "type": block_type,
                 "text": text,
                 "color": color,
                 "content": {
-                    "rich_text": block_content["rich_text"],
+                    "rich_text": block_content.get("rich_text", []),
                     "color": color
                 }
             }
@@ -512,10 +524,89 @@ def process_block_content(block: dict) -> dict:
                         result["children"] = children
                 except Exception as e:
                     logger.error(f"Error processing list item children for {block['id']}: {e}")
-                    logger.error(f"List item content: {block_content}")
+                    result["children"] = []
+        elif block_type == "video":
+            # Handle video blocks
+            video_info = block_content.get("file") or block_content.get("external", {})
+            result["video"] = {
+                "type": block_content.get("type", "external"),
+                "url": video_info.get("url", ""),
+                "caption": process_rich_text(block_content.get("caption", [])) if block_content.get("caption") else ""
+            }
+        elif block_type == "audio":
+            # Handle audio blocks
+            audio_info = block_content.get("file") or block_content.get("external", {})
+            result["audio"] = {
+                "type": block_content.get("type", "external"),
+                "url": audio_info.get("url", ""),
+                "caption": process_rich_text(block_content.get("caption", [])) if block_content.get("caption") else ""
+            }
+        elif block_type == "embed":
+            # Handle embed blocks
+            result["embed"] = {
+                "url": block_content.get("url", ""),
+                "caption": process_rich_text(block_content.get("caption", [])) if block_content.get("caption") else ""
+            }
+        elif block_type == "callout":
+            # Handle callout blocks
+            result["callout"] = {
+                "rich_text": block_content.get("rich_text", []),
+                "icon": block_content.get("icon"),
+                "color": color
+            }
+            # Process children if present
+            if block.get("has_children", False):
+                try:
+                    child_blocks = notion.blocks.children.list(block_id=block["id"])["results"]
+                    children = []
+                    for child_block in child_blocks:
+                        child_content = process_block_content(child_block)
+                        if child_content:
+                            children.append(child_content)
+                    result["children"] = children
+                except Exception as e:
+                    logger.error(f"Error processing callout children for {block['id']}: {e}")
+                    result["children"] = []
+        elif block_type == "quote":
+            # Handle quote blocks
+            result["quote"] = {
+                "rich_text": block_content.get("rich_text", []),
+                "color": color
+            }
+            # Process children if present
+            if block.get("has_children", False):
+                try:
+                    child_blocks = notion.blocks.children.list(block_id=block["id"])["results"]
+                    children = []
+                    for child_block in child_blocks:
+                        child_content = process_block_content(child_block)
+                        if child_content:
+                            children.append(child_content)
+                    result["children"] = children
+                except Exception as e:
+                    logger.error(f"Error processing quote children for {block['id']}: {e}")
+                    result["children"] = []
+        elif block_type == "divider":
+            # Handle divider blocks
+            result["divider"] = {}
+        elif block_type == "equation":
+            # Handle equation blocks
+            result["equation"] = {
+                "expression": block_content.get("expression", "")
+            }
+        elif block_type == "breadcrumb":
+            # Handle breadcrumb blocks
+            result["breadcrumb"] = {}
+        elif block_type == "table_of_contents":
+            # Handle table of contents blocks
+            result["table_of_contents"] = {
+                "color": color
+            }
+        
         return result
     except Exception as e:
         logger.warning(f"Error processing block content: {e}")
+        logger.warning(f"Block type: {block.get('type', 'unknown')}, Block ID: {block.get('id', 'unknown')}")
         return None
 
 @app.get("/images")
@@ -689,11 +780,11 @@ async def get_file(file_id: str):
         logger.error(f"Error retrieving file {file_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/page/{page_id}")
-async def read_page(page_id: str):
-    """通过 page_id 访问页面"""
-    logger.info(f"Redirecting to page.html with id: {page_id}")
-    return RedirectResponse(f"/static/page.html?id={page_id}", status_code=302)
+@app.get("/static/page/{page_id}")
+async def serve_page_html(page_id: str):
+    """通过 page_id 访问页面 HTML"""
+    logger.info(f"Serving page.html for page ID: {page_id}")
+    return FileResponse("static/page.html")
 
 @app.get("/{suffix}")
 async def read_suffix_pages(suffix: str):
@@ -769,80 +860,91 @@ async def get_pages(suffix: Optional[str] = None):
 @app.get("/api/page/{page_id}")
 async def get_page(page_id: str):
     try:
-        # 使用 notion_client 获取页面数据
-        page_data = notion.pages.retrieve(page_id=page_id)
-        logger.info(f"\nProcessing API request for page {page_id}")
-        logger.info(f"Raw page data: {page_data}")
+        logger.info(f"Fetching page content for API request: {page_id}")
         
-        # 提取页面属性
-        properties = page_data.get('properties', {})
-        logger.info(f"All properties: {properties}")
+        # First try to get the block to check if it's a child page
+        try:
+            block = notion.blocks.retrieve(block_id=page_id)
+            logger.info(f"Retrieved block type: {block['type']}")
+            if block["type"] == "child_page":
+                # If it's a child page, get the full page to get all properties including cover
+                try:
+                    page = notion.pages.retrieve(page_id=page_id)
+                    page_info = get_page_info(page)  # This will handle the cover properly
+                    if page_info:
+                        page_info["parent_id"] = block["parent"]["page_id"] if block["parent"]["type"] == "page_id" else None
+                    logger.info(f"Found child page: {page_info['title'] if page_info else 'None'}")
+                except Exception as e:
+                    logger.warning(f"Error getting full page for child page, falling back to basic info: {e}")
+                    # Try to get title from block first
+                    title = block.get("child_page", {}).get("title", "")
+                    if not title:
+                        # Try to get title from page object if available
+                        title = page.get("properties", {}).get("title", {}).get("title", [{}])[0].get("text", {}).get("content", "Untitled")
+                    
+                    back_property = page.get("properties", {}).get("Back", {}).get("select", {}).get("name")
+                    show_back = True if back_property is None else back_property != "False"
+                    page_info = {
+                        "id": block["id"],
+                        "title": title,
+                        "created_time": block["created_time"],
+                        "last_edited_time": block["last_edited_time"],
+                        "parent_id": block["parent"]["page_id"] if block["parent"]["type"] == "page_id" else None,
+                        "show_back": show_back,
+                        "cover": None  # No cover in fallback case
+                    }
+            else:
+                # If it's not a child page, get page metadata normally
+                page = notion.pages.retrieve(page_id=page_id)
+                page_info = get_page_info(page)
+                logger.info(f"Found regular page: {page_info['title'] if page_info else 'None'}")
+        except Exception as e:
+            logger.warning(f"Error retrieving block, trying page: {e}")
+            # If block retrieval fails, try page retrieval as fallback
+            page = notion.pages.retrieve(page_id=page_id)
+            page_info = get_page_info(page)
+            if page_info and "parent" in page and page["parent"]["type"] == "page_id":
+                page_info["parent_id"] = page["parent"]["page_id"]
         
-        # 检查 Hidden 属性
-        hidden = properties.get("Hidden", {}).get("select", {}).get("name") == "True"
-        if hidden:
-            logger.info(f"Page {page_id} is hidden")
+        if not page_info:
+            logger.error("Page info not found")
             raise HTTPException(status_code=404, detail="Page not found")
         
-        # 获取标题
-        title = ''
-        title_obj = properties.get('title', properties.get('Name', {}))
-        if title_obj and title_obj.get('title'):
-            title = title_obj['title'][0].get('plain_text', 'Untitled')
-        logger.info(f"Title: {title}")
+        # Get page blocks
+        blocks = []
+        has_more = True
+        cursor = None
+        total_blocks = 0
         
-        # 获取 suffix
-        suffix = ''
-        suffix_obj = properties.get('suffix', {})
-        logger.info(f"Raw suffix object: {suffix_obj}")
-        
-        # 处理文本类型的 suffix
-        if suffix_obj:
-            prop_type = suffix_obj.get('type', '')
-            logger.info(f"Suffix property type: {prop_type}")
+        logger.info("Fetching page blocks...")
+        while has_more:
+            if cursor:
+                response = notion.blocks.children.list(block_id=page_id, start_cursor=cursor)
+            else:
+                response = notion.blocks.children.list(block_id=page_id)
             
-            if prop_type == 'rich_text':
-                rich_text = suffix_obj.get('rich_text', [])
-                if rich_text:
-                    suffix = rich_text[0].get('plain_text', '')
-            elif prop_type == 'text':
-                text_content = suffix_obj.get('text', {})
-                logger.info(f"Text content: {text_content}")
-                if isinstance(text_content, str):
-                    suffix = text_content
-                elif isinstance(text_content, dict):
-                    suffix = text_content.get('content', '')
+            current_blocks = response["results"]
+            total_blocks += len(current_blocks)
+            logger.info(f"Retrieved {len(current_blocks)} blocks (total: {total_blocks})")
+            
+            for block in current_blocks:
+                logger.info(f"Processing block type: {block['type']}")
+                processed_block = process_block_content(block)
+                if processed_block:
+                    blocks.append(processed_block)
+            
+            has_more = response["has_more"]
+            if has_more:
+                cursor = response["next_cursor"]
+                logger.info("More blocks available, continuing...")
         
-        logger.info(f"Final extracted suffix: {suffix}")
-        
-        # 更新页面数据
-        page = Page(
-            id=page_id,
-            title=title,
-            last_edited_time=page_data.get('last_edited_time', ''),
-            created_time=page_data.get('created_time', ''),
-            parent_id=page_data.get('parent', {}).get('database_id'),
-            edit_date=page_data.get('last_edited_time', ''),
-            show_back=True,
-            suffix=suffix
-        )
-        pages_data[page_id] = page.dict()
-        logger.info(f"Updated pages_data with: {page.dict()}")
-        
-        # 更新 suffix 索引
-        if suffix:
-            logger.info(f"Adding page {page_id} with suffix: {suffix}")
-            if suffix not in suffix_pages:
-                suffix_pages[suffix] = []
-            # 检查是否已存在
-            existing_page = next((p for p in suffix_pages[suffix] if p['id'] == page_id), None)
-            if not existing_page:
-                suffix_pages[suffix].append(page.dict())
-                logger.info(f"Added to suffix_pages[{suffix}]")
-        
-        return page_data
+        logger.info(f"Successfully processed {len(blocks)} blocks")
+        return {
+            "page": page_info,
+            "blocks": blocks
+        }
     except Exception as e:
-        logger.error(f"Error getting page {page_id}: {str(e)}")
+        logger.error(f"Error getting page content for API: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # 添加获取页面块内容的端点
