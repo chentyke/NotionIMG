@@ -213,15 +213,17 @@ body {
     transition: opacity 0.3s ease;
 }
 
-/* 增强的三点跳跃加载动画 */
-.loading-spinner {
+/* 背景加载的三点跳跃动画 - 使用更具体的选择器避免冲突 */
+.loading-indicator-container .loading-spinner {
     display: flex;
     gap: 1rem;
     align-items: flex-end;
     height: 40px;
+    border: none;
+    animation: none;
 }
 
-.spinner-dot {
+.loading-indicator-container .spinner-dot {
     width: 14px;
     height: 14px;
     background: linear-gradient(135deg, var(--primary-color), #60a5fa);
@@ -239,13 +241,13 @@ body {
         radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.4), transparent 50%);
 }
 
-.spinner-dot:nth-child(1) { 
+.loading-indicator-container .spinner-dot:nth-child(1) { 
     animation-delay: -0.4s; 
 }
-.spinner-dot:nth-child(2) { 
+.loading-indicator-container .spinner-dot:nth-child(2) { 
     animation-delay: -0.2s; 
 }
-.spinner-dot:nth-child(3) { 
+.loading-indicator-container .spinner-dot:nth-child(3) { 
     animation-delay: 0s; 
 }
 
@@ -288,7 +290,7 @@ body {
         color: #e5e7eb;
     }
     
-    .spinner-dot {
+    .loading-indicator-container .spinner-dot {
         background: linear-gradient(135deg, #60a5fa, #93c5fd);
         box-shadow: 
             0 0 20px rgba(96, 165, 250, 0.5),
@@ -340,12 +342,12 @@ body {
         min-height: 100px;
     }
     
-    .loading-spinner {
+    .loading-indicator-container .loading-spinner {
         gap: 0.8rem;
         height: 35px;
     }
     
-    .spinner-dot {
+    .loading-indicator-container .spinner-dot {
         width: 12px;
         height: 12px;
     }
