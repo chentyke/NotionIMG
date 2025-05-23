@@ -560,4 +560,129 @@
         width: 16px;
         height: 16px;
     }
+}
+
+/* Enhanced Copy Button States */
+.copy-link-button.copy-success {
+    animation: successPulse 0.6s ease-out;
+}
+
+.copy-link-button.copy-error {
+    animation: errorShake 0.6s ease-out;
+}
+
+@keyframes successPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+@keyframes errorShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-2px); }
+    75% { transform: translateX(2px); }
+}
+
+/* Toast Notification Styles */
+.toast-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+    min-width: 300px;
+    max-width: 400px;
+    padding: 0;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15), 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateX(100%);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    overflow: hidden;
+}
+
+.toast-notification.toast-show {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.toast-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+.toast-content i {
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.toast-content span {
+    flex: 1;
+}
+
+/* Toast color variants */
+.toast-success {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+}
+
+.toast-success .toast-content i {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.toast-error {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+}
+
+.toast-error .toast-content i {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.toast-info {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+}
+
+.toast-info .toast-content i {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* Dark theme adjustments */
+@media (prefers-color-scheme: dark) {
+    .toast-notification {
+        border-color: rgba(0, 0, 0, 0.3);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+}
+
+/* Mobile toast optimizations */
+@media (max-width: 640px) {
+    .toast-notification {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        min-width: auto;
+        max-width: none;
+        width: calc(100% - 20px);
+        transform: translateY(-100%);
+    }
+    
+    .toast-notification.toast-show {
+        transform: translateY(0);
+    }
+    
+    .toast-content {
+        padding: 14px 16px;
+        font-size: 13px;
+    }
+    
+    .toast-content i {
+        font-size: 16px;
+    }
 } 

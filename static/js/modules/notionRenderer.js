@@ -964,17 +964,187 @@ function copyCode(button) {
 window.copyCode = copyCode;
 
 /**
- * Copy current page link to clipboard
+ * Copy current page link to clipboard with enhanced user feedback
  */
 function copyPageLink() {
     const currentUrl = window.location.href;
-    navigator.clipboard.writeText(currentUrl).then(() => {
-        // Show success message with toast
-        // This would require implementing a toast notification system
-        console.log('Page link copied to clipboard');
-    }).catch(err => {
-        console.error('Failed to copy page link: ', err);
+    
+    // Try modern clipboard API first
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(currentUrl)
+            .then(() => {
+                showCopySuccess('页面链接已复制到剪贴板');
+            })
+            .catch(err => {
+                console.error('Failed to copy with clipboard API:', err);
+                fallbackCopyToClipboard(currentUrl);
+            });
+    } else {
+        // Fallback for older browsers or non-secure contexts
+        fallbackCopyToClipboard(currentUrl);
+    }
+}
+
+/**
+ * Fallback method to copy text to clipboard
+ * @param {string} text - Text to copy
+ */
+function fallbackCopyToClipboard(text) {
+    try {
+        // Create a temporary textarea element
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.top = '0';
+        textarea.style.left = '0';
+        textarea.style.width = '2em';
+        textarea.style.height = '2em';
+        textarea.style.padding = '0';
+        textarea.style.border = 'none';
+        textarea.style.outline = 'none';
+        textarea.style.boxShadow = 'none';
+        textarea.style.background = 'transparent';
+        
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        
+        if (successful) {
+            showCopySuccess('页面链接已复制到剪贴板');
+        } else {
+            showCopyError('复制失败，请手动复制链接');
+        }
+    } catch (err) {
+        console.error('Fallback copy failed:', err);
+        showCopyError('复制失败，请手动复制链接');
+    }
+}
+
+/**
+ * Show success message for copy operation
+ * @param {string} message - Success message to display
+ */
+function showCopySuccess(message) {
+    // Update copy button temporarily
+    const copyButtons = document.querySelectorAll('.copy-link-button');
+    copyButtons.forEach(button => {
+        const originalHTML = button.innerHTML;
+        const icon = button.querySelector('i');
+        const span = button.querySelector('span');
+        
+        // Change icon to checkmark
+        if (icon) {
+            icon.className = 'fas fa-check';
+            icon.style.color = '#10b981'; // green color
+        }
+        
+        // Change text if span exists
+        if (span) {
+            span.textContent = '已复制';
+        }
+        
+        // Add success class
+        button.classList.add('copy-success');
+        
+        // Restore original state after 2 seconds
+        setTimeout(() => {
+            if (icon) {
+                icon.className = 'fas fa-link';
+                icon.style.color = '';
+            }
+            if (span) {
+                span.textContent = '复制链接';
+            }
+            button.classList.remove('copy-success');
+        }, 2000);
     });
+    
+    // Show toast notification
+    showToast(message, 'success');
+}
+
+/**
+ * Show error message for copy operation
+ * @param {string} message - Error message to display
+ */
+function showCopyError(message) {
+    // Update copy button temporarily
+    const copyButtons = document.querySelectorAll('.copy-link-button');
+    copyButtons.forEach(button => {
+        const icon = button.querySelector('i');
+        const span = button.querySelector('span');
+        
+        // Change icon to error
+        if (icon) {
+            icon.className = 'fas fa-exclamation-triangle';
+            icon.style.color = '#ef4444'; // red color
+        }
+        
+        // Change text if span exists
+        if (span) {
+            span.textContent = '复制失败';
+        }
+        
+        // Add error class
+        button.classList.add('copy-error');
+        
+        // Restore original state after 2 seconds
+        setTimeout(() => {
+            if (icon) {
+                icon.className = 'fas fa-link';
+                icon.style.color = '';
+            }
+            if (span) {
+                span.textContent = '复制链接';
+            }
+            button.classList.remove('copy-error');
+        }, 2000);
+    });
+    
+    // Show toast notification
+    showToast(message, 'error');
+}
+
+/**
+ * Show toast notification
+ * @param {string} message - Message to display
+ * @param {string} type - Type of toast ('success', 'error', 'info')
+ */
+function showToast(message, type = 'info') {
+    // Remove existing toasts
+    const existingToasts = document.querySelectorAll('.toast-notification');
+    existingToasts.forEach(toast => toast.remove());
+    
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `toast-notification toast-${type}`;
+    toast.innerHTML = `
+        <div class="toast-content">
+            <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    // Add to page
+    document.body.appendChild(toast);
+    
+    // Animate in
+    setTimeout(() => {
+        toast.classList.add('toast-show');
+    }, 10);
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+        toast.classList.remove('toast-show');
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.remove();
+            }
+        }, 300);
+    }, 3000);
 }
 
 /**
