@@ -1,25 +1,27 @@
 /* Notion-like Code Block Styles */
 .code-block {
     position: relative;
-    margin: 12px 0;
+    margin: 24px 0;
     font-family: ui-monospace, SFMono-Regular, "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     font-size: 14px;
-    line-height: 1.5;
+    line-height: 1.6;
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
     transition: box-shadow 0.2s ease;
+    border: 1px solid #e9ecef;
 }
 
 .code-block:hover {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.3);
+    border-color: #dee2e6;
 }
 
 /* Code header - mimics Notion's language indicator */
 .code-block .code-header {
     background: #f8f9fa;
     border-bottom: 1px solid #e9ecef;
-    padding: 8px 16px;
+    padding: 10px 18px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -27,12 +29,14 @@
     font-weight: 500;
     color: #6c757d;
     user-select: none;
+    min-height: 40px;
 }
 
 .code-block .code-language {
     text-transform: capitalize;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
     letter-spacing: 0.025em;
+    font-weight: 600;
 }
 
 /* Copy button - Notion style */
@@ -40,7 +44,7 @@
     background: transparent;
     border: 1px solid #dee2e6;
     border-radius: 4px;
-    padding: 4px 8px;
+    padding: 6px 10px;
     font-size: 11px;
     color: #6c757d;
     cursor: pointer;
@@ -49,6 +53,7 @@
     align-items: center;
     gap: 4px;
     opacity: 0.7;
+    font-weight: 500;
 }
 
 .copy-code-btn:hover {
@@ -77,7 +82,7 @@
 .code-block pre {
     background: #ffffff;
     margin: 0;
-    padding: 16px;
+    padding: 20px 18px;
     overflow-x: auto;
     border: none;
     font-family: inherit;
@@ -85,6 +90,7 @@
     line-height: inherit;
     white-space: pre;
     tab-size: 4;
+    min-height: 60px;
 }
 
 .code-block pre::-webkit-scrollbar {
@@ -93,6 +99,7 @@
 
 .code-block pre::-webkit-scrollbar-track {
     background: #f1f3f4;
+    border-radius: 4px;
 }
 
 .code-block pre::-webkit-scrollbar-thumb {
@@ -118,12 +125,83 @@
     white-space: pre;
 }
 
-/* Notion-like syntax highlighting colors (light theme) */
+/* Enhanced syntax highlighting colors (light theme) */
+.code-block .hljs {
+    background: transparent !important;
+    color: #37352f;
+}
+
+.code-block .hljs-comment,
+.code-block .hljs-quote {
+    color: #6a737d;
+    font-style: italic;
+}
+
+.code-block .hljs-keyword,
+.code-block .hljs-selector-tag,
+.code-block .hljs-literal,
+.code-block .hljs-type,
+.code-block .hljs-section,
+.code-block .hljs-link {
+    color: #d73a49;
+    font-weight: 600;
+}
+
+.code-block .hljs-string,
+.code-block .hljs-regexp,
+.code-block .hljs-template-string,
+.code-block .hljs-symbol {
+    color: #032f62;
+}
+
+.code-block .hljs-number,
+.code-block .hljs-meta {
+    color: #005cc5;
+}
+
+.code-block .hljs-built_in,
+.code-block .hljs-class .hljs-title {
+    color: #6f42c1;
+    font-weight: 600;
+}
+
+.code-block .hljs-function .hljs-title,
+.code-block .hljs-title.function_ {
+    color: #6f42c1;
+    font-weight: 600;
+}
+
+.code-block .hljs-attr,
+.code-block .hljs-variable,
+.code-block .hljs-template-variable,
+.code-block .hljs-class .hljs-title,
+.code-block .hljs-type {
+    color: #e36209;
+}
+
+.code-block .hljs-params {
+    color: #24292e;
+}
+
+.code-block .hljs-tag {
+    color: #22863a;
+}
+
+.code-block .hljs-name {
+    color: #22863a;
+    font-weight: 600;
+}
+
+.code-block .hljs-attribute {
+    color: #6f42c1;
+}
+
+/* Fallback token classes for non-highlight.js highlighting */
 .code-block .token.comment,
 .code-block .token.prolog,
 .code-block .token.doctype,
 .code-block .token.cdata {
-    color: #999988;
+    color: #6a737d;
     font-style: italic;
 }
 
@@ -162,13 +240,13 @@
 .code-block .token.attr-value,
 .code-block .token.keyword {
     color: #d73a49;
-    font-weight: 500;
+    font-weight: 600;
 }
 
 .code-block .token.function,
 .code-block .token.class-name {
     color: #6f42c1;
-    font-weight: 500;
+    font-weight: 600;
 }
 
 .code-block .token.regex,
@@ -181,10 +259,12 @@
 @media (prefers-color-scheme: dark) {
     .code-block {
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.5);
+        border-color: #404040;
     }
     
     .code-block:hover {
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.6);
+        border-color: #525252;
     }
 
     .code-block .code-header {
@@ -230,6 +310,77 @@
     }
 
     /* Dark theme syntax highlighting */
+    .code-block .hljs {
+        background: transparent !important;
+        color: #e4e4e7;
+    }
+
+    .code-block .hljs-comment,
+    .code-block .hljs-quote {
+        color: #6a9955;
+        font-style: italic;
+    }
+
+    .code-block .hljs-keyword,
+    .code-block .hljs-selector-tag,
+    .code-block .hljs-literal,
+    .code-block .hljs-type,
+    .code-block .hljs-section,
+    .code-block .hljs-link {
+        color: #ff6b6b;
+        font-weight: 600;
+    }
+
+    .code-block .hljs-string,
+    .code-block .hljs-regexp,
+    .code-block .hljs-template-string,
+    .code-block .hljs-symbol {
+        color: #a5d6ff;
+    }
+
+    .code-block .hljs-number,
+    .code-block .hljs-meta {
+        color: #79c0ff;
+    }
+
+    .code-block .hljs-built_in,
+    .code-block .hljs-class .hljs-title {
+        color: #c084fc;
+        font-weight: 600;
+    }
+
+    .code-block .hljs-function .hljs-title,
+    .code-block .hljs-title.function_ {
+        color: #c084fc;
+        font-weight: 600;
+    }
+
+    .code-block .hljs-attr,
+    .code-block .hljs-variable,
+    .code-block .hljs-template-variable,
+    .code-block .hljs-class .hljs-title,
+    .code-block .hljs-type {
+        color: #fbbf24;
+    }
+
+    .code-block .hljs-params {
+        color: #e4e4e7;
+    }
+
+    .code-block .hljs-tag {
+        color: #7ee787;
+    }
+
+    .code-block .hljs-name {
+        color: #7ee787;
+        font-weight: 600;
+    }
+
+    .code-block .hljs-attribute {
+        color: #c084fc;
+    }
+
+    /* Dark theme fallback token classes */
     .code-block .token.comment,
     .code-block .token.prolog,
     .code-block .token.doctype,
@@ -272,19 +423,42 @@
     .code-block .token.attr-value,
     .code-block .token.keyword {
         color: #ff6b6b;
-        font-weight: 500;
+        font-weight: 600;
     }
 
     .code-block .token.function,
     .code-block .token.class-name {
         color: #c084fc;
-        font-weight: 500;
+        font-weight: 600;
     }
 
     .code-block .token.regex,
     .code-block .token.important,
     .code-block .token.variable {
         color: #fbbf24;
+    }
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+    .code-block {
+        margin: 16px 0;
+        font-size: 13px;
+    }
+
+    .code-block .code-header {
+        padding: 8px 14px;
+        min-height: 36px;
+    }
+
+    .code-block pre {
+        padding: 16px 14px;
+        min-height: 50px;
+    }
+
+    .copy-code-btn {
+        padding: 4px 8px;
+        font-size: 10px;
     }
 }
 

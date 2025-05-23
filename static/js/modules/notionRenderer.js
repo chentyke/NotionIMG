@@ -2,6 +2,7 @@
 import { updateLoadingProgress } from './loader.js';
 import { imageObserver } from './imageHandler.js';
 import { processRichText, generateHeadingId, updatePageTitle } from './utils.js';
+import { codeHighlighter, CodeHighlighter } from './codeHighlight.js';
 import { 
     getTotalBlocks, 
     getLoadedBlocks, 
@@ -352,6 +353,9 @@ async function renderBlock(block) {
                 const language = block.language || 'plain text';
                 const codeId = `code-${Math.random().toString(36).substr(2, 9)}`;
                 
+                // Use the CodeHighlighter's language mapping
+                const hljsLanguage = CodeHighlighter.getLanguageClass(language);
+                
                 // Apply color to the code block container if specified
                 const codeContainerStyle = blockColorStyle ? ` style="${blockColorStyle}"` : '';
                 
@@ -367,7 +371,7 @@ async function renderBlock(block) {
                                 Copy
                             </button>
                         </div>
-                        <pre><code id="${codeId}">${codeText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>
+                        <pre><code id="${codeId}" class="language-${hljsLanguage}">${codeText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>
                     </div>`;
             } catch (error) {
                 console.error('Error rendering code block:', error);
@@ -845,6 +849,9 @@ async function loadPage(pageId = null) {
             imageObserver.observe(img);
         });
         
+        // Apply syntax highlighting to code blocks using the new highlighter
+        codeHighlighter.highlightAllCodeBlocks();
+        
         // Initialize TOC after content is rendered
         TableOfContents.build();
         
@@ -944,36 +951,16 @@ function toggleBlock(id) {
 }
 
 /**
- * Copy code from a code block
+ * Copy code from a code block - Enhanced version
  * @param {HTMLElement} button - The button that was clicked
  */
 function copyCode(button) {
-    const codeId = button.getAttribute('data-code-id');
-    const codeElement = document.getElementById(codeId);
-    if (!codeElement) return;
-    
-    const text = codeElement.innerText;
-    
-    // Use Clipboard API
-    navigator.clipboard.writeText(text).then(() => {
-        // Show success state on button
-        const originalHTML = button.innerHTML;
-        button.innerHTML = `
-            <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-            </svg>
-        `;
-        button.classList.add('copied');
-        
-        // Reset after 2 seconds
-        setTimeout(() => {
-            button.innerHTML = originalHTML;
-            button.classList.remove('copied');
-        }, 2000);
-    }).catch(err => {
-        console.error('Failed to copy code: ', err);
-    });
+    const enhancedCopyCode = CodeHighlighter.enhanceCopyCode();
+    enhancedCopyCode(button);
 }
+
+// Make copyCode globally accessible
+window.copyCode = copyCode;
 
 /**
  * Copy current page link to clipboard
