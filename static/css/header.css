@@ -239,7 +239,7 @@
     color: white;
 }
 
-/* 全屏浮动目录样式 */
+/* 全屏浮动目录样式 - 优化版本 */
 .floating-toc-fullscreen {
     position: fixed;
     top: 0;
@@ -263,9 +263,9 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.2);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    background: rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
 
 .floating-toc-panel {
@@ -273,20 +273,22 @@
     top: 0;
     left: 50%;
     transform: translateX(-50%) translateY(-100%);
-    width: min(600px, calc(100vw - 32px));
-    max-height: 80vh;
-    background: rgba(255, 255, 255, 0.98);
-    backdrop-filter: blur(25px);
-    -webkit-backdrop-filter: blur(25px);
-    border-radius: 0 0 24px 24px;
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    width: min(800px, calc(100vw - 32px)); /* 增加宽度以充分利用空间 */
+    height: 100vh; /* 占满全屏高度 */
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border-radius: 0 0 32px 32px; /* 更圆润的底部圆角 */
+    border: 1px solid rgba(255, 255, 255, 0.4);
     border-top: none;
     box-shadow: 
-        0 20px 50px rgba(0, 0, 0, 0.15),
-        0 8px 25px rgba(0, 0, 0, 0.1),
-        inset 0 1px 0 rgba(255, 255, 255, 0.6);
+        0 25px 80px rgba(0, 0, 0, 0.12),
+        0 10px 40px rgba(0, 0, 0, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.7);
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
 .floating-toc-fullscreen.visible .floating-toc-panel {
@@ -297,48 +299,58 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 24px 28px 20px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-    background: rgba(255, 255, 255, 0.5);
+    padding: 32px 40px 24px; /* 增加内边距 */
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    background: rgba(255, 255, 255, 0.4);
+    flex-shrink: 0; /* 防止头部收缩 */
 }
 
 .floating-toc-header h2 {
-    font-size: 1.25rem;
+    font-size: 1.5rem; /* 增大标题字号 */
     font-weight: 700;
     color: var(--text-primary);
     margin: 0;
+    letter-spacing: -0.025em;
 }
 
 .floating-toc-close {
-    width: 36px;
-    height: 36px;
+    width: 40px; /* 增大关闭按钮 */
+    height: 40px;
     border: none;
-    background: rgba(0, 0, 0, 0.05);
-    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.04);
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: var(--text-tertiary);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
+    font-size: 1.125rem;
 }
 
 .floating-toc-close:hover {
-    background: rgba(0, 0, 0, 0.1);
+    background: rgba(0, 0, 0, 0.08);
     color: var(--text-primary);
     transform: scale(1.05);
 }
 
 .floating-toc-content {
-    padding: 24px 28px 32px;
-    max-height: calc(80vh - 120px);
+    padding: 0 40px 40px; /* 移除顶部内边距，增加底部间距 */
+    flex: 1; /* 占满剩余空间 */
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
 }
 
 .floating-toc-list {
     list-style: none;
     padding: 0;
     margin: 0;
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr; /* 单列布局，最大化利用空间 */
+    gap: 6px; /* 增加间距提升阅读体验 */
+    align-content: start;
 }
 
 .floating-toc-list li {
@@ -348,23 +360,27 @@
 
 .floating-toc-list a {
     display: block;
-    padding: 12px 16px;
+    padding: 16px 24px; /* 增加内边距提升触摸体验 */
     color: var(--text-secondary);
     text-decoration: none;
-    border-radius: 12px;
-    transition: all 0.3s ease;
-    font-size: 0.9375rem;
-    line-height: 1.5;
-    border-left: 3px solid transparent;
-    margin-bottom: 4px;
+    border-radius: 16px; /* 更圆润的圆角 */
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 1rem; /* 统一较大的字号 */
+    line-height: 1.6;
+    border-left: 4px solid transparent;
     position: relative;
+    background: rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .floating-toc-list a:hover {
     background: rgba(59, 130, 246, 0.08);
     color: var(--text-primary);
-    border-left-color: rgba(59, 130, 246, 0.4);
-    transform: translateX(4px);
+    border-left-color: rgba(59, 130, 246, 0.6);
+    transform: translateX(6px) scale(1.02); /* 增强悬浮效果 */
+    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.15);
 }
 
 .floating-toc-list a.active {
@@ -372,95 +388,44 @@
     color: var(--primary-color);
     border-left-color: var(--primary-color);
     font-weight: 600;
-    transform: translateX(4px);
+    transform: translateX(6px) scale(1.02);
+    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.2);
 }
 
 .floating-toc-list a.active::before {
     content: '';
     position: absolute;
-    left: -3px;
+    left: -4px;
     top: 50%;
     transform: translateY(-50%);
-    width: 6px;
-    height: 20px;
+    width: 8px;
+    height: 28px;
     background: var(--primary-color);
-    border-radius: 3px;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
 }
 
-/* 标题层级缩进 */
+/* 优化标题层级样式 - 更好的视觉层次 */
 .floating-toc-list .level-1 {
-    padding-left: 16px;
-    font-size: 1rem;
-    font-weight: 600;
+    padding-left: 24px;
+    font-size: 1.125rem; /* 一级标题最大 */
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.5); /* 不同的背景色区分 */
 }
 
 .floating-toc-list .level-2 {
-    padding-left: 32px;
-    font-size: 0.9375rem;
+    padding-left: 40px;
+    font-size: 1.0625rem; /* 二级标题中等 */
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.4);
 }
 
 .floating-toc-list .level-3 {
-    padding-left: 48px;
-    font-size: 0.875rem;
-    color: var(--text-tertiary);
-}
-
-/* Dark theme floating header */
-@media (prefers-color-scheme: dark) {
-    .floating-header {
-        background: rgba(17, 24, 39, 0.95);
-        border-color: rgba(255, 255, 255, 0.1);
-        box-shadow: 
-            0 8px 32px rgba(0, 0, 0, 0.3),
-            0 2px 8px rgba(0, 0, 0, 0.2),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    }
-    
-    .floating-header:hover {
-        transform: translateX(-50%) translateY(-2px);
-        box-shadow: 
-            0 12px 40px rgba(0, 0, 0, 0.4),
-            0 4px 12px rgba(0, 0, 0, 0.3),
-            inset 0 1px 0 rgba(255, 255, 255, 0.15);
-    }
-    
-    .floating-header .copy-link-button {
-        background: rgba(55, 65, 81, 0.8);
-        border-color: rgba(255, 255, 255, 0.1);
-        color: var(--text-tertiary);
-    }
-    
-    .floating-header .copy-link-button:hover {
-        background: rgba(75, 85, 99, 1);
-        border-color: rgba(255, 255, 255, 0.2);
-        color: var(--text-primary);
-    }
-    
-    .floating-toc-backdrop {
-        background: rgba(0, 0, 0, 0.4);
-    }
-    
-    .floating-toc-panel {
-        background: rgba(17, 24, 39, 0.98);
-        border-color: rgba(255, 255, 255, 0.1);
-        box-shadow: 
-            0 20px 50px rgba(0, 0, 0, 0.4),
-            0 8px 25px rgba(0, 0, 0, 0.3),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    }
-    
-    .floating-toc-header {
-        background: rgba(17, 24, 39, 0.5);
-        border-bottom-color: rgba(255, 255, 255, 0.1);
-    }
-    
-    .floating-toc-close {
-        background: rgba(255, 255, 255, 0.05);
-    }
-    
-    .floating-toc-close:hover {
-        background: rgba(255, 255, 255, 0.1);
-    }
+    padding-left: 56px;
+    font-size: 1rem; /* 三级标题正常 */
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.3);
 }
 
 /* Mobile optimizations */
@@ -556,34 +521,131 @@
     
     /* 移动端全屏目录调整 */
     .floating-toc-panel {
-        width: calc(100vw - 16px);
-        max-height: 85vh;
-        border-radius: 0 0 20px 20px;
+        width: calc(100vw - 12px); /* 最大化利用移动端屏幕空间 */
+        height: 100vh; /* 占满全屏 */
+        border-radius: 0 0 24px 24px;
     }
     
     .floating-toc-header {
-        padding: 20px 24px 16px;
+        padding: 24px 20px 20px; /* 压缩横向内边距 */
     }
     
     .floating-toc-header h2 {
-        font-size: 1.125rem;
+        font-size: 1.25rem; /* 移动端适中的标题大小 */
     }
     
     .floating-toc-close {
-        width: 32px;
-        height: 32px;
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
     }
     
     .floating-toc-content {
-        padding: 20px 24px 28px;
-        max-height: calc(85vh - 100px);
+        padding: 0 20px 32px; /* 压缩横向内边距，增加底部空间 */
+    }
+    
+    .floating-toc-list {
+        gap: 4px; /* 移动端减少间距以容纳更多内容 */
     }
     
     .floating-toc-list a {
-        padding: 14px 16px; /* 增加触摸区域 */
-        font-size: 0.9375rem;
+        padding: 18px 20px; /* 增大触摸区域 */
+        font-size: 1rem;
+        border-radius: 14px;
     }
     
+    .floating-toc-list .level-1 {
+        padding-left: 20px;
+        font-size: 1.0625rem;
+    }
+    
+    .floating-toc-list .level-2 {
+        padding-left: 36px;
+        font-size: 1rem;
+    }
+    
+    .floating-toc-list .level-3 {
+        padding-left: 52px;
+        font-size: 0.9375rem;
+    }
+}
+
+/* Dark theme floating header */
+@media (prefers-color-scheme: dark) {
+    .floating-header {
+        background: rgba(17, 24, 39, 0.95);
+        border-color: rgba(255, 255, 255, 0.1);
+        box-shadow: 
+            0 8px 32px rgba(0, 0, 0, 0.3),
+            0 2px 8px rgba(0, 0, 0, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+    
+    .floating-header:hover {
+        transform: translateX(-50%) translateY(-2px);
+        box-shadow: 
+            0 12px 40px rgba(0, 0, 0, 0.4),
+            0 4px 12px rgba(0, 0, 0, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    }
+    
+    .floating-header .copy-link-button {
+        background: rgba(55, 65, 81, 0.8);
+        border-color: rgba(255, 255, 255, 0.1);
+        color: var(--text-tertiary);
+    }
+    
+    .floating-header .copy-link-button:hover {
+        background: rgba(75, 85, 99, 1);
+        border-color: rgba(255, 255, 255, 0.2);
+        color: var(--text-primary);
+    }
+    
+    .floating-toc-backdrop {
+        background: rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+    }
+    
+    .floating-toc-panel {
+        background: rgba(17, 24, 39, 0.96);
+        border-color: rgba(255, 255, 255, 0.15);
+        box-shadow: 
+            0 25px 80px rgba(0, 0, 0, 0.5),
+            0 10px 40px rgba(0, 0, 0, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    }
+    
+    .floating-toc-header {
+        background: rgba(17, 24, 39, 0.4);
+        border-bottom-color: rgba(255, 255, 255, 0.08);
+    }
+    
+    .floating-toc-close {
+        background: rgba(255, 255, 255, 0.06);
+    }
+    
+    .floating-toc-close:hover {
+        background: rgba(255, 255, 255, 0.12);
+    }
+    
+    .floating-toc-list a {
+        background: rgba(17, 24, 39, 0.4);
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .floating-toc-list .level-1 {
+        background: rgba(17, 24, 39, 0.6);
+    }
+    
+    .floating-toc-list .level-2 {
+        background: rgba(17, 24, 39, 0.5);
+    }
+    
+    .floating-toc-list .level-3 {
+        background: rgba(17, 24, 39, 0.4);
+    }
+
     /* 移动端深色模式悬浮效果 */
     @media (prefers-color-scheme: dark) {
         .floating-header:hover {
