@@ -1081,6 +1081,10 @@ async function loadMoreContentInBackground(pageId, cursor, pageContent) {
         };
         
         // 第一步：收集所有剩余的块，使用改进的错误处理和重试机制
+        // 同时实现每10个块的实时渲染，提升用户体验
+        const blocksToRender = []; // 临时收集待渲染的块
+        const renderThreshold = 10; // 每10个块渲染一次
+        
         while (hasMore && batchCount < maxBatches && failedAttempts < maxFailedAttempts) {
             let retryCount = 0;
             let batchSuccess = false;
@@ -1153,9 +1157,22 @@ async function loadMoreContentInBackground(pageId, cursor, pageContent) {
                     }
                     
                     if (moreData.blocks && moreData.blocks.length > 0) {
-                        // 按顺序添加到allNewBlocks数组中
-                        allNewBlocks.push(...moreData.blocks);
-                        totalBlocksCollected += moreData.blocks.length;
+                        // 按顺序添加到临时数组中
+                        for (const block of moreData.blocks) {
+                            block._sequence = totalBlocksCollected;
+                            block._batch = batchCount;
+                            blocksToRender.push(block);
+                            allNewBlocks.push(block);
+                            totalBlocksCollected += 1;
+                            
+                            // 每收集到renderThreshold个块就渲染一次
+                            if (blocksToRender.length >= renderThreshold) {
+                                console.log(`Rendering ${blocksToRender.length} blocks incrementally...`);
+                                await renderIncrementalBlocks(blocksToRender, pageContent, loadingIndicator);
+                                blocksToRender.length = 0; // 清空已渲染的块
+                            }
+                        }
+                        
                         console.log(`✓ Collected batch ${batchCount + 1}: ${moreData.blocks.length} blocks (total collected: ${totalBlocksCollected})`);
                         
                         // Log debug information if available
@@ -1252,13 +1269,12 @@ async function loadMoreContentInBackground(pageId, cursor, pageContent) {
                 console.warn(`Stopping background loading due to too many failed attempts (${failedAttempts})`);
                 break;
             }
-            
-            // 每隔几个批次就渲染一下已经收集的块，提高用户体验
-            if (allNewBlocks.length > 0 && batchCount % 5 === 0) {
-                console.log(`Rendering intermediate batch: ${allNewBlocks.length} blocks`);
-                await renderIntermediateBatch(allNewBlocks, pageContent, loadingIndicator);
-                allNewBlocks.length = 0; // 清空已渲染的块
-            }
+        }
+        
+        // 渲染剩余的块（如果有不足renderThreshold的块）
+        if (blocksToRender.length > 0) {
+            console.log(`Rendering final ${blocksToRender.length} blocks...`);
+            await renderIncrementalBlocks(blocksToRender, pageContent, loadingIndicator);
         }
         
         // 处理加载完成的情况
@@ -1279,14 +1295,8 @@ async function loadMoreContentInBackground(pageId, cursor, pageContent) {
                     }
                 }, 10000);
             }
-        }
-        
-        // 第二步：渲染剩余的新块（如果有的话）
-        if (allNewBlocks.length > 0) {
-            console.log(`Rendering final batch: ${allNewBlocks.length} additional blocks`);
-            await renderFinalBatch(allNewBlocks, pageContent, loadingIndicator);
         } else {
-            // Remove loading indicator if no blocks to render
+            // Remove loading indicator if all content loaded successfully
             const indicator = document.getElementById('background-loading');
             if (indicator) {
                 indicator.remove();
@@ -1312,6 +1322,123 @@ async function loadMoreContentInBackground(pageId, cursor, pageContent) {
                 }
             }, 10000);
         }
+    }
+}
+
+/**
+ * Render incremental blocks during background loading (every 10 blocks)
+ * @param {Array} blocks - Blocks to render
+ * @param {HTMLElement} pageContent - Page content container
+ * @param {HTMLElement} loadingIndicator - Loading indicator element
+ */
+async function renderIncrementalBlocks(blocks, pageContent, loadingIndicator) {
+    if (blocks.length === 0) return;
+    
+    try {
+        console.log(`Rendering ${blocks.length} blocks incrementally...`);
+        
+        // Validate and sort blocks by sequence
+        validateBlockOrder(blocks, "Incremental blocks - before sorting");
+        
+        if (blocks[0]._sequence !== undefined) {
+            blocks.sort((a, b) => (a._sequence || 0) - (b._sequence || 0));
+            validateBlockOrder(blocks, "Incremental blocks - after sorting");
+        }
+        
+        // 检查最后一个元素是否是列表，以便正确续接
+        const lastElement = pageContent.children[pageContent.children.length - 2]; // -2 because last is loading indicator
+        let currentList = null;
+        
+        // 检查是否可以续接现有列表
+        if (lastElement && (lastElement.tagName === 'UL' || lastElement.tagName === 'OL')) {
+            const firstNewBlock = blocks[0];
+            if (firstNewBlock && 
+                ((firstNewBlock.type === 'bulleted_list_item' && lastElement.tagName === 'UL') ||
+                 (firstNewBlock.type === 'numbered_list_item' && lastElement.tagName === 'OL'))) {
+                currentList = { 
+                    tag: lastElement.tagName.toLowerCase(), 
+                    type: firstNewBlock.type,
+                    element: lastElement 
+                };
+                console.log(`Will extend existing ${currentList.tag} list with incremental blocks`);
+            }
+        }
+        
+        // 渲染块
+        let processedContent = '';
+        let listContinuationHandled = false;
+        
+        for (let i = 0; i < blocks.length; i++) {
+            const block = blocks[i];
+            try {
+                // 特殊处理列表项以确保正确分组
+                if (block.type === 'bulleted_list_item' || block.type === 'numbered_list_item') {
+                    const listTag = block.type === 'bulleted_list_item' ? 'ul' : 'ol';
+                    
+                    // 如果是第一个块且可以续接现有列表
+                    if (i === 0 && currentList && currentList.tag === listTag && currentList.element && !listContinuationHandled) {
+                        // 直接渲染列表项并添加到现有列表
+                        const listItem = await renderBlock(block);
+                        currentList.element.insertAdjacentHTML('beforeend', listItem);
+                        listContinuationHandled = true;
+                        continue;
+                    }
+                    
+                    // 开始新列表或继续当前列表
+                    if (!currentList || currentList.tag !== listTag || currentList.element) {
+                        // 关闭之前的列表
+                        if (currentList && !currentList.element) {
+                            processedContent += `</${currentList.tag}>`;
+                        }
+                        
+                        // 开始新列表
+                        processedContent += `<${listTag} class="my-4 ${listTag === 'ul' ? 'list-disc' : 'list-decimal'} ml-6">`;
+                        currentList = { tag: listTag, type: block.type, element: null };
+                    }
+                    
+                    // 添加列表项
+                    processedContent += await renderBlock(block);
+                } else {
+                    // 非列表项：关闭任何打开的列表
+                    if (currentList && !currentList.element) {
+                        processedContent += `</${currentList.tag}>`;
+                        currentList = null;
+                    }
+                    
+                    // 添加块内容
+                    processedContent += await renderBlock(block);
+                }
+            } catch (error) {
+                console.error(`Error rendering incremental block ${block.id}:`, error);
+                processedContent += `<div class="text-red-500">Error rendering a block: ${error.message}</div>`;
+            }
+        }
+        
+        // 关闭任何剩余的打开列表
+        if (currentList && !currentList.element) {
+            processedContent += `</${currentList.tag}>`;
+        }
+        
+        // 只有在有处理过的内容时才添加到页面
+        if (processedContent.trim()) {
+            // 创建临时容器
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = processedContent;
+            
+            // 按顺序插入新内容到加载指示器之前
+            const fragment = document.createDocumentFragment();
+            while (tempDiv.firstChild) {
+                fragment.appendChild(tempDiv.firstChild);
+            }
+            pageContent.insertBefore(fragment, loadingIndicator);
+            
+            // Post-process the new content
+            postProcessContent(pageContent);
+            
+            console.log(`Successfully rendered ${blocks.length} incremental blocks`);
+        }
+    } catch (error) {
+        console.error('Error rendering incremental blocks:', error);
     }
 }
 
