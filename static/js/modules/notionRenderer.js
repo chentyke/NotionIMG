@@ -1327,21 +1327,24 @@ async function loadMoreContentInBackground(pageId, cursor, pageContent) {
 
 /**
  * Calculate the starting number for an ordered list to continue numbering
+ * Only counts if there's an immediately adjacent ordered list
  * @param {HTMLElement} pageContent - Page content container
- * @returns {number} - The next number to start from
+ * @param {HTMLElement} loadingIndicator - Loading indicator element
+ * @returns {number} - The next number to start from (1 if should restart)
  */
-function calculateOrderedListStart(pageContent) {
-    let totalOrderedItems = 0;
+function calculateOrderedListStart(pageContent, loadingIndicator) {
+    // 找到加载指示器之前的最后一个元素
+    const lastElement = pageContent.children[pageContent.children.length - 2]; // -2 because last is loading indicator
     
-    // 查找页面中所有的有序列表
-    const orderedLists = pageContent.querySelectorAll('ol');
-    
-    for (const ol of orderedLists) {
-        const listItems = ol.querySelectorAll('li');
-        totalOrderedItems += listItems.length;
+    // 如果最后一个元素是有序列表，则继续编号
+    if (lastElement && lastElement.tagName === 'OL') {
+        const listItems = lastElement.querySelectorAll('li');
+        const currentStart = parseInt(lastElement.getAttribute('start') || '1');
+        return currentStart + listItems.length;
     }
     
-    return totalOrderedItems + 1;
+    // 如果最后一个元素不是有序列表，则从1开始
+    return 1;
 }
 
 /**
@@ -1356,11 +1359,15 @@ function getLastListContext(pageContent, loadingIndicator) {
     
     if (lastElement && (lastElement.tagName === 'UL' || lastElement.tagName === 'OL')) {
         const listItems = lastElement.querySelectorAll('li');
+        const startValue = parseInt(lastElement.getAttribute('start') || '1');
+        
         return {
             element: lastElement,
             tag: lastElement.tagName.toLowerCase(),
             type: lastElement.tagName === 'UL' ? 'bulleted_list_item' : 'numbered_list_item',
-            itemCount: listItems.length
+            itemCount: listItems.length,
+            startValue: startValue,
+            nextNumber: startValue + listItems.length
         };
     }
     
@@ -1391,12 +1398,13 @@ async function renderIncrementalBlocks(blocks, pageContent, loadingIndicator) {
         let currentList = getLastListContext(pageContent, loadingIndicator);
         let orderedListStart = null; // 有序列表的起始编号
         
-        if (currentList) {
-            console.log(`Found existing ${currentList.tag} list with ${currentList.itemCount} items`);
-            if (currentList.tag === 'ol') {
-                orderedListStart = currentList.itemCount + 1;
-                console.log(`Next ordered list should start from ${orderedListStart}`);
-            }
+        if (currentList && currentList.tag === 'ol') {
+            // 只有当最后一个元素确实是有序列表时才继续编号
+            orderedListStart = currentList.nextNumber;
+            console.log(`Last element is ordered list starting from ${currentList.startValue} with ${currentList.itemCount} items, next should start from ${orderedListStart}`);
+        } else {
+            // 如果最后一个元素不是有序列表，或者没有找到列表，则从1开始
+            console.log(`Last element is not an ordered list, new ordered lists will start from 1`);
         }
         
         // 渲染块
@@ -1430,7 +1438,7 @@ async function renderIncrementalBlocks(blocks, pageContent, loadingIndicator) {
                         if (listTag === 'ol') {
                             // 如果还没有计算起始编号，现在计算
                             if (orderedListStart === null) {
-                                orderedListStart = calculateOrderedListStart(pageContent);
+                                orderedListStart = calculateOrderedListStart(pageContent, loadingIndicator);
                                 console.log(`Calculated ordered list start: ${orderedListStart}`);
                             }
                             processedContent += `<ol class="my-4 list-decimal ml-6" start="${orderedListStart}">`;
@@ -1455,7 +1463,7 @@ async function renderIncrementalBlocks(blocks, pageContent, loadingIndicator) {
                     if (currentList && !currentList.element) {
                         processedContent += `</${currentList.tag}>`;
                         currentList = null;
-                        orderedListStart = null; // 重置编号
+                        orderedListStart = null; // 重置编号，下一个有序列表将从1开始
                     }
                     
                     // 添加块内容
