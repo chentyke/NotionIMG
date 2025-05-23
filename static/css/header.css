@@ -239,7 +239,7 @@
     color: white;
 }
 
-/* 全屏浮动目录样式 - 逐级展开效果 */
+/* 全屏浮动目录样式 - 优化毛玻璃动画 */
 .floating-toc-fullscreen {
     position: fixed;
     top: 0;
@@ -249,7 +249,8 @@
     z-index: 1500;
     opacity: 0;
     visibility: hidden;
-    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+                visibility 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .floating-toc-fullscreen.visible {
@@ -263,30 +264,36 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.3); /* 暗色毛玻璃背景 */
+    background: rgba(255, 255, 255, 0);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: background-color;
+    transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.floating-toc-fullscreen.visible .floating-toc-backdrop {
+    background: rgba(255, 255, 255, 0.6);
 }
 
 .floating-toc-panel {
     position: absolute;
     top: 0;
     left: 50%;
-    transform: translateX(-50%);
+    transform: translateX(-50%) scale(0.98);
     width: min(800px, calc(100vw - 32px));
     height: 100vh;
-    background: transparent; /* 保持透明 */
+    background: transparent;
     border: none;
     box-shadow: none;
-    transition: none; /* 面板本身不需要动画 */
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform; /* 性能优化 */
 }
 
 .floating-toc-fullscreen.visible .floating-toc-panel {
-    transform: translateX(-50%);
+    transform: translateX(-50%) scale(1);
 }
 
 .floating-toc-header {
@@ -298,8 +305,9 @@
     background: transparent;
     flex-shrink: 0;
     opacity: 0;
-    transform: translateY(-20px);
-    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.1s; /* 延迟0.1s */
+    transform: translateY(-15px);
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    transition-delay: 0.1s;
 }
 
 .floating-toc-fullscreen.visible .floating-toc-header {
@@ -362,27 +370,28 @@
     margin: 0;
     padding: 0;
     opacity: 0;
-    transform: translateY(20px);
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateY(15px) scale(0.98);
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform, opacity; /* 性能优化 */
 }
 
-/* 逐级出现动画 */
+/* 优化逐级出现动画 */
 .floating-toc-fullscreen.visible .floating-toc-list li {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
 }
 
-.floating-toc-fullscreen.visible .floating-toc-list li:nth-child(1) { transition-delay: 0.2s; }
-.floating-toc-fullscreen.visible .floating-toc-list li:nth-child(2) { transition-delay: 0.25s; }
-.floating-toc-fullscreen.visible .floating-toc-list li:nth-child(3) { transition-delay: 0.3s; }
-.floating-toc-fullscreen.visible .floating-toc-list li:nth-child(4) { transition-delay: 0.35s; }
-.floating-toc-fullscreen.visible .floating-toc-list li:nth-child(5) { transition-delay: 0.4s; }
-.floating-toc-fullscreen.visible .floating-toc-list li:nth-child(6) { transition-delay: 0.45s; }
-.floating-toc-fullscreen.visible .floating-toc-list li:nth-child(7) { transition-delay: 0.5s; }
-.floating-toc-fullscreen.visible .floating-toc-list li:nth-child(8) { transition-delay: 0.55s; }
-.floating-toc-fullscreen.visible .floating-toc-list li:nth-child(9) { transition-delay: 0.6s; }
-.floating-toc-fullscreen.visible .floating-toc-list li:nth-child(10) { transition-delay: 0.65s; }
-.floating-toc-fullscreen.visible .floating-toc-list li:nth-child(n+11) { transition-delay: 0.7s; }
+.floating-toc-fullscreen.visible .floating-toc-list li:nth-child(1) { transition-delay: 0.15s; }
+.floating-toc-fullscreen.visible .floating-toc-list li:nth-child(2) { transition-delay: 0.18s; }
+.floating-toc-fullscreen.visible .floating-toc-list li:nth-child(3) { transition-delay: 0.21s; }
+.floating-toc-fullscreen.visible .floating-toc-list li:nth-child(4) { transition-delay: 0.24s; }
+.floating-toc-fullscreen.visible .floating-toc-list li:nth-child(5) { transition-delay: 0.27s; }
+.floating-toc-fullscreen.visible .floating-toc-list li:nth-child(6) { transition-delay: 0.3s; }
+.floating-toc-fullscreen.visible .floating-toc-list li:nth-child(7) { transition-delay: 0.33s; }
+.floating-toc-fullscreen.visible .floating-toc-list li:nth-child(8) { transition-delay: 0.36s; }
+.floating-toc-fullscreen.visible .floating-toc-list li:nth-child(9) { transition-delay: 0.39s; }
+.floating-toc-fullscreen.visible .floating-toc-list li:nth-child(10) { transition-delay: 0.42s; }
+.floating-toc-fullscreen.visible .floating-toc-list li:nth-child(n+11) { transition-delay: 0.45s; }
 
 .floating-toc-list a {
     display: block;
@@ -633,13 +642,19 @@
     }
     
     .floating-toc-backdrop {
-        background: rgba(0, 0, 0, 0.3); /* 暗色毛玻璃背景 */
+        background: rgba(0, 0, 0, 0); /* 初始透明 */
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
+        will-change: background-color;
+        transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .floating-toc-fullscreen.visible .floating-toc-backdrop {
+        background: rgba(0, 0, 0, 0.3); /* 暗色毛玻璃背景 */
     }
     
     .floating-toc-panel {
-        background: transparent; /* 保持透明 */
+        background: transparent;
         border: none;
         box-shadow: none;
     }
