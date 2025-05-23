@@ -780,42 +780,110 @@ async def get_page_content(page_id: str):
             logger.error("Page info not found")
             raise HTTPException(status_code=404, detail="Page not found")
         
-        # Get page blocks
+        # Get page blocks with timeout and pagination support
         blocks = []
         has_more = True
-        cursor = None
+        next_cursor = cursor
         total_blocks = 0
+        blocks_processed = 0
         
-        logger.info("Fetching page blocks...")
-        while has_more:
-            if cursor:
-                response = notion.blocks.children.list(block_id=page_id, start_cursor=cursor)
-            else:
-                response = notion.blocks.children.list(block_id=page_id)
-            
-            current_blocks = response["results"]
-            total_blocks += len(current_blocks)
-            logger.info(f"Retrieved {len(current_blocks)} blocks (total: {total_blocks})")
-            
-            for block in current_blocks:
-                logger.info(f"Processing block type: {block['type']}")
-                processed_block = process_block_content(block)
-                if processed_block:
-                    blocks.append(processed_block)
-            
-            has_more = response["has_more"]
-            if has_more:
-                cursor = response["next_cursor"]
-                logger.info("More blocks available, continuing...")
+        # Set default limit to 15 for initial load, None for subsequent loads
+        effective_limit = limit if limit is not None else (15 if cursor is None else 100)
         
+        logger.info(f"Fetching page blocks with limit={effective_limit}, cursor={cursor}")
+        try:
+            while has_more and (effective_limit is None or blocks_processed < effective_limit):
+                # Wrap block children list call with timeout
+                loop = asyncio.get_event_loop()
+                
+                # Build API parameters
+                api_params = {"block_id": page_id}
+                if next_cursor:
+                    api_params["start_cursor"] = next_cursor
+                
+                # Calculate page size for this request
+                remaining_limit = effective_limit - blocks_processed if effective_limit else 100
+                page_size = min(100, remaining_limit) if effective_limit else 100
+                api_params["page_size"] = page_size
+                
+                response = await asyncio.wait_for(
+                    loop.run_in_executor(None, partial(notion.blocks.children.list, **api_params)),
+                    timeout=20.0  # 20 second timeout for blocks
+                )
+                
+                current_blocks = response["results"]
+                total_blocks += len(current_blocks)
+                logger.info(f"Retrieved {len(current_blocks)} blocks (total: {total_blocks})")
+                
+                # Process blocks in the exact order received from Notion API
+                batch_processed_blocks = []
+                for i, block in enumerate(current_blocks):
+                    if effective_limit and blocks_processed >= effective_limit:
+                        break
+                        
+                    logger.info(f"Processing block {i+1}/{len(current_blocks)}, type: {block['type']}, id: {block.get('id', 'unknown')}")
+                    processed_block = process_block_content(block)
+                    if processed_block:
+                        # Add sequence information to help with ordering
+                        processed_block["_sequence"] = blocks_processed
+                        processed_block["_batch"] = len(blocks) // 100  # Which batch this came from
+                        batch_processed_blocks.append(processed_block)
+                        blocks_processed += 1
+                
+                # Add batch to blocks list while preserving order
+                blocks.extend(batch_processed_blocks)
+                logger.info(f"Added {len(batch_processed_blocks)} processed blocks to output (total processed: {blocks_processed})")
+                
+                has_more = response["has_more"]
+                if has_more:
+                    next_cursor = response["next_cursor"]
+                    logger.info(f"More blocks available, next_cursor: {next_cursor}")
+                else:
+                    next_cursor = None
+                    
+                # Stop if we've reached the limit
+                if effective_limit and blocks_processed >= effective_limit:
+                    logger.info(f"Reached limit of {effective_limit} blocks")
+                    break
+                    
+        except asyncio.TimeoutError:
+            logger.error(f"Timeout retrieving blocks for page {page_id}")
+            # Return partial content instead of failing completely
+            logger.info(f"Returning partial content with {len(blocks)} blocks")
+            
         logger.info(f"Successfully processed {len(blocks)} blocks")
-        return {
+        
+        response_data = {
             "page": page_info,
-            "blocks": blocks
+            "blocks": blocks,
+            "has_more": has_more,
+            "next_cursor": next_cursor,
+            "total_loaded": blocks_processed,
+            "debug_info": {
+                "total_batches": (blocks_processed // 100) + 1,
+                "blocks_with_sequence": len([b for b in blocks if "_sequence" in b]),
+                "first_block_sequence": blocks[0].get("_sequence") if blocks else None,
+                "last_block_sequence": blocks[-1].get("_sequence") if blocks else None,
+                "request_cursor": cursor,
+                "response_cursor": next_cursor
+            }
         }
+        
+        # Add pagination info for debugging
+        if cursor is None:
+            logger.info(f"Initial load: returned {len(blocks)} blocks")
+        else:
+            logger.info(f"Subsequent load: returned {len(blocks)} blocks with cursor {cursor}")
+        
+        return response_data
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
     except Exception as e:
         logger.error(f"Error getting page content: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Stack trace:", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 @app.get("/image/{image_id}")
 async def get_image(image_id: str):
@@ -1050,15 +1118,24 @@ async def get_page(page_id: str, limit: Optional[int] = None, cursor: Optional[s
                 total_blocks += len(current_blocks)
                 logger.info(f"Retrieved {len(current_blocks)} blocks (total: {total_blocks})")
                 
-                for block in current_blocks:
+                # Process blocks in the exact order received from Notion API
+                batch_processed_blocks = []
+                for i, block in enumerate(current_blocks):
                     if effective_limit and blocks_processed >= effective_limit:
                         break
                         
-                    logger.info(f"Processing block type: {block['type']}")
+                    logger.info(f"Processing block {i+1}/{len(current_blocks)}, type: {block['type']}, id: {block.get('id', 'unknown')}")
                     processed_block = process_block_content(block)
                     if processed_block:
-                        blocks.append(processed_block)
+                        # Add sequence information to help with ordering
+                        processed_block["_sequence"] = blocks_processed
+                        processed_block["_batch"] = len(blocks) // 100  # Which batch this came from
+                        batch_processed_blocks.append(processed_block)
                         blocks_processed += 1
+                
+                # Add batch to blocks list while preserving order
+                blocks.extend(batch_processed_blocks)
+                logger.info(f"Added {len(batch_processed_blocks)} processed blocks to output (total processed: {blocks_processed})")
                 
                 has_more = response["has_more"]
                 if has_more:
@@ -1084,7 +1161,15 @@ async def get_page(page_id: str, limit: Optional[int] = None, cursor: Optional[s
             "blocks": blocks,
             "has_more": has_more,
             "next_cursor": next_cursor,
-            "total_loaded": blocks_processed
+            "total_loaded": blocks_processed,
+            "debug_info": {
+                "total_batches": (blocks_processed // 100) + 1,
+                "blocks_with_sequence": len([b for b in blocks if "_sequence" in b]),
+                "first_block_sequence": blocks[0].get("_sequence") if blocks else None,
+                "last_block_sequence": blocks[-1].get("_sequence") if blocks else None,
+                "request_cursor": cursor,
+                "response_cursor": next_cursor
+            }
         }
         
         # Add pagination info for debugging
@@ -1172,15 +1257,24 @@ async def get_more_blocks(page_id: str, cursor: str, limit: Optional[int] = 20):
                 current_blocks = response["results"]
                 logger.info(f"Retrieved {len(current_blocks)} more blocks")
                 
-                for block in current_blocks:
+                # Process blocks in the exact order received from Notion API
+                batch_processed_blocks = []
+                for i, block in enumerate(current_blocks):
                     if blocks_processed >= limit:
                         break
                         
-                    logger.info(f"Processing additional block type: {block['type']}")
+                    logger.info(f"Processing additional block {i+1}/{len(current_blocks)}, type: {block['type']}, id: {block.get('id', 'unknown')}")
                     processed_block = process_block_content(block)
                     if processed_block:
-                        blocks.append(processed_block)
+                        # Add sequence information to help with ordering
+                        processed_block["_sequence"] = blocks_processed
+                        processed_block["_cursor_batch"] = next_cursor[:10] if next_cursor else "initial"  # Identifier for this batch
+                        batch_processed_blocks.append(processed_block)
                         blocks_processed += 1
+                
+                # Add batch to blocks list while preserving order
+                blocks.extend(batch_processed_blocks)
+                logger.info(f"Added {len(batch_processed_blocks)} processed blocks to output (total additional: {blocks_processed})")
                 
                 has_more = response["has_more"]
                 if has_more:

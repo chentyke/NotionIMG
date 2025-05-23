@@ -732,6 +732,59 @@ async function renderBlock(block) {
 }
 
 /**
+ * Validate and log block ordering for debugging
+ * @param {Array} blocks - Array of blocks to validate
+ * @param {string} source - Source description for logging
+ */
+function validateBlockOrder(blocks, source = "unknown") {
+    if (!blocks || blocks.length === 0) {
+        console.log(`Block order validation (${source}): No blocks to validate`);
+        return;
+    }
+    
+    console.log(`Block order validation (${source}): Validating ${blocks.length} blocks`);
+    
+    let hasSequenceInfo = blocks.some(block => block._sequence !== undefined);
+    
+    if (hasSequenceInfo) {
+        // Check if blocks are in sequence order
+        let isOrdered = true;
+        let previousSequence = -1;
+        
+        for (let i = 0; i < blocks.length; i++) {
+            const currentSequence = blocks[i]._sequence || 0;
+            if (currentSequence < previousSequence) {
+                isOrdered = false;
+                console.warn(`Block order issue (${source}): Block ${i} has sequence ${currentSequence} but previous was ${previousSequence}`);
+            }
+            previousSequence = currentSequence;
+        }
+        
+        if (isOrdered) {
+            console.log(`Block order validation (${source}): ✓ All blocks are in correct sequence order`);
+        } else {
+            console.warn(`Block order validation (${source}): ✗ Blocks are NOT in correct sequence order`);
+        }
+        
+        // Log first and last few blocks for debugging
+        const logCount = Math.min(3, blocks.length);
+        console.log(`Block order validation (${source}): First ${logCount} blocks:`, 
+            blocks.slice(0, logCount).map(b => ({ type: b.type, sequence: b._sequence, id: b.id })));
+        
+        if (blocks.length > logCount) {
+            console.log(`Block order validation (${source}): Last ${logCount} blocks:`, 
+                blocks.slice(-logCount).map(b => ({ type: b.type, sequence: b._sequence, id: b.id })));
+        }
+    } else {
+        console.log(`Block order validation (${source}): No sequence information available`);
+        // Log first few blocks by type
+        const logCount = Math.min(5, blocks.length);
+        console.log(`Block order validation (${source}): First ${logCount} block types:`, 
+            blocks.slice(0, logCount).map(b => ({ type: b.type, id: b.id })));
+    }
+}
+
+/**
  * Load and render a Notion page
  * @param {string} pageId - The ID of the page to load
  */
@@ -788,6 +841,11 @@ async function loadPage(pageId = null) {
         
         updateLoadingProgress(30);
         loadingText.textContent = '正在处理页面内容...';
+        
+        // Log debug information if available
+        if (data.debug_info) {
+            console.log('API Debug Info:', data.debug_info);
+        }
         
         // Render page cover and basic info
         if (data.page) {
@@ -846,6 +904,10 @@ async function loadPage(pageId = null) {
         loadingText.textContent = '正在渲染内容...';
         
         console.log('Starting to render blocks...', data.blocks?.length || 0, 'blocks');
+        
+        // Validate block order before rendering
+        validateBlockOrder(data.blocks, "Initial page load");
+        
         const content = await renderBlocks(data.blocks);
         console.log('Blocks rendered successfully, content length:', content.length);
         
@@ -983,15 +1045,17 @@ async function loadMoreContentInBackground(pageId, cursor, pageContent) {
         let hasMore = true;
         let nextCursor = cursor;
         let batchCount = 0;
+        const allNewBlocks = []; // 收集所有新块以确保正确顺序
         
-        while (hasMore && batchCount < 10) { // Limit to prevent infinite loops
+        // 第一步：收集所有剩余的块
+        while (hasMore && batchCount < 20) { // 增加限制以防止无限循环
             try {
                 // Load next batch with rate limiting delay
                 if (batchCount > 0) {
-                    await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay between batches
+                    await new Promise(resolve => setTimeout(resolve, 500)); // 减少延迟到500ms
                 }
                 
-                const response = await fetch(`/api/page/${pageId}/more?cursor=${nextCursor}&limit=20`);
+                const response = await fetch(`/api/page/${pageId}/more?cursor=${nextCursor}&limit=30`);
                 
                 if (!response.ok) {
                     throw new Error(`Server returned ${response.status}: ${response.statusText}`);
@@ -1000,87 +1064,14 @@ async function loadMoreContentInBackground(pageId, cursor, pageContent) {
                 const moreData = await response.json();
                 
                 if (moreData.blocks && moreData.blocks.length > 0) {
-                    // Check if we need to extend existing lists
-                    const lastElement = pageContent.children[pageContent.children.length - 2]; // -2 because last is loading indicator
+                    // 按顺序添加到allNewBlocks数组中
+                    allNewBlocks.push(...moreData.blocks);
+                    console.log(`Collected batch ${batchCount + 1}: ${moreData.blocks.length} blocks (total collected: ${allNewBlocks.length})`);
                     
-                    // Process blocks and handle list continuation
-                    let processedContent = '';
-                    let currentList = null;
-                    
-                    // Check if the last element in the page is a list that we can extend
-                    if (lastElement && (lastElement.tagName === 'UL' || lastElement.tagName === 'OL')) {
-                        const firstBlock = moreData.blocks[0];
-                        if (firstBlock && 
-                            ((firstBlock.type === 'bulleted_list_item' && lastElement.tagName === 'UL') ||
-                             (firstBlock.type === 'numbered_list_item' && lastElement.tagName === 'OL'))) {
-                            // We can extend the existing list
-                            currentList = { 
-                                tag: lastElement.tagName.toLowerCase(), 
-                                type: firstBlock.type,
-                                element: lastElement 
-                            };
-                            console.log(`Extending existing ${currentList.tag} list`);
-                        }
+                    // Log debug information if available
+                    if (moreData.debug_info) {
+                        console.log(`Batch ${batchCount + 1} Debug Info:`, moreData.debug_info);
                     }
-                    
-                    // Render blocks with proper list handling
-                    for (const block of moreData.blocks) {
-                        try {
-                            // Special handling for list items to group them or extend existing lists
-                            if (block.type === 'bulleted_list_item' || block.type === 'numbered_list_item') {
-                                const listTag = block.type === 'bulleted_list_item' ? 'ul' : 'ol';
-                                
-                                if (currentList && currentList.tag === listTag && currentList.element) {
-                                    // Extend existing list - directly append to the DOM element
-                                    const listItem = await renderBlock(block);
-                                    currentList.element.insertAdjacentHTML('beforeend', listItem);
-                                } else {
-                                    // Start a new list
-                                    if (currentList && !currentList.element) {
-                                        processedContent += `</${currentList.tag}>`;
-                                    }
-                                    
-                                    processedContent += `<${listTag} class="my-4 ${listTag === 'ul' ? 'list-disc' : 'list-decimal'} ml-6">`;
-                                    processedContent += await renderBlock(block);
-                                    currentList = { tag: listTag, type: block.type, element: null };
-                                }
-                            } else {
-                                // For non-list items, close any open list
-                                if (currentList && !currentList.element) {
-                                    processedContent += `</${currentList.tag}>`;
-                                    currentList = null;
-                                }
-                                
-                                // Add the block content
-                                processedContent += await renderBlock(block);
-                            }
-                        } catch (error) {
-                            console.error(`Error rendering block ${block.id}:`, error);
-                            processedContent += `<div class="text-red-500">Error rendering a block: ${error.message}</div>`;
-                        }
-                    }
-                    
-                    // Close any remaining open list
-                    if (currentList && !currentList.element) {
-                        processedContent += `</${currentList.tag}>`;
-                    }
-                    
-                    // Only add non-empty processed content to avoid empty containers
-                    if (processedContent.trim()) {
-                        // Create a temporary container for the new content
-                        const tempDiv = document.createElement('div');
-                        tempDiv.innerHTML = processedContent;
-                        
-                        // Insert new content before the loading indicator
-                        while (tempDiv.firstChild) {
-                            pageContent.insertBefore(tempDiv.firstChild, loadingIndicator);
-                        }
-                    }
-                    
-                    // Post-process the new content (this will also refresh the TOC)
-                    postProcessContent(pageContent);
-                    
-                    console.log(`Loaded batch ${batchCount + 1}: ${moreData.blocks.length} blocks`);
                 }
                 
                 hasMore = moreData.has_more;
@@ -1093,13 +1084,128 @@ async function loadMoreContentInBackground(pageId, cursor, pageContent) {
             }
         }
         
+        // 第二步：一次性渲染所有新块以保证顺序
+        if (allNewBlocks.length > 0) {
+            console.log(`Rendering ${allNewBlocks.length} additional blocks in correct order...`);
+            
+            // Validate block order before sorting
+            validateBlockOrder(allNewBlocks, "Background load - before sorting");
+            
+            // 确保块按序列顺序排列（如果有序列信息的话）
+            if (allNewBlocks[0]._sequence !== undefined) {
+                allNewBlocks.sort((a, b) => (a._sequence || 0) - (b._sequence || 0));
+                console.log(`Sorted ${allNewBlocks.length} additional blocks by sequence number`);
+                
+                // Validate again after sorting
+                validateBlockOrder(allNewBlocks, "Background load - after sorting");
+            }
+            
+            // 检查最后一个元素是否是列表，以便正确续接
+            const lastElement = pageContent.children[pageContent.children.length - 2]; // -2 because last is loading indicator
+            let currentList = null;
+            
+            // 检查是否可以续接现有列表
+            if (lastElement && (lastElement.tagName === 'UL' || lastElement.tagName === 'OL')) {
+                const firstNewBlock = allNewBlocks[0];
+                if (firstNewBlock && 
+                    ((firstNewBlock.type === 'bulleted_list_item' && lastElement.tagName === 'UL') ||
+                     (firstNewBlock.type === 'numbered_list_item' && lastElement.tagName === 'OL'))) {
+                    currentList = { 
+                        tag: lastElement.tagName.toLowerCase(), 
+                        type: firstNewBlock.type,
+                        element: lastElement 
+                    };
+                    console.log(`Will extend existing ${currentList.tag} list`);
+                }
+            }
+            
+            // 渲染所有新块
+            let processedContent = '';
+            let listContinuationHandled = false;
+            
+            for (let i = 0; i < allNewBlocks.length; i++) {
+                const block = allNewBlocks[i];
+                try {
+                    // Log block processing for debugging
+                    if (block._sequence !== undefined) {
+                        console.log(`Processing additional block ${i+1}/${allNewBlocks.length}, sequence: ${block._sequence}, type: ${block.type}`);
+                    }
+                    
+                    // 特殊处理列表项以确保正确分组
+                    if (block.type === 'bulleted_list_item' || block.type === 'numbered_list_item') {
+                        const listTag = block.type === 'bulleted_list_item' ? 'ul' : 'ol';
+                        
+                        // 如果是第一个块且可以续接现有列表
+                        if (i === 0 && currentList && currentList.tag === listTag && currentList.element && !listContinuationHandled) {
+                            // 直接渲染列表项并添加到现有列表
+                            const listItem = await renderBlock(block);
+                            currentList.element.insertAdjacentHTML('beforeend', listItem);
+                            listContinuationHandled = true;
+                            continue;
+                        }
+                        
+                        // 开始新列表或继续当前列表
+                        if (!currentList || currentList.tag !== listTag || currentList.element) {
+                            // 关闭之前的列表
+                            if (currentList && !currentList.element) {
+                                processedContent += `</${currentList.tag}>`;
+                            }
+                            
+                            // 开始新列表
+                            processedContent += `<${listTag} class="my-4 ${listTag === 'ul' ? 'list-disc' : 'list-decimal'} ml-6">`;
+                            currentList = { tag: listTag, type: block.type, element: null };
+                        }
+                        
+                        // 添加列表项
+                        processedContent += await renderBlock(block);
+                    } else {
+                        // 非列表项：关闭任何打开的列表
+                        if (currentList && !currentList.element) {
+                            processedContent += `</${currentList.tag}>`;
+                            currentList = null;
+                        }
+                        
+                        // 添加块内容
+                        processedContent += await renderBlock(block);
+                    }
+                } catch (error) {
+                    console.error(`Error rendering block ${block.id}:`, error);
+                    processedContent += `<div class="text-red-500">Error rendering a block: ${error.message}</div>`;
+                }
+            }
+            
+            // 关闭任何剩余的打开列表
+            if (currentList && !currentList.element) {
+                processedContent += `</${currentList.tag}>`;
+            }
+            
+            // 只有在有处理过的内容时才添加到页面
+            if (processedContent.trim()) {
+                // 创建临时容器
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = processedContent;
+                
+                // 按顺序插入新内容到加载指示器之前
+                const fragment = document.createDocumentFragment();
+                while (tempDiv.firstChild) {
+                    fragment.appendChild(tempDiv.firstChild);
+                }
+                pageContent.insertBefore(fragment, loadingIndicator);
+                
+                console.log(`Successfully added ${allNewBlocks.length} blocks in correct order`);
+            }
+            
+            // 后处理新内容（这也会刷新目录）
+            postProcessContent(pageContent);
+        }
+        
         // Remove loading indicator
         const indicator = document.getElementById('background-loading');
         if (indicator) {
             indicator.remove();
         }
         
-        console.log(`Background loading completed. Loaded ${batchCount} additional batches.`);
+        console.log(`Background loading completed. Loaded ${batchCount} batches with ${allNewBlocks.length} total blocks.`);
         
     } catch (error) {
         console.error('Error in background loading:', error);
@@ -1121,11 +1227,23 @@ async function loadMoreContentInBackground(pageId, cursor, pageContent) {
  * @returns {string} - HTML content
  */
 async function renderBlocks(blocks) {
+    // 确保块按序列顺序排列（如果有序列信息的话）
+    if (blocks && blocks.length > 0 && blocks[0]._sequence !== undefined) {
+        blocks.sort((a, b) => (a._sequence || 0) - (b._sequence || 0));
+        console.log(`Sorted ${blocks.length} blocks by sequence number`);
+    }
+    
     let content = '';
     let currentList = null;
     
-    for (const block of blocks) {
+    for (let i = 0; i < blocks.length; i++) {
+        const block = blocks[i];
         try {
+            // Log block processing for debugging
+            if (block._sequence !== undefined) {
+                console.log(`Rendering block ${i+1}/${blocks.length}, sequence: ${block._sequence}, type: ${block.type}`);
+            }
+            
             // Special handling for list items to group them
             if (block.type === 'bulleted_list_item' || block.type === 'numbered_list_item') {
                 const listTag = block.type === 'bulleted_list_item' ? 'ul' : 'ol';
@@ -1164,7 +1282,7 @@ async function renderBlocks(blocks) {
     if (currentList) {
         content += `</${currentList.tag}>`;
     }
-    
+
     return content;
 }
 
