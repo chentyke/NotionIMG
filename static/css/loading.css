@@ -1,63 +1,6 @@
-/* Enhanced Creative Loading Animations */
+/* Enhanced Loading Animations - Flat & Minimalist Design */
 
-/* Keyframe animations */
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-@keyframes pulse {
-    0%, 100% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.05); opacity: 0.8; }
-}
-
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-10px); }
-}
-
-@keyframes shimmer {
-    0% { background-position: -200% 0; }
-    100% { background-position: 200% 0; }
-}
-
-@keyframes typewriter {
-    from { width: 0; }
-    to { width: 100%; }
-}
-
-@keyframes blink {
-    0%, 50% { border-color: transparent; }
-    51%, 100% { border-color: var(--link-color); }
-}
-
-@keyframes orbit {
-    0% { transform: rotate(0deg) translateX(30px) rotate(0deg); }
-    100% { transform: rotate(360deg) translateX(30px) rotate(-360deg); }
-}
-
-@keyframes waveProgress {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
-}
-
-@keyframes breathe {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-}
-
-@keyframes slideUpFade {
-    0% { 
-        opacity: 0; 
-        transform: translateY(20px); 
-    }
-    100% { 
-        opacity: 1; 
-        transform: translateY(0); 
-    }
-}
-
-/* Loading Overlay with Enhanced Background */
+/* Main loading overlay with subtle gradient */
 .loading-overlay {
     position: fixed;
     top: 0;
@@ -66,175 +9,119 @@
     height: 100%;
     background: linear-gradient(135deg, 
         var(--bg-primary) 0%, 
-        rgba(59, 130, 246, 0.02) 25%,
-        rgba(168, 85, 247, 0.02) 50%,
-        rgba(236, 72, 153, 0.02) 75%,
-        var(--bg-primary) 100%);
-    background-size: 400% 400%;
-    animation: gradientShift 8s ease infinite;
+        rgba(var(--bg-secondary-rgb, 249, 250, 251), 0.95) 100%);
     z-index: 2000;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     opacity: 1;
-    transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-    backdrop-filter: blur(2px);
-}
-
-@keyframes gradientShift {
-    0%, 100% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
+    transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(1px);
 }
 
 .loading-overlay.fade-out {
     opacity: 0;
 }
 
-/* Enhanced Loading Spinner Container */
-.loading-spinner-container {
-    position: relative;
-    width: 80px;
-    height: 80px;
-    margin-bottom: 2rem;
+/* Loading container with gentle animation */
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+    text-align: center;
+    animation: float 3s ease-in-out infinite;
 }
 
-/* Main Creative Spinner */
-.loading-spinner {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 60px;
-    height: 60px;
-    border: 3px solid transparent;
+/* Multi-stage loading indicator */
+.loading-stages {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.stage-dot {
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
+    background-color: var(--border-color);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
-    animation: breathe 2s ease-in-out infinite;
+    overflow: hidden;
 }
 
-.loading-spinner::before {
+.stage-dot.active {
+    background-color: var(--link-color);
+    transform: scale(1.2);
+    box-shadow: 0 0 0 4px rgba(var(--link-color-rgb), 0.2);
+}
+
+.stage-dot.completed {
+    background-color: var(--success-color, #10b981);
+    transform: scale(1);
+}
+
+.stage-dot.active::before {
     content: '';
     position: absolute;
-    top: -3px;
-    left: -3px;
-    right: -3px;
-    bottom: -3px;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(255, 255, 255, 0.4) 50%, 
+        transparent 100%);
+    animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Central loading spinner with breathing animation */
+.loading-spinner {
+    width: 40px;
+    height: 40px;
     border: 3px solid var(--border-color);
     border-top: 3px solid var(--link-color);
     border-radius: 50%;
-    animation: spin 1.2s linear infinite;
+    animation: spin 1.2s linear infinite, breathe 2s ease-in-out infinite;
+    position: relative;
 }
 
 .loading-spinner::after {
     content: '';
     position: absolute;
-    top: 8px;
-    left: 8px;
-    right: 8px;
-    bottom: 8px;
+    top: 2px;
+    left: 2px;
+    right: 2px;
+    bottom: 2px;
+    border-radius: 50%;
     border: 2px solid transparent;
-    border-top: 2px solid var(--link-color);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite reverse;
+    border-top: 2px solid rgba(var(--link-color-rgb), 0.3);
+    animation: spin 2s linear infinite reverse;
 }
 
-/* Orbital Dots */
-.loading-orbital {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 80px;
-    height: 80px;
-}
-
-.loading-orbital-dot {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--link-color);
-    animation: orbit 3s linear infinite;
-    transform-origin: -30px center;
-}
-
-.loading-orbital-dot:nth-child(2) {
-    animation-delay: -1s;
-    background: rgba(168, 85, 247, 0.8);
-}
-
-.loading-orbital-dot:nth-child(3) {
-    animation-delay: -2s;
-    background: rgba(236, 72, 153, 0.8);
-}
-
-/* Enhanced Loading Text with Typewriter Effect */
-.loading-text {
-    color: var(--text-secondary);
-    font-size: 1rem;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-    opacity: 0.9;
-    position: relative;
-    overflow: hidden;
-    white-space: nowrap;
-    border-right: 2px solid transparent;
-    max-width: 300px;
-    animation: typewriter 2s steps(40) infinite alternate, blink 1s step-end infinite;
-}
-
-/* Loading Stage Indicator */
-.loading-stage {
-    font-size: 0.875rem;
-    color: var(--text-tertiary);
-    margin-bottom: 1.5rem;
-    opacity: 0.8;
-    animation: slideUpFade 0.5s ease-out;
-}
-
-/* Creative Progress Bar */
+/* Enhanced progress bar with gradient and animations */
 .loading-progress {
     width: 280px;
-    height: 6px;
+    height: 4px;
     background-color: var(--border-color);
-    border-radius: 3px;
+    border-radius: 2px;
     overflow: hidden;
     position: relative;
-    box-shadow: 
-        0 1px 3px rgba(0, 0, 0, 0.1),
-        inset 0 1px 2px rgba(0, 0, 0, 0.05);
-    margin-bottom: 1rem;
-}
-
-.loading-progress::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(90deg, 
-        transparent 0%, 
-        rgba(255, 255, 255, 0.2) 50%, 
-        transparent 100%);
-    animation: waveProgress 2s linear infinite;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .loading-progress-bar {
     height: 100%;
-    background: linear-gradient(135deg, 
+    background: linear-gradient(90deg, 
         var(--link-color) 0%, 
-        rgba(168, 85, 247, 0.8) 50%,
-        rgba(236, 72, 153, 0.8) 100%);
-    background-size: 200% 100%;
-    animation: gradientShift 3s ease infinite;
+        rgba(var(--link-color-rgb), 0.8) 50%, 
+        var(--link-color) 100%);
     transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    border-radius: 3px;
+    will-change: width;
     position: relative;
-    overflow: hidden;
+    border-radius: 2px;
 }
 
 .loading-progress-bar::after {
@@ -248,197 +135,187 @@
         transparent 0%, 
         rgba(255, 255, 255, 0.3) 50%, 
         transparent 100%);
-    animation: shimmer 1.5s infinite;
+    animation: progressShine 2s ease-in-out infinite;
 }
 
-/* Progress Percentage */
-.loading-percentage {
-    font-size: 0.875rem;
+.loading-progress.complete .loading-progress-bar {
+    background: linear-gradient(90deg, 
+        var(--success-color, #10b981) 0%, 
+        rgba(16, 185, 129, 0.8) 50%, 
+        var(--success-color, #10b981) 100%);
+    animation: completePulse 0.6s ease-out;
+}
+
+/* Loading text with typing animation */
+.loading-text {
     color: var(--text-secondary);
+    font-size: 0.9rem;
     font-weight: 500;
+    opacity: 0.9;
     margin-top: 0.5rem;
-    opacity: 0.8;
-    font-variant-numeric: tabular-nums;
-}
-
-/* Loading Status Icons */
-.loading-status-icons {
+    min-height: 1.5rem;
     display: flex;
-    gap: 1rem;
-    margin-top: 1.5rem;
-    opacity: 0.6;
+    align-items: center;
+    gap: 0.5rem;
 }
 
-.loading-status-icon {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background: var(--border-color);
+.loading-text::after {
+    content: '';
+    width: 2px;
+    height: 1rem;
+    background-color: var(--link-color);
+    animation: blink 1s ease-in-out infinite;
+}
+
+/* Status indicators */
+.loading-status {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    opacity: 0.7;
+}
+
+.status-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--text-tertiary);
+    transition: all 0.3s ease;
+}
+
+.status-item.active {
+    color: var(--link-color);
+    opacity: 1;
+    transform: translateX(4px);
+}
+
+.status-item.completed {
+    color: var(--success-color, #10b981);
+}
+
+.status-icon {
+    width: 16px;
+    height: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
-    transition: all 0.3s ease;
-    position: relative;
+    font-size: 0.7rem;
 }
 
-.loading-status-icon.active {
-    background: var(--link-color);
-    color: white;
-    animation: pulse 2s infinite;
+/* Animations */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
-.loading-status-icon.completed {
-    background: var(--success-color);
-    color: white;
-    animation: none;
+@keyframes breathe {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
 }
 
-.loading-status-icon::after {
-    content: '';
-    position: absolute;
-    top: -2px;
-    left: -2px;
-    right: -2px;
-    bottom: -2px;
-    border: 2px solid transparent;
-    border-radius: 50%;
-    transition: border-color 0.3s ease;
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
 }
 
-.loading-status-icon.active::after {
-    border-color: var(--link-color);
-    animation: spin 2s linear infinite;
+@keyframes shimmer {
+    0% { left: -100%; }
+    100% { left: 100%; }
 }
 
-/* Floating particles for extra visual appeal */
-.loading-particles {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    overflow: hidden;
+@keyframes progressShine {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
 }
 
-.loading-particle {
-    position: absolute;
-    width: 4px;
-    height: 4px;
-    background: var(--link-color);
-    border-radius: 50%;
-    opacity: 0.3;
-    animation: float 4s ease-in-out infinite;
+@keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
 }
 
-.loading-particle:nth-child(1) { left: 10%; animation-delay: -0.5s; }
-.loading-particle:nth-child(2) { left: 20%; animation-delay: -1s; }
-.loading-particle:nth-child(3) { left: 30%; animation-delay: -1.5s; }
-.loading-particle:nth-child(4) { left: 40%; animation-delay: -2s; }
-.loading-particle:nth-child(5) { left: 50%; animation-delay: -2.5s; }
-.loading-particle:nth-child(6) { left: 60%; animation-delay: -3s; }
-.loading-particle:nth-child(7) { left: 70%; animation-delay: -3.5s; }
-.loading-particle:nth-child(8) { left: 80%; animation-delay: -4s; }
-.loading-particle:nth-child(9) { left: 90%; animation-delay: -4.5s; }
+@keyframes completePulse {
+    0% { transform: scaleY(1); }
+    50% { transform: scaleY(1.2); }
+    100% { transform: scaleY(1); }
+}
 
-/* Page Transition Overlay */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Page transition overlay */
 .page-transition {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(135deg, var(--bg-primary), rgba(59, 130, 246, 0.05));
+    background: linear-gradient(135deg, 
+        var(--bg-primary) 0%, 
+        rgba(var(--bg-secondary-rgb, 249, 250, 251), 0.98) 100%);
     z-index: 1999;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(2px);
 }
 
 .page-transition.active {
-    opacity: 0.95;
+    opacity: 1;
     pointer-events: auto;
 }
 
-/* Success Animation when loading completes */
-.loading-progress.complete .loading-progress-bar {
-    background: linear-gradient(135deg, 
-        var(--success-color) 0%, 
-        rgba(34, 197, 94, 0.8) 100%);
-    animation: pulse 1s ease-out;
-}
-
-.loading-progress.complete::after {
-    content: '✓';
-    position: absolute;
-    right: -30px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--success-color);
-    font-weight: bold;
-    font-size: 18px;
-    animation: slideUpFade 0.5s ease-out;
-}
-
-/* Mobile Optimizations */
+/* Mobile optimizations */
 @media (max-width: 640px) {
-    .loading-progress {
-        width: 85%;
-        max-width: 300px;
+    .loading-container {
+        gap: 1.5rem;
+        padding: 0 1rem;
     }
     
-    .loading-spinner-container {
-        width: 70px;
-        height: 70px;
-        margin-bottom: 1.5rem;
+    .loading-progress {
+        width: 85%;
+        max-width: 260px;
     }
     
     .loading-spinner {
-        width: 50px;
-        height: 50px;
+        width: 36px;
+        height: 36px;
     }
     
-    .loading-orbital {
-        width: 70px;
-        height: 70px;
+    .stage-dot {
+        width: 10px;
+        height: 10px;
     }
     
     .loading-text {
-        font-size: 0.9rem;
-        max-width: 250px;
+        font-size: 0.85rem;
     }
     
-    .loading-status-icons {
-        gap: 0.75rem;
-        margin-top: 1rem;
-    }
-    
-    .loading-status-icon {
-        width: 20px;
-        height: 20px;
-        font-size: 10px;
+    .status-item {
+        font-size: 0.75rem;
     }
 }
 
-/* Dark Theme Adjustments */
+/* Dark mode adjustments */
 @media (prefers-color-scheme: dark) {
     .loading-overlay {
         background: linear-gradient(135deg, 
             var(--bg-primary) 0%, 
-            rgba(59, 130, 246, 0.05) 25%,
-            rgba(168, 85, 247, 0.05) 50%,
-            rgba(236, 72, 153, 0.05) 75%,
-            var(--bg-primary) 100%);
+            rgba(17, 24, 39, 0.95) 100%);
     }
     
-    .loading-particle {
-        background: rgba(156, 163, 175, 0.6);
-    }
-    
-    .loading-progress {
-        box-shadow: 
-            0 1px 3px rgba(0, 0, 0, 0.3),
-            inset 0 1px 2px rgba(0, 0, 0, 0.2);
+    .page-transition {
+        background: linear-gradient(135deg, 
+            var(--bg-primary) 0%, 
+            rgba(17, 24, 39, 0.98) 100%);
     }
 } 
