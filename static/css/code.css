@@ -82,7 +82,7 @@
 .code-block pre {
     background: #ffffff !important;
     margin: 0 !important;
-    padding: 36px 56px 40px 56px !important;
+    padding: 16px 20px 18px 20px !important;
     overflow-x: auto !important;
     border: none !important;
     font-family: inherit;
@@ -297,7 +297,7 @@
 
     .code-block pre {
         background: #1e1e1e !important;
-        padding: 36px 56px 40px 56px !important;
+        padding: 16px 20px 18px 20px !important;
         line-height: 1.7 !important;
         min-height: 80px !important;
     }
@@ -462,7 +462,7 @@
     }
 
     .code-block pre {
-        padding: 28px 40px 32px 40px !important;
+        padding: 12px 16px 14px 16px !important;
         min-height: 70px !important;
         line-height: 1.6 !important;
     }
