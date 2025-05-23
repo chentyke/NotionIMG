@@ -10,12 +10,17 @@ import * as NotionRenderer from './notionRenderer.js';
 let floatingHeaderVisible = false;
 let lastScrollTop = 0;
 
+// Floating TOC management
+let floatingTocVisible = false;
+let floatingTocHeadings = [];
+
 /**
  * Initialize floating header scroll behavior
  */
 function initFloatingHeader() {
     const floatingHeader = document.getElementById('floatingHeader');
     const floatingTitle = document.getElementById('floatingTitle');
+    const floatingTocButton = document.getElementById('floatingTocButton');
     const pageTitle = document.getElementById('pageTitle');
     
     if (!floatingHeader || !floatingTitle) return;
@@ -48,9 +53,20 @@ function initFloatingHeader() {
             if (shouldShow && !floatingHeaderVisible) {
                 floatingHeader.classList.add('visible');
                 floatingHeaderVisible = true;
+                
+                // Show TOC button if headings exist
+                if (floatingTocHeadings.length > 0 && floatingTocButton) {
+                    floatingTocButton.style.display = 'flex';
+                }
             } else if (!shouldShow && floatingHeaderVisible) {
                 floatingHeader.classList.remove('visible');
                 floatingHeaderVisible = false;
+                
+                // Hide TOC button and close TOC panel
+                if (floatingTocButton) {
+                    floatingTocButton.style.display = 'none';
+                }
+                hideFloatingToc();
             }
         }
         
@@ -68,6 +84,179 @@ function initFloatingHeader() {
     
     // Initial check
     setTimeout(handleScroll, 100);
+}
+
+/**
+ * Initialize floating TOC functionality
+ */
+function initFloatingToc() {
+    floatingTocHeadings = [];
+    
+    // Collect all headings (h1, h2, h3) from the page content
+    const pageContent = document.getElementById('pageContent');
+    if (!pageContent) return;
+    
+    const headings = pageContent.querySelectorAll('h1, h2, h3');
+    headings.forEach((heading, index) => {
+        const level = parseInt(heading.tagName.charAt(1));
+        const text = heading.textContent.trim();
+        let id = heading.id;
+        
+        // Generate ID if not exists
+        if (!id) {
+            id = `heading-${index}`;
+            heading.id = id;
+        }
+        
+        floatingTocHeadings.push({ level, text, id });
+    });
+    
+    // Build floating TOC HTML
+    buildFloatingToc();
+    
+    // Update scroll spy
+    updateFloatingTocScrollSpy();
+}
+
+/**
+ * Build floating TOC HTML structure
+ */
+function buildFloatingToc() {
+    const floatingTocList = document.getElementById('floatingTocList');
+    if (!floatingTocList || floatingTocHeadings.length === 0) return;
+    
+    let html = '';
+    floatingTocHeadings.forEach(heading => {
+        html += `
+            <li>
+                <a href="#${heading.id}" class="level-${heading.level}" onclick="scrollToHeading('${heading.id}')">
+                    ${heading.text}
+                </a>
+            </li>
+        `;
+    });
+    
+    floatingTocList.innerHTML = html;
+}
+
+/**
+ * Update floating TOC scroll spy to highlight current section
+ */
+function updateFloatingTocScrollSpy() {
+    if (floatingTocHeadings.length === 0) return;
+    
+    const handleScrollSpy = () => {
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        let currentHeading = null;
+        
+        // Find the current heading based on scroll position
+        for (let i = floatingTocHeadings.length - 1; i >= 0; i--) {
+            const heading = document.getElementById(floatingTocHeadings[i].id);
+            if (heading) {
+                const headingTop = heading.getBoundingClientRect().top + scrollTop;
+                if (scrollTop >= headingTop - 100) {
+                    currentHeading = floatingTocHeadings[i].id;
+                    break;
+                }
+            }
+        }
+        
+        // Update active states
+        const tocLinks = document.querySelectorAll('#floatingTocList a');
+        tocLinks.forEach(link => {
+            if (currentHeading && link.getAttribute('href') === `#${currentHeading}`) {
+                link.classList.add('active');
+            } else {
+                link.classList.remove('active');
+            }
+        });
+    };
+    
+    // Add scroll listener for scroll spy
+    let spyTimeout;
+    window.addEventListener('scroll', () => {
+        if (spyTimeout) {
+            clearTimeout(spyTimeout);
+        }
+        spyTimeout = setTimeout(handleScrollSpy, 50);
+    }, { passive: true });
+    
+    // Initial check
+    setTimeout(handleScrollSpy, 100);
+}
+
+/**
+ * Toggle floating TOC visibility
+ */
+function toggleFloatingToc() {
+    const floatingToc = document.getElementById('floatingToc');
+    const floatingTocButton = document.getElementById('floatingTocButton');
+    
+    if (!floatingToc || !floatingTocButton) return;
+    
+    if (floatingTocVisible) {
+        hideFloatingToc();
+    } else {
+        showFloatingToc();
+    }
+}
+
+/**
+ * Show floating TOC
+ */
+function showFloatingToc() {
+    const floatingToc = document.getElementById('floatingToc');
+    const floatingTocButton = document.getElementById('floatingTocButton');
+    
+    if (!floatingToc || !floatingTocButton) return;
+    
+    floatingToc.classList.add('visible');
+    floatingTocButton.classList.add('active');
+    floatingTocVisible = true;
+    
+    // Close on outside click
+    setTimeout(() => {
+        const handleOutsideClick = (e) => {
+            if (!floatingToc.contains(e.target) && !floatingTocButton.contains(e.target)) {
+                hideFloatingToc();
+                document.removeEventListener('click', handleOutsideClick);
+            }
+        };
+        document.addEventListener('click', handleOutsideClick);
+    }, 100);
+}
+
+/**
+ * Hide floating TOC
+ */
+function hideFloatingToc() {
+    const floatingToc = document.getElementById('floatingToc');
+    const floatingTocButton = document.getElementById('floatingTocButton');
+    
+    if (!floatingToc || !floatingTocButton) return;
+    
+    floatingToc.classList.remove('visible');
+    floatingTocButton.classList.remove('active');
+    floatingTocVisible = false;
+}
+
+/**
+ * Scroll to specific heading
+ */
+function scrollToHeading(headingId) {
+    const heading = document.getElementById(headingId);
+    if (heading) {
+        const offset = 100; // Account for floating header
+        const top = heading.getBoundingClientRect().top + window.pageYOffset - offset;
+        
+        window.scrollTo({
+            top: top,
+            behavior: 'smooth'
+        });
+        
+        // Hide TOC after scrolling
+        hideFloatingToc();
+    }
 }
 
 // Initialize the page when DOM is loaded
@@ -89,8 +278,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 await NotionRenderer.loadPage(newPageId);
                 NotionRenderer.PageTransition.complete();
                 
-                // Re-initialize floating header after page load
-                setTimeout(initFloatingHeader, 300);
+                // Re-initialize floating header and TOC after page load
+                setTimeout(() => {
+                    initFloatingHeader();
+                    initFloatingToc();
+                }, 300);
             });
         }
     });
@@ -100,8 +292,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const pageId = urlParams.get('id');
     if (pageId) {
         NotionRenderer.loadPage(pageId).then(() => {
-            // Re-initialize floating header after initial page load
-            setTimeout(initFloatingHeader, 300);
+            // Re-initialize floating header and TOC after initial page load
+            setTimeout(() => {
+                initFloatingHeader();
+                initFloatingToc();
+            }, 300);
         });
     }
     
@@ -112,6 +307,8 @@ document.addEventListener('DOMContentLoaded', function() {
     window.copyPageLink = NotionRenderer.copyPageLink;
     window.openImageModal = Modal.openImageModal;
     window.closeImageModal = Modal.closeImageModal;
+    window.toggleFloatingToc = toggleFloatingToc;
+    window.scrollToHeading = scrollToHeading;
 });
 
 // Handle errors globally

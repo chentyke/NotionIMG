@@ -54,10 +54,26 @@
     <!-- Floating header with glass effect -->
     <div id="floatingHeader" class="floating-header">
         <div class="content-wrapper">
+            <button id="floatingTocButton" class="floating-toc-button" onclick="toggleFloatingToc()" title="目录" aria-label="切换目录" style="display: none;">
+                <i class="fas fa-list"></i>
+            </button>
             <h1 id="floatingTitle"></h1>
             <button class="copy-link-button" onclick="copyPageLink()" title="复制页面链接" aria-label="复制页面链接">
                 <i class="fas fa-link"></i>
             </button>
+        </div>
+    </div>
+    
+    <!-- Floating Table of Contents -->
+    <div id="floatingToc" class="floating-toc">
+        <div class="floating-toc-content">
+            <div class="floating-toc-header">
+                <span>目录</span>
+                <button onclick="toggleFloatingToc()" class="floating-toc-close" aria-label="关闭目录">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <ul id="floatingTocList" class="floating-toc-list"></ul>
         </div>
     </div>
     
