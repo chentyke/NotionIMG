@@ -728,38 +728,85 @@ async function loadPage(pageId = null) {
         updateLoadingProgress(50);
         loadingText.textContent = '正在渲染内容...';
         
+        console.log('Starting to render blocks...', data.blocks?.length || 0, 'blocks');
         const content = await renderBlocks(data.blocks);
+        console.log('Blocks rendered successfully, content length:', content.length);
         
         updateLoadingProgress(80);
         loadingText.textContent = '正在完成加载...';
         
         // Display initial content
+        console.log('Setting page content...');
         const pageContent = document.getElementById('pageContent');
         pageContent.innerHTML = content;
+        console.log('Page content set successfully');
         
         // Initialize image lazy loading for the initial content
-        imageObserver.init();
+        console.log('Initializing image observer...');
+        try {
+            imageObserver.init();
+            console.log('Image observer initialized');
+        } catch (error) {
+            console.error('Error initializing image observer:', error);
+        }
         
         // Initialize table of contents
-        TableOfContents.init();
+        console.log('Initializing table of contents...');
+        try {
+            TableOfContents.init();
+            console.log('Table of contents initialized');
+        } catch (error) {
+            console.error('Error initializing table of contents:', error);
+        }
         
         // Post-process the initial content
-        postProcessContent(pageContent);
+        console.log('Post-processing content...');
+        try {
+            postProcessContent(pageContent);
+            console.log('Content post-processed successfully');
+        } catch (error) {
+            console.error('Error post-processing content:', error);
+        }
         
         // Show the container
+        console.log('Finishing loading...');
         updateLoadingProgress(90);
+        
+        // Set up a fallback timer to ensure page shows even if something goes wrong
+        const fallbackTimer = setTimeout(() => {
+            console.warn('Fallback timer triggered - forcing page to show');
+            const container = document.querySelector('.container');
+            if (!container.classList.contains('loaded')) {
+                container.classList.add('loaded');
+                updateLoadingProgress(100);
+                console.log('Page forced to show via fallback mechanism');
+            }
+        }, 5000); // 5 second fallback
+        
         setTimeout(() => {
+            console.log('Adding loaded class to container...');
             container.classList.add('loaded');
             updateLoadingProgress(100);
+            console.log('Page loading completed successfully');
+            
+            // Clear the fallback timer since we completed successfully
+            clearTimeout(fallbackTimer);
             
             // Start loading remaining content in background if there's more
             if (data.has_more && data.next_cursor) {
+                console.log('Starting background loading for remaining content...');
                 loadMoreContentInBackground(targetPageId, data.next_cursor, pageContent);
             }
         }, 200);
         
     } catch (error) {
         console.error('Error loading page:', error);
+        
+        // Clear any existing fallback timer
+        if (typeof fallbackTimer !== 'undefined') {
+            clearTimeout(fallbackTimer);
+        }
+        
         const pageContent = document.getElementById('pageContent');
         pageContent.innerHTML = `
             <div class="text-center text-red-500">
@@ -931,13 +978,35 @@ async function renderBlocks(blocks) {
  * @param {HTMLElement} container - The container with rendered content
  */
 function postProcessContent(container) {
-    // Apply syntax highlighting to code blocks
-    codeHighlighter.highlightAllCodeBlocks();
-    
-    // Initialize lazy loading for new images
-    container.querySelectorAll('img[data-src]').forEach(img => {
-        imageObserver.observe(img);
-    });
+    try {
+        console.log('Starting post-processing...');
+        
+        // Apply syntax highlighting to code blocks
+        console.log('Applying syntax highlighting...');
+        try {
+            codeHighlighter.highlightAllCodeBlocks();
+            console.log('Syntax highlighting applied successfully');
+        } catch (error) {
+            console.error('Error applying syntax highlighting:', error);
+        }
+        
+        // Initialize lazy loading for new images
+        console.log('Setting up lazy loading for images...');
+        try {
+            const images = container.querySelectorAll('img[data-src]');
+            console.log(`Found ${images.length} images to observe`);
+            images.forEach(img => {
+                imageObserver.observe(img);
+            });
+            console.log('Image lazy loading set up successfully');
+        } catch (error) {
+            console.error('Error setting up image lazy loading:', error);
+        }
+        
+        console.log('Post-processing completed');
+    } catch (error) {
+        console.error('Error in postProcessContent:', error);
+    }
 }
 
 /**
