@@ -445,13 +445,14 @@
     box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
 }
 
-/* 优化标题层级样式 - 统一背景，层级通过缩进和样式区分 */
+/* 优化标题层级样式 - 素雅配色 + 连接线层级关系 */
 .floating-toc-list .level-1 {
     padding-left: 28px;
     font-size: 1.125rem;
     font-weight: 700;
     background: rgba(255, 255, 255, 0.5);
-    border-left: 4px solid transparent;
+    border-left: none;
+    position: relative;
 }
 
 .floating-toc-list .level-2 {
@@ -459,7 +460,8 @@
     font-size: 1.0625rem;
     font-weight: 600;
     background: rgba(255, 255, 255, 0.45);
-    border-left: 3px solid transparent;
+    border-left: none;
+    position: relative;
 }
 
 .floating-toc-list .level-3 {
@@ -468,109 +470,179 @@
     font-weight: 500;
     color: var(--text-secondary);
     background: rgba(255, 255, 255, 0.4);
-    border-left: 2px solid transparent;
+    border-left: none;
+    position: relative;
 }
 
-/* 增强悬停效果 - 不同层级的悬停颜色 */
+/* 层级连接线 - 表示从属关系 */
+.floating-toc-list .level-2::before {
+    content: '';
+    position: absolute;
+    left: 32px;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: linear-gradient(to bottom, 
+        transparent 0%, 
+        rgba(156, 163, 175, 0.4) 20%, 
+        rgba(156, 163, 175, 0.4) 80%, 
+        transparent 100%);
+}
+
+.floating-toc-list .level-2::after {
+    content: '';
+    position: absolute;
+    left: 32px;
+    top: 50%;
+    width: 12px;
+    height: 1px;
+    background: rgba(156, 163, 175, 0.4);
+    transform: translateY(-50%);
+}
+
+.floating-toc-list .level-3::before {
+    content: '';
+    position: absolute;
+    left: 52px;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: linear-gradient(to bottom, 
+        transparent 0%, 
+        rgba(156, 163, 175, 0.3) 20%, 
+        rgba(156, 163, 175, 0.3) 80%, 
+        transparent 100%);
+}
+
+.floating-toc-list .level-3::after {
+    content: '';
+    position: absolute;
+    left: 52px;
+    top: 50%;
+    width: 12px;
+    height: 1px;
+    background: rgba(156, 163, 175, 0.3);
+    transform: translateY(-50%);
+}
+
+/* 素雅的悬停效果 */
 .floating-toc-list .level-1:hover {
-    background: rgba(59, 130, 246, 0.15);
-    border-left-color: rgba(59, 130, 246, 0.3);
+    background: rgba(107, 114, 128, 0.08);
     transform: translateY(-2px) scale(1.01);
     box-shadow: 
-        0 8px 24px rgba(59, 130, 246, 0.15),
-        0 4px 12px rgba(0, 0, 0, 0.08);
-}
-
-.floating-toc-list .level-2:hover {
-    background: rgba(16, 185, 129, 0.12);
-    border-left-color: rgba(16, 185, 129, 0.4);
-    transform: translateY(-2px) scale(1.01);
-    box-shadow: 
-        0 8px 24px rgba(16, 185, 129, 0.12),
+        0 8px 24px rgba(107, 114, 128, 0.12),
         0 4px 12px rgba(0, 0, 0, 0.06);
 }
 
-.floating-toc-list .level-3:hover {
-    background: rgba(168, 85, 247, 0.1);
-    border-left-color: rgba(168, 85, 247, 0.35);
+.floating-toc-list .level-2:hover {
+    background: rgba(107, 114, 128, 0.06);
     transform: translateY(-2px) scale(1.01);
     box-shadow: 
-        0 8px 24px rgba(168, 85, 247, 0.1),
+        0 8px 24px rgba(107, 114, 128, 0.1),
         0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
-/* 增强选中状态 - 不同层级的主题色 */
-.floating-toc-list .level-1.active {
-    background: rgba(59, 130, 246, 0.2);
-    color: #1d4ed8;
-    font-weight: 800;
-    border-left-color: #3b82f6;
-    transform: translateY(-2px) scale(1.02);
-    box-shadow: 
-        0 12px 32px rgba(59, 130, 246, 0.25),
-        0 6px 16px rgba(0, 0, 0, 0.1);
+.floating-toc-list .level-2:hover::before,
+.floating-toc-list .level-2:hover::after {
+    background: rgba(107, 114, 128, 0.6);
 }
 
-.floating-toc-list .level-2.active {
-    background: rgba(16, 185, 129, 0.18);
-    color: #047857;
-    font-weight: 700;
-    border-left-color: #10b981;
+.floating-toc-list .level-3:hover {
+    background: rgba(107, 114, 128, 0.05);
+    transform: translateY(-2px) scale(1.01);
+    box-shadow: 
+        0 8px 24px rgba(107, 114, 128, 0.08),
+        0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.floating-toc-list .level-3:hover::before,
+.floating-toc-list .level-3:hover::after {
+    background: rgba(107, 114, 128, 0.5);
+}
+
+/* 素雅的选中状态 */
+.floating-toc-list .level-1.active {
+    background: rgba(75, 85, 99, 0.12);
+    color: var(--text-primary);
+    font-weight: 800;
     transform: translateY(-2px) scale(1.02);
     box-shadow: 
-        0 12px 32px rgba(16, 185, 129, 0.2),
+        0 12px 32px rgba(75, 85, 99, 0.15),
         0 6px 16px rgba(0, 0, 0, 0.08);
 }
 
-.floating-toc-list .level-3.active {
-    background: rgba(168, 85, 247, 0.15);
-    color: #7c3aed;
-    font-weight: 650;
-    border-left-color: #a855f7;
+.floating-toc-list .level-2.active {
+    background: rgba(75, 85, 99, 0.1);
+    color: var(--text-primary);
+    font-weight: 700;
     transform: translateY(-2px) scale(1.02);
     box-shadow: 
-        0 12px 32px rgba(168, 85, 247, 0.18),
-        0 6px 16px rgba(0, 0, 0, 0.07);
+        0 12px 32px rgba(75, 85, 99, 0.12),
+        0 6px 16px rgba(0, 0, 0, 0.06);
 }
 
-/* 优化选中指示器 - 不同层级不同样式 */
+.floating-toc-list .level-2.active::before,
+.floating-toc-list .level-2.active::after {
+    background: rgba(75, 85, 99, 0.8);
+}
+
+.floating-toc-list .level-3.active {
+    background: rgba(75, 85, 99, 0.08);
+    color: var(--text-primary);
+    font-weight: 650;
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 
+        0 12px 32px rgba(75, 85, 99, 0.1),
+        0 6px 16px rgba(0, 0, 0, 0.05);
+}
+
+.floating-toc-list .level-3.active::before,
+.floating-toc-list .level-3.active::after {
+    background: rgba(75, 85, 99, 0.7);
+}
+
+/* 素雅的选中指示器 */
 .floating-toc-list .level-1.active::before {
     content: '';
     position: absolute;
     left: 8px;
     top: 50%;
     transform: translateY(-50%);
-    width: 6px;
-    height: 24px;
-    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-    border-radius: 3px;
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+    width: 4px;
+    height: 20px;
+    background: linear-gradient(135deg, #6b7280, #4b5563);
+    border-radius: 2px;
+    box-shadow: 0 2px 8px rgba(75, 85, 99, 0.3);
 }
 
 .floating-toc-list .level-2.active::before {
     content: '';
     position: absolute;
-    left: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 5px;
-    height: 20px;
-    background: linear-gradient(135deg, #10b981, #047857);
-    border-radius: 2.5px;
-    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+    left: 32px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(to bottom, 
+        transparent 0%, 
+        rgba(75, 85, 99, 0.8) 20%, 
+        rgba(75, 85, 99, 0.8) 80%, 
+        transparent 100%);
+    border-radius: 1px;
 }
 
 .floating-toc-list .level-3.active::before {
     content: '';
     position: absolute;
-    left: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 4px;
-    height: 16px;
-    background: linear-gradient(135deg, #a855f7, #7c3aed);
-    border-radius: 2px;
-    box-shadow: 0 2px 8px rgba(168, 85, 247, 0.4);
+    left: 52px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(to bottom, 
+        transparent 0%, 
+        rgba(75, 85, 99, 0.7) 20%, 
+        rgba(75, 85, 99, 0.7) 80%, 
+        transparent 100%);
+    border-radius: 1px;
 }
 
 /* 添加关闭时的收缩动画 */
@@ -842,70 +914,134 @@
     
     .floating-toc-list .level-1 {
         background: rgba(17, 24, 39, 0.7);
-        border-left: 4px solid transparent;
+        border-left: none;
+        position: relative;
     }
     
     .floating-toc-list .level-2 {
         background: rgba(17, 24, 39, 0.6);
-        border-left: 3px solid transparent;
+        border-left: none;
+        position: relative;
     }
     
     .floating-toc-list .level-3 {
         background: rgba(17, 24, 39, 0.5);
-        border-left: 2px solid transparent;
+        border-left: none;
+        position: relative;
+    }
+    
+    /* 暗色主题连接线 */
+    .floating-toc-list .level-2::before {
+        background: linear-gradient(to bottom, 
+            transparent 0%, 
+            rgba(156, 163, 175, 0.3) 20%, 
+            rgba(156, 163, 175, 0.3) 80%, 
+            transparent 100%);
+    }
+    
+    .floating-toc-list .level-2::after {
+        background: rgba(156, 163, 175, 0.3);
+    }
+    
+    .floating-toc-list .level-3::before {
+        background: linear-gradient(to bottom, 
+            transparent 0%, 
+            rgba(156, 163, 175, 0.25) 20%, 
+            rgba(156, 163, 175, 0.25) 80%, 
+            transparent 100%);
+    }
+    
+    .floating-toc-list .level-3::after {
+        background: rgba(156, 163, 175, 0.25);
     }
     
     /* 暗色主题悬停效果 */
     .floating-toc-list .level-1:hover {
-        background: rgba(59, 130, 246, 0.25);
-        border-left-color: rgba(59, 130, 246, 0.5);
+        background: rgba(107, 114, 128, 0.15);
         box-shadow: 
-            0 8px 24px rgba(59, 130, 246, 0.2),
+            0 8px 24px rgba(107, 114, 128, 0.2),
             0 4px 12px rgba(0, 0, 0, 0.4);
     }
     
     .floating-toc-list .level-2:hover {
-        background: rgba(16, 185, 129, 0.2);
-        border-left-color: rgba(16, 185, 129, 0.6);
+        background: rgba(107, 114, 128, 0.12);
         box-shadow: 
-            0 8px 24px rgba(16, 185, 129, 0.18),
+            0 8px 24px rgba(107, 114, 128, 0.18),
             0 4px 12px rgba(0, 0, 0, 0.35);
     }
     
+    .floating-toc-list .level-2:hover::before,
+    .floating-toc-list .level-2:hover::after {
+        background: rgba(156, 163, 175, 0.6);
+    }
+    
     .floating-toc-list .level-3:hover {
-        background: rgba(168, 85, 247, 0.18);
-        border-left-color: rgba(168, 85, 247, 0.5);
+        background: rgba(107, 114, 128, 0.1);
         box-shadow: 
-            0 8px 24px rgba(168, 85, 247, 0.15),
+            0 8px 24px rgba(107, 114, 128, 0.15),
             0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+    
+    .floating-toc-list .level-3:hover::before,
+    .floating-toc-list .level-3:hover::after {
+        background: rgba(156, 163, 175, 0.5);
     }
     
     /* 暗色主题选中状态 */
     .floating-toc-list .level-1.active {
-        background: rgba(59, 130, 246, 0.35);
-        color: #60a5fa;
-        border-left-color: #3b82f6;
+        background: rgba(156, 163, 175, 0.2);
+        color: #d1d5db;
         box-shadow: 
-            0 12px 32px rgba(59, 130, 246, 0.3),
+            0 12px 32px rgba(156, 163, 175, 0.25),
             0 6px 16px rgba(0, 0, 0, 0.5);
     }
     
     .floating-toc-list .level-2.active {
-        background: rgba(16, 185, 129, 0.3);
-        color: #34d399;
-        border-left-color: #10b981;
+        background: rgba(156, 163, 175, 0.15);
+        color: #d1d5db;
         box-shadow: 
-            0 12px 32px rgba(16, 185, 129, 0.25),
+            0 12px 32px rgba(156, 163, 175, 0.2),
             0 6px 16px rgba(0, 0, 0, 0.45);
     }
     
+    .floating-toc-list .level-2.active::before,
+    .floating-toc-list .level-2.active::after {
+        background: rgba(156, 163, 175, 0.8);
+    }
+    
     .floating-toc-list .level-3.active {
-        background: rgba(168, 85, 247, 0.25);
-        color: #c084fc;
-        border-left-color: #a855f7;
+        background: rgba(156, 163, 175, 0.12);
+        color: #d1d5db;
         box-shadow: 
-            0 12px 32px rgba(168, 85, 247, 0.22),
+            0 12px 32px rgba(156, 163, 175, 0.18),
             0 6px 16px rgba(0, 0, 0, 0.4);
+    }
+    
+    .floating-toc-list .level-3.active::before,
+    .floating-toc-list .level-3.active::after {
+        background: rgba(156, 163, 175, 0.7);
+    }
+    
+    /* 暗色主题选中指示器 */
+    .floating-toc-list .level-1.active::before {
+        background: linear-gradient(135deg, #9ca3af, #6b7280);
+        box-shadow: 0 2px 8px rgba(156, 163, 175, 0.4);
+    }
+    
+    .floating-toc-list .level-2.active::before {
+        background: linear-gradient(to bottom, 
+            transparent 0%, 
+            rgba(156, 163, 175, 0.8) 20%, 
+            rgba(156, 163, 175, 0.8) 80%, 
+            transparent 100%);
+    }
+    
+    .floating-toc-list .level-3.active::before {
+        background: linear-gradient(to bottom, 
+            transparent 0%, 
+            rgba(156, 163, 175, 0.7) 20%, 
+            rgba(156, 163, 175, 0.7) 80%, 
+            transparent 100%);
     }
     
     /* 暗色主题关闭动画 */
