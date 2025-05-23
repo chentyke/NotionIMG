@@ -35,8 +35,16 @@ app.add_middleware(
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Initialize Notion client
-notion = Client(auth=os.environ.get("NOTION_TOKEN"))
+# Initialize Notion client with timeout settings
+try:
+    notion = Client(
+        auth=os.environ.get("NOTION_TOKEN"),
+        timeout_ms=30000  # 30 second timeout
+    )
+except Exception as e:
+    logger.error(f"Failed to initialize Notion client: {e}")
+    notion = None
+
 DATABASE_ID = os.environ.get("NOTION_DATABASE_ID")
 
 # 存储页面数据的字典
@@ -55,17 +63,26 @@ class Page(BaseModel):
 
 async def init_pages():
     """初始化时加载所有页面的数据"""
+    if not notion:
+        logger.error("Notion client not initialized, skipping page initialization")
+        return
+        
     try:
+        import asyncio
+        from functools import partial
+        
         logger.info("\n" + "="*50)
         logger.info("Starting to initialize pages...")
         # 清空现有数据
         pages_data.clear()
         suffix_pages.clear()
         
-        # 查询数据库中的所有页面
+        # 查询数据库中的所有页面 - 使用异步包装
         logger.info("Querying Notion database with pagination...")
         pages = []
         cursor = None
+        max_retries = 3
+        
         while True:
             query_params = {
                 "database_id": DATABASE_ID,
@@ -90,8 +107,28 @@ async def init_pages():
             
             if cursor:
                 query_params["start_cursor"] = cursor
-                
-            response = notion.databases.query(**query_params)
+            
+            # Retry logic for database queries
+            for attempt in range(max_retries):
+                try:
+                    loop = asyncio.get_event_loop()
+                    response = await asyncio.wait_for(
+                        loop.run_in_executor(None, partial(notion.databases.query, **query_params)),
+                        timeout=30.0  # 30 second timeout
+                    )
+                    break  # Success, exit retry loop
+                except asyncio.TimeoutError:
+                    logger.warning(f"Timeout on attempt {attempt + 1}/{max_retries} for database query")
+                    if attempt == max_retries - 1:
+                        logger.error("Max retries exceeded for database query")
+                        return  # Skip initialization if all retries failed
+                    await asyncio.sleep(2 ** attempt)  # Exponential backoff
+                except Exception as e:
+                    logger.warning(f"Error on attempt {attempt + 1}/{max_retries}: {e}")
+                    if attempt == max_retries - 1:
+                        logger.error(f"Max retries exceeded: {e}")
+                        return
+                    await asyncio.sleep(2 ** attempt)
             
             # 记录原始响应数据用于调试
             logger.info(f"\nRaw response data:")
@@ -212,6 +249,39 @@ async def startup_event():
 async def root():
     """根路由处理"""
     return FileResponse("static/pages.html")
+
+@app.get("/health")
+async def health_check():
+    """健康检查端点"""
+    try:
+        # 检查环境变量
+        has_token = bool(os.environ.get("NOTION_TOKEN"))
+        has_database_id = bool(os.environ.get("NOTION_DATABASE_ID"))
+        
+        # 检查 Notion 客户端
+        notion_client_status = "initialized" if notion else "not_initialized"
+        
+        # 检查数据
+        pages_count = len(pages_data)
+        suffixes_count = len(suffix_pages)
+        
+        status = {
+            "status": "healthy" if has_token and has_database_id and notion else "degraded",
+            "notion_token": "present" if has_token else "missing",
+            "database_id": "present" if has_database_id else "missing", 
+            "notion_client": notion_client_status,
+            "pages_loaded": pages_count,
+            "suffixes_loaded": suffixes_count,
+            "timestamp": "2024-01-01T00:00:00Z"  # 可以用实际时间戳
+        }
+        
+        return status
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e),
+            "timestamp": "2024-01-01T00:00:00Z"
+        }
 
 def get_file_info(page: dict) -> dict:
     """Extract file information from a Notion page."""
@@ -862,106 +932,173 @@ async def get_page(page_id: str):
     try:
         logger.info(f"Fetching page content for API request: {page_id}")
         
-        # First try to get the block to check if it's a child page
-        try:
-            block = notion.blocks.retrieve(block_id=page_id)
-            logger.info(f"Retrieved block type: {block['type']}")
-            if block["type"] == "child_page":
-                # If it's a child page, get the full page to get all properties including cover
+        # Add timeout for Notion API calls
+        import asyncio
+        from functools import partial
+        
+        async def get_notion_data_with_timeout():
+            # First try to get the block to check if it's a child page
+            try:
+                # Wrap synchronous notion calls in async with timeout
+                loop = asyncio.get_event_loop()
+                block = await asyncio.wait_for(
+                    loop.run_in_executor(None, partial(notion.blocks.retrieve, block_id=page_id)),
+                    timeout=15.0  # 15 second timeout
+                )
+                logger.info(f"Retrieved block type: {block['type']}")
+                
+                if block["type"] == "child_page":
+                    # If it's a child page, get the full page to get all properties including cover
+                    try:
+                        page = await asyncio.wait_for(
+                            loop.run_in_executor(None, partial(notion.pages.retrieve, page_id=page_id)),
+                            timeout=15.0
+                        )
+                        page_info = get_page_info(page)  # This will handle the cover properly
+                        if page_info:
+                            page_info["parent_id"] = block["parent"]["page_id"] if block["parent"]["type"] == "page_id" else None
+                        logger.info(f"Found child page: {page_info['title'] if page_info else 'None'}")
+                    except Exception as e:
+                        logger.warning(f"Error getting full page for child page, falling back to basic info: {e}")
+                        # Try to get title from block first
+                        title = block.get("child_page", {}).get("title", "")
+                        if not title:
+                            # Try to get title from page object if available
+                            title = page.get("properties", {}).get("title", {}).get("title", [{}])[0].get("text", {}).get("content", "Untitled")
+                        
+                        back_property = page.get("properties", {}).get("Back", {}).get("select", {}).get("name")
+                        show_back = True if back_property is None else back_property != "False"
+                        page_info = {
+                            "id": block["id"],
+                            "title": title,
+                            "created_time": block["created_time"],
+                            "last_edited_time": block["last_edited_time"],
+                            "parent_id": block["parent"]["page_id"] if block["parent"]["type"] == "page_id" else None,
+                            "show_back": show_back,
+                            "cover": None  # No cover in fallback case
+                        }
+                else:
+                    # If it's not a child page, get page metadata normally
+                    page = await asyncio.wait_for(
+                        loop.run_in_executor(None, partial(notion.pages.retrieve, page_id=page_id)),
+                        timeout=15.0
+                    )
+                    page_info = get_page_info(page)
+                    logger.info(f"Found regular page: {page_info['title'] if page_info else 'None'}")
+            except asyncio.TimeoutError:
+                logger.error(f"Timeout retrieving page metadata for {page_id}")
+                raise HTTPException(status_code=504, detail="Timeout retrieving page metadata from Notion API")
+            except Exception as e:
+                logger.warning(f"Error retrieving block, trying page: {e}")
+                # If block retrieval fails, try page retrieval as fallback
                 try:
-                    page = notion.pages.retrieve(page_id=page_id)
-                    page_info = get_page_info(page)  # This will handle the cover properly
-                    if page_info:
-                        page_info["parent_id"] = block["parent"]["page_id"] if block["parent"]["type"] == "page_id" else None
-                    logger.info(f"Found child page: {page_info['title'] if page_info else 'None'}")
-                except Exception as e:
-                    logger.warning(f"Error getting full page for child page, falling back to basic info: {e}")
-                    # Try to get title from block first
-                    title = block.get("child_page", {}).get("title", "")
-                    if not title:
-                        # Try to get title from page object if available
-                        title = page.get("properties", {}).get("title", {}).get("title", [{}])[0].get("text", {}).get("content", "Untitled")
+                    page = await asyncio.wait_for(
+                        loop.run_in_executor(None, partial(notion.pages.retrieve, page_id=page_id)),
+                        timeout=15.0
+                    )
+                    page_info = get_page_info(page)
+                    if page_info and "parent" in page and page["parent"]["type"] == "page_id":
+                        page_info["parent_id"] = page["parent"]["page_id"]
+                except asyncio.TimeoutError:
+                    logger.error(f"Timeout retrieving page {page_id}")
+                    raise HTTPException(status_code=504, detail="Timeout retrieving page from Notion API")
+                except Exception as fallback_error:
+                    logger.error(f"Both block and page retrieval failed for {page_id}: {fallback_error}")
+                    raise HTTPException(status_code=404, detail="Page not found or inaccessible")
                     
-                    back_property = page.get("properties", {}).get("Back", {}).get("select", {}).get("name")
-                    show_back = True if back_property is None else back_property != "False"
-                    page_info = {
-                        "id": block["id"],
-                        "title": title,
-                        "created_time": block["created_time"],
-                        "last_edited_time": block["last_edited_time"],
-                        "parent_id": block["parent"]["page_id"] if block["parent"]["type"] == "page_id" else None,
-                        "show_back": show_back,
-                        "cover": None  # No cover in fallback case
-                    }
-            else:
-                # If it's not a child page, get page metadata normally
-                page = notion.pages.retrieve(page_id=page_id)
-                page_info = get_page_info(page)
-                logger.info(f"Found regular page: {page_info['title'] if page_info else 'None'}")
-        except Exception as e:
-            logger.warning(f"Error retrieving block, trying page: {e}")
-            # If block retrieval fails, try page retrieval as fallback
-            page = notion.pages.retrieve(page_id=page_id)
-            page_info = get_page_info(page)
-            if page_info and "parent" in page and page["parent"]["type"] == "page_id":
-                page_info["parent_id"] = page["parent"]["page_id"]
+            return page_info
+            
+        page_info = await get_notion_data_with_timeout()
         
         if not page_info:
             logger.error("Page info not found")
             raise HTTPException(status_code=404, detail="Page not found")
         
-        # Get page blocks
+        # Get page blocks with timeout
         blocks = []
         has_more = True
         cursor = None
         total_blocks = 0
         
         logger.info("Fetching page blocks...")
-        while has_more:
-            if cursor:
-                response = notion.blocks.children.list(block_id=page_id, start_cursor=cursor)
-            else:
-                response = notion.blocks.children.list(block_id=page_id)
+        try:
+            while has_more:
+                # Wrap block children list call with timeout
+                loop = asyncio.get_event_loop()
+                if cursor:
+                    response = await asyncio.wait_for(
+                        loop.run_in_executor(None, partial(notion.blocks.children.list, block_id=page_id, start_cursor=cursor)),
+                        timeout=20.0  # 20 second timeout for blocks
+                    )
+                else:
+                    response = await asyncio.wait_for(
+                        loop.run_in_executor(None, partial(notion.blocks.children.list, block_id=page_id)),
+                        timeout=20.0
+                    )
+                
+                current_blocks = response["results"]
+                total_blocks += len(current_blocks)
+                logger.info(f"Retrieved {len(current_blocks)} blocks (total: {total_blocks})")
+                
+                for block in current_blocks:
+                    logger.info(f"Processing block type: {block['type']}")
+                    processed_block = process_block_content(block)
+                    if processed_block:
+                        blocks.append(processed_block)
+                
+                has_more = response["has_more"]
+                if has_more:
+                    cursor = response["next_cursor"]
+                    logger.info("More blocks available, continuing...")
+                    
+        except asyncio.TimeoutError:
+            logger.error(f"Timeout retrieving blocks for page {page_id}")
+            # Return partial content instead of failing completely
+            logger.info(f"Returning partial content with {len(blocks)} blocks")
             
-            current_blocks = response["results"]
-            total_blocks += len(current_blocks)
-            logger.info(f"Retrieved {len(current_blocks)} blocks (total: {total_blocks})")
-            
-            for block in current_blocks:
-                logger.info(f"Processing block type: {block['type']}")
-                processed_block = process_block_content(block)
-                if processed_block:
-                    blocks.append(processed_block)
-            
-            has_more = response["has_more"]
-            if has_more:
-                cursor = response["next_cursor"]
-                logger.info("More blocks available, continuing...")
-        
         logger.info(f"Successfully processed {len(blocks)} blocks")
         return {
             "page": page_info,
             "blocks": blocks
         }
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
     except Exception as e:
         logger.error(f"Error getting page content for API: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Stack trace:", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
-# 添加获取页面块内容的端点
+# 添加获取页面块内容的端点 - 使用异步版本
 @app.get("/api/blocks/{page_id}")
 async def get_blocks(page_id: str):
     try:
+        logger.info(f"Fetching blocks for page: {page_id}")
         headers = {
             "Authorization": f"Bearer {os.getenv('NOTION_TOKEN')}",
             "Notion-Version": "2022-06-28"
         }
-        async with httpx.AsyncClient() as client:
+        
+        # Use async HTTP client with timeout
+        timeout = httpx.Timeout(30.0)  # 30 second timeout
+        async with httpx.AsyncClient(timeout=timeout) as client:
             response = await client.get(
                 f"https://api.notion.com/v1/blocks/{page_id}/children",
                 headers=headers
             )
+            
+            if response.status_code != 200:
+                logger.error(f"Notion API returned {response.status_code}: {response.text}")
+                raise HTTPException(status_code=response.status_code, detail=f"Notion API error: {response.text}")
+                
             return response.json()
+            
+    except httpx.TimeoutException:
+        logger.error(f"Timeout fetching blocks for page {page_id}")
+        raise HTTPException(status_code=504, detail="Timeout fetching blocks from Notion API")
     except Exception as e:
+        logger.error(f"Error fetching blocks: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/notion/page/{page_id}")
@@ -1032,6 +1169,71 @@ async def get_database_raw():
         logger.error(f"Error getting raw database: {str(e)}")
         logger.error("Stack trace:", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/validate/{page_id}")
+async def validate_page(page_id: str):
+    """验证页面是否存在和可访问"""
+    try:
+        if not notion:
+            raise HTTPException(status_code=503, detail="Notion client not initialized")
+            
+        logger.info(f"Validating page: {page_id}")
+        
+        # 使用简单的页面检索来验证
+        import asyncio
+        from functools import partial
+        
+        try:
+            loop = asyncio.get_event_loop()
+            page = await asyncio.wait_for(
+                loop.run_in_executor(None, partial(notion.pages.retrieve, page_id=page_id)),
+                timeout=10.0  # 短超时用于快速验证
+            )
+            
+            # 检查页面是否被隐藏
+            properties = page.get("properties", {})
+            hidden = properties.get("Hidden", {}).get("select", {}).get("name") == "True"
+            
+            if hidden:
+                return {
+                    "valid": False,
+                    "reason": "Page is hidden",
+                    "page_id": page_id
+                }
+            
+            # 获取基本信息
+            title = "Untitled"
+            if "Name" in properties:
+                title_array = properties["Name"]["title"]
+                if title_array and len(title_array) > 0:
+                    title = title_array[0]["text"]["content"]
+            elif "title" in properties:
+                title_array = properties["title"]["title"]  
+                if title_array and len(title_array) > 0:
+                    title = title_array[0]["text"]["content"]
+            
+            return {
+                "valid": True,
+                "page_id": page_id,
+                "title": title,
+                "last_edited": page.get("last_edited_time"),
+                "has_cover": bool(page.get("cover"))
+            }
+            
+        except asyncio.TimeoutError:
+            logger.error(f"Timeout validating page {page_id}")
+            raise HTTPException(status_code=504, detail=f"Timeout validating page {page_id}")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error validating page {page_id}: {e}")
+        if "object not found" in str(e).lower():
+            raise HTTPException(status_code=404, detail=f"Page {page_id} not found")
+        elif "unauthorized" in str(e).lower():
+            raise HTTPException(status_code=403, detail="Access denied to this page")
+        else:
+            raise HTTPException(status_code=500, detail=f"Error validating page: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
