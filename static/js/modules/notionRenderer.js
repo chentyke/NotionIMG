@@ -655,10 +655,12 @@ async function loadPage(pageId = null) {
             }
         }
         
-        // Start loading data
+        // Start loading data - Initial load with limit=15
         updateLoadingProgress(10);
         loadingText.textContent = '正在获取页面数据...';
-        const response = await fetch(`/api/page/${targetPageId}`);
+        
+        // Initial load with only 15 blocks to avoid rate limiting
+        const response = await fetch(`/api/page/${targetPageId}?limit=15`);
         
         // Check for errors
         if (!response.ok) {
@@ -670,209 +672,272 @@ async function loadPage(pageId = null) {
         updateLoadingProgress(30);
         loadingText.textContent = '正在处理页面内容...';
         
-        // Update page title and date
-        if (data.page && data.page.title) {
-            document.title = data.page.title;
+        // Render page cover and basic info
+        if (data.page) {
+            // Update document title
             updatePageTitle(data.page.title);
-        }
-        
-        // Handle cover image
-        if (data.page && data.page.cover && pageCover) {
-            loadingText.textContent = '正在加载封面图片...';
-            const coverImg = pageCover.querySelector('img');
-            let coverUrl = '';
             
-            if (data.page.cover.type === 'external') {
-                coverUrl = data.page.cover.external.url;
-            } else if (data.page.cover.type === 'file') {
-                coverUrl = data.page.cover.file.url;
+            // Store parent page ID
+            if (data.page.parent_id) {
+                setParentPageId(data.page.parent_id);
             }
             
-            if (coverUrl && coverImg) {
-                try {
-                    await new Promise((resolve, reject) => {
-                        const img = new Image();
-                        img.onload = resolve;
-                        img.onerror = reject;
-                        img.src = coverUrl;
-                        
-                        // Set timeout to avoid hanging
-                        const timeout = setTimeout(() => {
-                            img.src = '';
-                            reject(new Error('Cover image load timeout'));
-                        }, 10000);
-                        
-                        img.onload = () => {
-                            clearTimeout(timeout);
-                            resolve();
-                        };
-                    });
-                    
-                    // Display cover with animation
-                    coverImg.src = coverUrl;
-                    pageCover.style.display = 'block';
-                    setTimeout(() => {
-                        pageCover.classList.add('loaded');
-                        coverImg.style.opacity = '1';
-                    }, 50);
-                } catch (error) {
-                    console.error('Failed to load cover image:', error);
-                    pageCover.style.display = 'none';
-                }
-            }
-        }
-        
-        // Update back button based on parent page and show_back property
-        setParentPageId(data.page.parent_id);
-        const backButtonContainer = document.querySelector('.mt-8');
-        const pageTitle = document.getElementById('pageTitle');
-        
-        if (pageTitle && data.page.title) {
-            pageTitle.textContent = data.page.title;
-        }
-        
-        if (backButtonContainer) {
-            // Show back button if parent page exists and show_back is true
-            if (data.page.parent_id && data.page.show_back !== false) {
-                backButtonContainer.style.display = 'flex';
-                
-                // Update the back button link
-                const backLink = backButtonContainer.querySelector('a');
-                if (backLink) {
-                    backLink.href = `/static/page.html?id=${data.page.parent_id}`;
-                    backLink.onclick = (e) => {
-                        e.preventDefault();
-                        loadChildPage(data.page.parent_id, 'Parent Page');
-                        return false;
+            // Set total blocks count for progress tracking (estimate based on initial load)
+            const estimatedTotal = data.has_more ? data.blocks.length * 3 : data.blocks.length;
+            setTotalBlocks(estimatedTotal);
+            setLoadedBlocks(0);
+            
+            // Show page cover if available
+            if (data.page.cover && pageCover) {
+                const img = pageCover.querySelector('img');
+                if (img) {
+                    img.onload = () => {
+                        updateLoadingProgress(40);
+                        pageCover.style.display = 'block';
+                        setTimeout(() => {
+                            pageCover.classList.add('loaded');
+                        }, 100);
                     };
+                    img.src = data.page.cover;
                 }
-                
-                // Animate the back button appearance
-                setTimeout(() => {
-                    backButtonContainer.classList.add('visible');
-                }, 300);
             } else {
-                backButtonContainer.style.display = 'none';
+                updateLoadingProgress(40);
+            }
+            
+            // Update page header
+            const pageTitle = document.getElementById('pageTitle');
+            const editDate = document.getElementById('editDate');
+            
+            if (pageTitle) pageTitle.textContent = data.page.title;
+            
+            if (editDate && data.page.edit_date) {
+                const date = new Date(data.page.edit_date);
+                editDate.innerHTML = `<i class="fa fa-edit"></i> 最后编辑：${date.toLocaleDateString('zh-CN')}`;
+            }
+            
+            // Handle back button visibility
+            if (backButton && data.page.show_back !== false) {
+                backButton.style.display = 'flex';
+                setTimeout(() => {
+                    backButton.classList.add('visible');
+                }, 300);
             }
         }
         
-        // Render the blocks
-        loadingText.textContent = '正在渲染页面内容...';
+        // Initial render of the first 15 blocks
+        updateLoadingProgress(50);
+        loadingText.textContent = '正在渲染内容...';
+        
+        const content = await renderBlocks(data.blocks);
+        
+        updateLoadingProgress(80);
+        loadingText.textContent = '正在完成加载...';
+        
+        // Display initial content
+        const pageContent = document.getElementById('pageContent');
+        pageContent.innerHTML = content;
+        
+        // Initialize image lazy loading for the initial content
+        imageObserver.init();
         
         // Initialize table of contents
         TableOfContents.init();
         
-        // Reset block counters
-        setTotalBlocks(data.blocks.length);
-        setLoadedBlocks(0);
+        // Post-process the initial content
+        postProcessContent(pageContent);
         
-        updateLoadingProgress(50);
-        
-        // Process blocks in batches and handle list types specially
-        let content = '';
-        let currentList = null;
-        
-        for (const block of data.blocks) {
-            try {
-                // Special handling for list items to group them
-                if (block.type === 'bulleted_list_item' || block.type === 'numbered_list_item') {
-                    const listTag = block.type === 'bulleted_list_item' ? 'ul' : 'ol';
-                    
-                    // Start a new list if needed
-                    if (!currentList || currentList.tag !== listTag) {
-                        // Close previous list if exists
-                        if (currentList) {
-                            content += `</${currentList.tag}>`;
-                        }
-                        
-                        // Start new list
-                        content += `<${listTag} class="my-4 ${listTag === 'ul' ? 'list-disc' : 'list-decimal'} ml-6">`;
-                        currentList = { tag: listTag, type: block.type };
-                    }
-                    
-                    // Add the list item
-                    content += await renderBlock(block);
-                } else {
-                    // For non-list items, close any open list
-                    if (currentList) {
-                        content += `</${currentList.tag}>`;
-                        currentList = null;
-                    }
-                    
-                    // Add the block content
-                    content += await renderBlock(block);
-                }
-            } catch (error) {
-                console.error(`Error rendering block ${block.id}:`, error);
-                content += `<div class="text-red-500">Error rendering a block: ${error.message}</div>`;
-            }
-        }
-        
-        // Close any remaining open list
-        if (currentList) {
-            content += `</${currentList.tag}>`;
-        }
-        
-        document.getElementById('pageContent').innerHTML = content;
-        
-        // Initialize lazy loading for images
-        document.querySelectorAll('img[data-src]').forEach(img => {
-            imageObserver.observe(img);
-        });
-        
-        // Apply syntax highlighting to code blocks using the new highlighter
-        codeHighlighter.highlightAllCodeBlocks();
-        
-        // Initialize TOC after content is rendered
-        TableOfContents.build();
-        
-        // Show container with animation when everything is loaded
+        // Show the container
         updateLoadingProgress(90);
-        loadingText.textContent = '优化显示效果...';
-        
         setTimeout(() => {
             container.classList.add('loaded');
             updateLoadingProgress(100);
-        }, 300);
+            
+            // Start loading remaining content in background if there's more
+            if (data.has_more && data.next_cursor) {
+                loadMoreContentInBackground(targetPageId, data.next_cursor, pageContent);
+            }
+        }, 200);
         
     } catch (error) {
-        console.error('Error loading page content:', error);
-        document.getElementById('pageContent').innerHTML = `
+        console.error('Error loading page:', error);
+        const pageContent = document.getElementById('pageContent');
+        pageContent.innerHTML = `
             <div class="text-center text-red-500">
-                <p>Error loading page content.</p>
-                <p class="text-sm mt-2">${error.message}</p>
-                <button onclick="window.location.reload()" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
+                <div class="text-6xl mb-4">⚠️</div>
+                <h2 class="text-2xl font-bold mb-4">页面加载失败</h2>
+                <p class="mb-4">无法加载页面内容。请检查页面ID是否正确，或稍后重试。</p>
+                <p class="text-sm text-gray-600 mb-4">错误信息：${error.message}</p>
+                <button onclick="window.location.reload()" 
+                        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
                     重新加载
                 </button>
             </div>`;
         
-        // Update loading state
-        const loadingText = document.querySelector('.loading-text');
-        if (loadingText) {
-            loadingText.textContent = '加载失败，请重试...';
-        }
-        updateLoadingProgress(100);
-        
-        // Hide loading overlay
+        // Show container even on error
+        const container = document.querySelector('.container');
         setTimeout(() => {
-            const loadingOverlay = document.getElementById('loadingOverlay');
-            if (loadingOverlay) {
-                loadingOverlay.classList.add('fade-out');
-                setTimeout(() => {
-                    loadingOverlay.style.display = 'none';
-                    loadingOverlay.classList.remove('fade-out');
-                }, 500);
-            }
-            
-            // Show container even on error to display error message
-            document.querySelector('.container').classList.add('loaded');
-        }, 1000);
+            container.classList.add('loaded');
+        }, 100);
+    }
+}
+
+/**
+ * Load remaining content in background to avoid blocking initial page load
+ * @param {string} pageId - The page ID
+ * @param {string} cursor - The cursor for next batch
+ * @param {HTMLElement} pageContent - The content container
+ */
+async function loadMoreContentInBackground(pageId, cursor, pageContent) {
+    try {
+        console.log('Loading more content in background...');
         
-        // Complete page transition if was transitioning
-        if (PageTransition.isTransitioning) {
-            PageTransition.complete();
+        // Add a loading indicator at the bottom
+        const loadingIndicator = document.createElement('div');
+        loadingIndicator.id = 'background-loading';
+        loadingIndicator.className = 'text-center text-gray-500 py-8';
+        loadingIndicator.innerHTML = `
+            <div class="flex items-center justify-center space-x-2">
+                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                <span>正在加载更多内容...</span>
+            </div>
+        `;
+        pageContent.appendChild(loadingIndicator);
+        
+        let hasMore = true;
+        let nextCursor = cursor;
+        let batchCount = 0;
+        
+        while (hasMore && batchCount < 10) { // Limit to prevent infinite loops
+            try {
+                // Load next batch with rate limiting delay
+                if (batchCount > 0) {
+                    await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay between batches
+                }
+                
+                const response = await fetch(`/api/page/${pageId}/more?cursor=${nextCursor}&limit=20`);
+                
+                if (!response.ok) {
+                    throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+                }
+                
+                const moreData = await response.json();
+                
+                if (moreData.blocks && moreData.blocks.length > 0) {
+                    // Render the new blocks
+                    const newContent = await renderBlocks(moreData.blocks);
+                    
+                    // Create a temporary container for the new content
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = newContent;
+                    
+                    // Insert new content before the loading indicator
+                    while (tempDiv.firstChild) {
+                        pageContent.insertBefore(tempDiv.firstChild, loadingIndicator);
+                    }
+                    
+                    // Post-process the new content
+                    postProcessContent(pageContent);
+                    
+                    console.log(`Loaded batch ${batchCount + 1}: ${moreData.blocks.length} blocks`);
+                }
+                
+                hasMore = moreData.has_more;
+                nextCursor = moreData.next_cursor;
+                batchCount++;
+                
+            } catch (error) {
+                console.error(`Error loading batch ${batchCount + 1}:`, error);
+                break; // Stop loading more on error
+            }
+        }
+        
+        // Remove loading indicator
+        const indicator = document.getElementById('background-loading');
+        if (indicator) {
+            indicator.remove();
+        }
+        
+        console.log(`Background loading completed. Loaded ${batchCount} additional batches.`);
+        
+    } catch (error) {
+        console.error('Error in background loading:', error);
+        const indicator = document.getElementById('background-loading');
+        if (indicator) {
+            indicator.innerHTML = `
+                <div class="text-red-500">
+                    <span>加载更多内容时出错</span>
+                </div>
+            `;
+            setTimeout(() => indicator.remove(), 3000);
         }
     }
+}
+
+/**
+ * Render multiple blocks
+ * @param {Array} blocks - Array of blocks to render
+ * @returns {string} - HTML content
+ */
+async function renderBlocks(blocks) {
+    let content = '';
+    let currentList = null;
+    
+    for (const block of blocks) {
+        try {
+            // Special handling for list items to group them
+            if (block.type === 'bulleted_list_item' || block.type === 'numbered_list_item') {
+                const listTag = block.type === 'bulleted_list_item' ? 'ul' : 'ol';
+                
+                // Start a new list if needed
+                if (!currentList || currentList.tag !== listTag) {
+                    // Close previous list if exists
+                    if (currentList) {
+                        content += `</${currentList.tag}>`;
+                    }
+                    
+                    // Start new list
+                    content += `<${listTag} class="my-4 ${listTag === 'ul' ? 'list-disc' : 'list-decimal'} ml-6">`;
+                    currentList = { tag: listTag, type: block.type };
+                }
+                
+                // Add the list item
+                content += await renderBlock(block);
+            } else {
+                // For non-list items, close any open list
+                if (currentList) {
+                    content += `</${currentList.tag}>`;
+                    currentList = null;
+                }
+                
+                // Add the block content
+                content += await renderBlock(block);
+            }
+        } catch (error) {
+            console.error(`Error rendering block ${block.id}:`, error);
+            content += `<div class="text-red-500">Error rendering a block: ${error.message}</div>`;
+        }
+    }
+    
+    // Close any remaining open list
+    if (currentList) {
+        content += `</${currentList.tag}>`;
+    }
+    
+    return content;
+}
+
+/**
+ * Post-process rendered content (apply syntax highlighting, etc.)
+ * @param {HTMLElement} container - The container with rendered content
+ */
+function postProcessContent(container) {
+    // Apply syntax highlighting to code blocks
+    codeHighlighter.highlightAllCodeBlocks();
+    
+    // Initialize lazy loading for new images
+    container.querySelectorAll('img[data-src]').forEach(img => {
+        imageObserver.observe(img);
+    });
 }
 
 /**

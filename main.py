@@ -929,9 +929,9 @@ async def get_pages(suffix: Optional[str] = None):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/page/{page_id}")
-async def get_page(page_id: str):
+async def get_page(page_id: str, limit: Optional[int] = None, cursor: Optional[str] = None):
     try:
-        logger.info(f"Fetching page content for API request: {page_id}")
+        logger.info(f"Fetching page content for API request: {page_id}, limit={limit}, cursor={cursor}")
         
         # Add timeout for Notion API calls
         import asyncio
@@ -1015,42 +1015,62 @@ async def get_page(page_id: str):
             logger.error("Page info not found")
             raise HTTPException(status_code=404, detail="Page not found")
         
-        # Get page blocks with timeout
+        # Get page blocks with timeout and pagination support
         blocks = []
         has_more = True
-        cursor = None
+        next_cursor = cursor
         total_blocks = 0
+        blocks_processed = 0
         
-        logger.info("Fetching page blocks...")
+        # Set default limit to 15 for initial load, None for subsequent loads
+        effective_limit = limit if limit is not None else (15 if cursor is None else 100)
+        
+        logger.info(f"Fetching page blocks with limit={effective_limit}, cursor={cursor}")
         try:
-            while has_more:
+            while has_more and (effective_limit is None or blocks_processed < effective_limit):
                 # Wrap block children list call with timeout
                 loop = asyncio.get_event_loop()
-                if cursor:
-                    response = await asyncio.wait_for(
-                        loop.run_in_executor(None, partial(notion.blocks.children.list, block_id=page_id, start_cursor=cursor)),
-                        timeout=20.0  # 20 second timeout for blocks
-                    )
-                else:
-                    response = await asyncio.wait_for(
-                        loop.run_in_executor(None, partial(notion.blocks.children.list, block_id=page_id)),
-                        timeout=20.0
-                    )
+                
+                # Build API parameters
+                api_params = {"block_id": page_id}
+                if next_cursor:
+                    api_params["start_cursor"] = next_cursor
+                
+                # Calculate page size for this request
+                remaining_limit = effective_limit - blocks_processed if effective_limit else 100
+                page_size = min(100, remaining_limit) if effective_limit else 100
+                api_params["page_size"] = page_size
+                
+                response = await asyncio.wait_for(
+                    loop.run_in_executor(None, partial(notion.blocks.children.list, **api_params)),
+                    timeout=20.0  # 20 second timeout for blocks
+                )
                 
                 current_blocks = response["results"]
                 total_blocks += len(current_blocks)
                 logger.info(f"Retrieved {len(current_blocks)} blocks (total: {total_blocks})")
                 
                 for block in current_blocks:
+                    if effective_limit and blocks_processed >= effective_limit:
+                        break
+                        
                     logger.info(f"Processing block type: {block['type']}")
                     processed_block = process_block_content(block)
                     if processed_block:
                         blocks.append(processed_block)
+                        blocks_processed += 1
                 
                 has_more = response["has_more"]
                 if has_more:
-                    cursor = response["next_cursor"]
-                    logger.info("More blocks available, continuing...")
+                    next_cursor = response["next_cursor"]
+                    logger.info(f"More blocks available, next_cursor: {next_cursor}")
+                else:
+                    next_cursor = None
+                    
+                # Stop if we've reached the limit
+                if effective_limit and blocks_processed >= effective_limit:
+                    logger.info(f"Reached limit of {effective_limit} blocks")
+                    break
                     
         except asyncio.TimeoutError:
             logger.error(f"Timeout retrieving blocks for page {page_id}")
@@ -1058,10 +1078,22 @@ async def get_page(page_id: str):
             logger.info(f"Returning partial content with {len(blocks)} blocks")
             
         logger.info(f"Successfully processed {len(blocks)} blocks")
-        return {
+        
+        response_data = {
             "page": page_info,
-            "blocks": blocks
+            "blocks": blocks,
+            "has_more": has_more,
+            "next_cursor": next_cursor,
+            "total_loaded": blocks_processed
         }
+        
+        # Add pagination info for debugging
+        if cursor is None:
+            logger.info(f"Initial load: returned {len(blocks)} blocks")
+        else:
+            logger.info(f"Subsequent load: returned {len(blocks)} blocks with cursor {cursor}")
+        
+        return response_data
         
     except HTTPException:
         # Re-raise HTTP exceptions as-is
@@ -1101,6 +1133,86 @@ async def get_blocks(page_id: str):
     except Exception as e:
         logger.error(f"Error fetching blocks: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# 添加专门的增量加载更多内容的端点
+@app.get("/api/page/{page_id}/more")
+async def get_more_blocks(page_id: str, cursor: str, limit: Optional[int] = 20):
+    """
+    获取页面的更多块内容 - 用于增量加载避免API限制
+    """
+    try:
+        logger.info(f"Fetching more blocks for page {page_id} with cursor {cursor}, limit={limit}")
+        
+        import asyncio
+        from functools import partial
+        
+        blocks = []
+        has_more = True
+        next_cursor = cursor
+        blocks_processed = 0
+        
+        logger.info(f"Loading more blocks with limit={limit}")
+        try:
+            while has_more and blocks_processed < limit:
+                # Wrap block children list call with timeout
+                loop = asyncio.get_event_loop()
+                
+                # Build API parameters
+                api_params = {
+                    "block_id": page_id,
+                    "start_cursor": next_cursor,
+                    "page_size": min(100, limit - blocks_processed)
+                }
+                
+                response = await asyncio.wait_for(
+                    loop.run_in_executor(None, partial(notion.blocks.children.list, **api_params)),
+                    timeout=20.0  # 20 second timeout for blocks
+                )
+                
+                current_blocks = response["results"]
+                logger.info(f"Retrieved {len(current_blocks)} more blocks")
+                
+                for block in current_blocks:
+                    if blocks_processed >= limit:
+                        break
+                        
+                    logger.info(f"Processing additional block type: {block['type']}")
+                    processed_block = process_block_content(block)
+                    if processed_block:
+                        blocks.append(processed_block)
+                        blocks_processed += 1
+                
+                has_more = response["has_more"]
+                if has_more:
+                    next_cursor = response["next_cursor"]
+                    logger.info(f"More blocks still available, next_cursor: {next_cursor}")
+                else:
+                    next_cursor = None
+                    
+                # Stop if we've reached the limit
+                if blocks_processed >= limit:
+                    logger.info(f"Reached limit of {limit} additional blocks")
+                    break
+                    
+        except asyncio.TimeoutError:
+            logger.error(f"Timeout retrieving more blocks for page {page_id}")
+            logger.info(f"Returning partial additional content with {len(blocks)} blocks")
+            
+        logger.info(f"Successfully processed {len(blocks)} additional blocks")
+        
+        return {
+            "blocks": blocks,
+            "has_more": has_more,
+            "next_cursor": next_cursor,
+            "total_loaded": blocks_processed
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting more blocks for page {page_id}: {e}")
+        logger.error("Stack trace:", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 @app.get("/api/notion/page/{page_id}")
 async def get_notion_page(page_id: str):
