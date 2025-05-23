@@ -425,7 +425,8 @@ def process_block_content(block: dict) -> dict:
         result = {
             "type": block_type,
             "text": text,
-            "color": color
+            "color": color,
+            "id": block.get("id")  # Include block ID for frontend use
         }
 
         # Add block content specific data

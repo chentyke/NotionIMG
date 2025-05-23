@@ -223,7 +223,8 @@ async function renderBlock(block) {
         case 'heading_1':
             // Use the processed text from our API response
             const h1Text = block.text || '';
-            const h1Id = `heading-${block.id || generateHeadingId(h1Text)}`;
+            // Use actual block ID if available, otherwise fall back to generated ID
+            const h1Id = block.id ? block.id.replace(/-/g, '') : generateHeadingId(h1Text);
             // Add to table of contents
             TableOfContents.addHeading(1, h1Text.replace(/<[^>]*>/g, ''), h1Id);
             return `<h1 id="${h1Id}" ${blockColorStyle ? `style="${blockColorStyle}"` : ''}>${h1Text}</h1>`;
@@ -231,7 +232,8 @@ async function renderBlock(block) {
         case 'heading_2':
             // Use the processed text from our API response
             const h2Text = block.text || '';
-            const h2Id = `heading-${block.id || generateHeadingId(h2Text)}`;
+            // Use actual block ID if available, otherwise fall back to generated ID
+            const h2Id = block.id ? block.id.replace(/-/g, '') : generateHeadingId(h2Text);
             // Add to table of contents
             TableOfContents.addHeading(2, h2Text.replace(/<[^>]*>/g, ''), h2Id);
             return `<h2 id="${h2Id}" ${blockColorStyle ? `style="${blockColorStyle}"` : ''}>${h2Text}</h2>`;
@@ -239,7 +241,8 @@ async function renderBlock(block) {
         case 'heading_3':
             // Use the processed text from our API response
             const h3Text = block.text || '';
-            const h3Id = `heading-${block.id || generateHeadingId(h3Text)}`;
+            // Use actual block ID if available, otherwise fall back to generated ID
+            const h3Id = block.id ? block.id.replace(/-/g, '') : generateHeadingId(h3Text);
             // Add to table of contents
             TableOfContents.addHeading(3, h3Text.replace(/<[^>]*>/g, ''), h3Id);
             return `<h3 id="${h3Id}" ${blockColorStyle ? `style="${blockColorStyle}"` : ''}>${h3Text}</h3>`;

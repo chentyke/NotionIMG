@@ -213,31 +213,37 @@ function updateFloatingTocScrollSpy() {
         const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
         let newActiveHeading = null;
         
-        // Find the current heading based on scroll position
-        // 遍历所有标题，找到当前可见的标题
-        for (let i = 0; i < floatingTocHeadings.length; i++) {
-            const heading = document.getElementById(floatingTocHeadings[i].id);
-            if (heading) {
-                // 使用 offsetTop 获取元素距离文档顶部的准确位置
-                const headingTop = heading.offsetTop;
-                const headingBottom = headingTop + heading.offsetHeight;
-                
-                // 考虑浮动标题头的高度偏移
-                const offset = 100;
-                
-                // 如果当前滚动位置在这个标题的范围内，或者超过了这个标题
-                if (scrollTop + offset >= headingTop) {
-                    newActiveHeading = floatingTocHeadings[i].id;
-                    
-                    // 检查是否有下一个标题，如果当前位置还没到下一个标题，就继续使用当前标题
-                    if (i < floatingTocHeadings.length - 1) {
-                        const nextHeading = document.getElementById(floatingTocHeadings[i + 1].id);
-                        if (nextHeading && scrollTop + offset < nextHeading.offsetTop) {
-                            break; // 找到了当前标题，停止查找
+        // 检查页面是否滚动到顶部（在第一个标题之前）
+        const firstHeading = document.getElementById(floatingTocHeadings[0].id);
+        if (firstHeading) {
+            const firstHeadingTop = firstHeading.offsetTop;
+            const offset = 150; // 增加偏移量，确保标题完全进入视口才激活
+            
+            // 如果滚动位置在第一个标题之前，不显示任何活跃标题
+            if (scrollTop + offset < firstHeadingTop) {
+                newActiveHeading = null;
+            } else {
+                // 遍历所有标题，找到当前可见的标题
+                for (let i = 0; i < floatingTocHeadings.length; i++) {
+                    const heading = document.getElementById(floatingTocHeadings[i].id);
+                    if (heading) {
+                        const headingTop = heading.offsetTop;
+                        
+                        // 如果当前滚动位置超过了这个标题
+                        if (scrollTop + offset >= headingTop) {
+                            newActiveHeading = floatingTocHeadings[i].id;
+                            
+                            // 检查是否有下一个标题，如果当前位置还没到下一个标题，就继续使用当前标题
+                            if (i < floatingTocHeadings.length - 1) {
+                                const nextHeading = document.getElementById(floatingTocHeadings[i + 1].id);
+                                if (nextHeading && scrollTop + offset < nextHeading.offsetTop) {
+                                    break; // 找到了当前标题，停止查找
+                                }
+                            } else {
+                                // 这是最后一个标题
+                                break;
+                            }
                         }
-                    } else {
-                        // 这是最后一个标题
-                        break;
                     }
                 }
             }
@@ -268,8 +274,14 @@ function updateFloatingTocScrollSpy() {
                             floatingBreadcrumb.innerHTML = breadcrumbPath;
                         }
                     } else {
-                        // 如果没有活跃标题，显示默认文本
-                        floatingBreadcrumb.innerHTML = '<span class="breadcrumb-separator">/</span><span style="color: var(--text-tertiary);">选择章节...</span>';
+                        // 如果没有活跃标题，只显示页面标题
+                        const pageTitle = document.querySelector('.page-title');
+                        if (pageTitle) {
+                            const title = pageTitle.textContent.trim();
+                            floatingBreadcrumb.innerHTML = `<span class="main-title">${title}</span>`;
+                        } else {
+                            floatingBreadcrumb.innerHTML = '<span class="main-title">页面内容</span>';
+                        }
                     }
                 }
             }
@@ -349,6 +361,7 @@ function hideFloatingToc() {
  * Scroll to specific heading
  */
 function scrollToHeading(headingId) {
+    console.log('Scrolling to heading:', headingId);
     const heading = document.getElementById(headingId);
     if (heading) {
         // 先隐藏目录
@@ -358,13 +371,18 @@ function scrollToHeading(headingId) {
         setTimeout(() => {
             // 使用 offsetTop 获取准确的位置
             const headingTop = heading.offsetTop;
-            const offset = 120; // Account for floating header
+            const offset = 100; // Account for floating header
             const targetPosition = headingTop - offset;
+            
+            console.log('Target scroll position:', targetPosition);
             
             window.scrollTo({
                 top: Math.max(0, targetPosition), // 确保不会滚动到负数位置
                 behavior: 'smooth'
             });
+            
+            // 更新URL hash
+            window.history.replaceState(null, null, `#${headingId}`);
             
             // 强制更新当前活跃标题
             setTimeout(() => {
@@ -393,6 +411,37 @@ function scrollToHeading(headingId) {
                 }
             }, 300);
         }, 200);
+    } else {
+        console.warn('Heading not found:', headingId);
+    }
+}
+
+/**
+ * Handle URL fragment on page load
+ */
+function handleUrlFragment() {
+    const hash = window.location.hash;
+    if (hash && hash.startsWith('#')) {
+        const headingId = hash.substring(1);
+        console.log('URL fragment detected:', headingId);
+        
+        // 延迟处理，确保页面内容已加载
+        setTimeout(() => {
+            const heading = document.getElementById(headingId);
+            if (heading) {
+                console.log('Found heading for fragment, scrolling to:', headingId);
+                scrollToHeading(headingId);
+            } else {
+                console.warn('Heading not found for fragment:', headingId);
+                // 如果标题不存在，尝试去掉fragment前缀重新查找
+                const alternativeId = headingId.replace(/^heading-/, '');
+                const alternativeHeading = document.getElementById(alternativeId);
+                if (alternativeHeading) {
+                    console.log('Found alternative heading:', alternativeId);
+                    scrollToHeading(alternativeId);
+                }
+            }
+        }, 1000); // 增加延迟确保内容完全加载
     }
 }
 
@@ -419,6 +468,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 setTimeout(() => {
                     initFloatingHeader();
                     initFloatingToc();
+                    handleUrlFragment(); // Handle URL fragment after page load
                 }, 300);
             });
         }
@@ -433,6 +483,7 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => {
                 initFloatingHeader();
                 initFloatingToc();
+                handleUrlFragment(); // Handle URL fragment after initial page load
             }, 300);
         });
     }
