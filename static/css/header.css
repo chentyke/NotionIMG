@@ -800,9 +800,23 @@
         border-radius: 16px;
     }
     
+    /* 移动端选中状态横杠位置优化 - 避免与文字重合 */
+    .floating-toc-list a.active::before {
+        left: 6px; /* 移动端减少左边距，避免与文字重合 */
+        width: 3px; /* 稍微减少宽度 */
+        height: 18px; /* 稍微减少高度 */
+    }
+    
     .floating-toc-list .level-1 {
         padding-left: 22px;
         font-size: 1.0625rem;
+    }
+    
+    /* 移动端一级标题选中横杠 */
+    .floating-toc-list .level-1.active::before {
+        left: 6px; /* 移动端优化位置 */
+        width: 3px;
+        height: 18px;
     }
     
     .floating-toc-list .level-2 {
@@ -810,9 +824,21 @@
         font-size: 1rem;
     }
     
+    /* 移动端二级标题去掉连接线，简化视觉 */
+    .floating-toc-list .level-2::before,
+    .floating-toc-list .level-2::after {
+        display: none; /* 移动端隐藏连接线，简化界面 */
+    }
+    
     .floating-toc-list .level-3 {
         padding-left: 58px;
         font-size: 0.9375rem;
+    }
+    
+    /* 移动端三级标题去掉连接线，简化视觉 */
+    .floating-toc-list .level-3::before,
+    .floating-toc-list .level-3::after {
+        display: none; /* 移动端隐藏连接线，简化界面 */
     }
 }
 

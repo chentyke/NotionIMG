@@ -436,6 +436,18 @@ function showFloatingToc() {
     floatingToc.classList.add('visible');
     floatingTocVisible = true;
     
+    // 在目录展开后，确保当前活跃章节被正确高亮并滚动到视野中
+    setTimeout(() => {
+        // 先更新当前活跃章节（基于保存的滚动位置）
+        updateCurrentActiveHeading();
+        
+        // 高亮当前活跃章节
+        highlightCurrentActiveHeading();
+        
+        // 滚动到当前活跃章节
+        scrollToActiveHeadingInToc();
+    }, 100); // 等待目录完全展开
+    
     // 添加键盘事件监听
     const handleKeyDown = (e) => {
         if (e.key === 'Escape') {
@@ -447,6 +459,100 @@ function showFloatingToc() {
     
     // 将键盘监听器存储到floatingToc元素上，以便后续移除
     floatingToc._handleKeyDown = handleKeyDown;
+}
+
+/**
+ * Update current active heading based on saved scroll position
+ */
+function updateCurrentActiveHeading() {
+    if (floatingTocHeadings.length === 0) return;
+    
+    let newActiveHeading = null;
+    const scrollTop = scrollPosition; // 使用保存的滚动位置
+    
+    // 检查页面是否滚动到顶部（在第一个标题之前）
+    const firstHeading = document.getElementById(floatingTocHeadings[0].id);
+    if (firstHeading) {
+        const firstHeadingTop = firstHeading.offsetTop;
+        const offset = 150;
+        
+        if (scrollTop + offset >= firstHeadingTop) {
+            // 遍历所有标题，找到当前位置对应的标题
+            for (let i = 0; i < floatingTocHeadings.length; i++) {
+                const heading = document.getElementById(floatingTocHeadings[i].id);
+                if (heading) {
+                    const headingTop = heading.offsetTop;
+                    
+                    if (scrollTop + offset >= headingTop) {
+                        newActiveHeading = floatingTocHeadings[i].id;
+                        
+                        // 检查是否有下一个标题
+                        if (i < floatingTocHeadings.length - 1) {
+                            const nextHeading = document.getElementById(floatingTocHeadings[i + 1].id);
+                            if (nextHeading && scrollTop + offset < nextHeading.offsetTop) {
+                                break;
+                            }
+                        } else {
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    currentActiveHeading = newActiveHeading;
+}
+
+/**
+ * Highlight current active heading in TOC
+ */
+function highlightCurrentActiveHeading() {
+    const tocLinks = document.querySelectorAll('#floatingTocList a');
+    tocLinks.forEach(link => {
+        if (currentActiveHeading && link.getAttribute('href') === `#${currentActiveHeading}`) {
+            link.classList.add('active');
+        } else {
+            link.classList.remove('active');
+        }
+    });
+}
+
+/**
+ * Scroll to active heading in TOC list with enhanced animation
+ */
+function scrollToActiveHeadingInToc() {
+    if (!currentActiveHeading) return;
+    
+    const activeTocLink = document.querySelector(`#floatingTocList a[href="#${currentActiveHeading}"]`);
+    if (!activeTocLink) return;
+    
+    const tocContent = document.querySelector('.floating-toc-content');
+    if (!tocContent) return;
+    
+    // 计算需要滚动的位置
+    const linkRect = activeTocLink.getBoundingClientRect();
+    const contentRect = tocContent.getBoundingClientRect();
+    
+    // 目标位置：将当前章节滚动到目录容器的中央
+    const targetScroll = activeTocLink.offsetTop - (contentRect.height / 2) + (linkRect.height / 2);
+    
+    // 平滑滚动到目标位置
+    tocContent.scrollTo({
+        top: Math.max(0, targetScroll),
+        behavior: 'smooth'
+    });
+    
+    // 添加视觉强调效果
+    activeTocLink.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+    activeTocLink.style.transform = 'translateY(-2px) scale(1.02)';
+    activeTocLink.style.boxShadow = '0 8px 24px rgba(59, 130, 246, 0.2), 0 4px 12px rgba(0, 0, 0, 0.1)';
+    
+    // 恢复正常状态
+    setTimeout(() => {
+        activeTocLink.style.transform = '';
+        activeTocLink.style.boxShadow = '';
+    }, 600);
 }
 
 /**
