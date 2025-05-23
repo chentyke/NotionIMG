@@ -151,43 +151,6 @@
     width: 100%;
 }
 
-/* 浮动目录按钮样式 */
-.floating-toc-button {
-    width: 32px;
-    height: 32px;
-    min-width: 32px;
-    margin: 0;
-    padding: 0;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(255, 255, 255, 0.8);
-    border: 1px solid rgba(0, 0, 0, 0.08);
-    color: var(--text-tertiary);
-    transition: all 0.2s ease;
-    backdrop-filter: blur(10px);
-    flex-shrink: 0;
-    cursor: pointer;
-}
-
-.floating-toc-button i {
-    font-size: 0.875rem;
-}
-
-.floating-toc-button:hover {
-    background: rgba(255, 255, 255, 1);
-    border-color: rgba(0, 0, 0, 0.12);
-    transform: scale(1.05);
-    color: var(--text-primary);
-}
-
-.floating-toc-button.active {
-    background: rgba(59, 130, 246, 0.9);
-    border-color: rgba(59, 130, 246, 0.3);
-    color: white;
-}
-
 .floating-header h1 {
     font-size: 1rem;
     font-weight: 600;
@@ -246,63 +209,151 @@
     color: white;
 }
 
-/* 浮动目录面板样式 */
-.floating-toc {
+/* 独立浮动目录岛按钮 */
+.floating-toc-island {
     position: fixed;
-    top: 70px;
-    left: 50%;
-    transform: translateX(-50%) translateY(-20px);
-    z-index: 999;
-    background: rgba(255, 255, 255, 0.98);
+    bottom: 100px;
+    right: 24px;
+    z-index: 1001;
+    width: 56px;
+    height: 56px;
+    border-radius: 28px;
+    background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border-radius: 16px;
     border: 1px solid rgba(255, 255, 255, 0.3);
     box-shadow: 
-        0 12px 40px rgba(0, 0, 0, 0.15),
-        0 4px 16px rgba(0, 0, 0, 0.1),
-        inset 0 1px 0 rgba(255, 255, 255, 0.5);
+        0 8px 32px rgba(0, 0, 0, 0.12),
+        0 2px 12px rgba(0, 0, 0, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     opacity: 0;
     visibility: hidden;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    max-width: 400px;
-    width: calc(100vw - 64px);
-    min-width: 280px;
-    max-height: 400px;
-    overflow: hidden;
+    transform: translateY(20px) scale(0.8);
 }
 
-.floating-toc.visible {
+.floating-toc-island.visible {
     opacity: 1;
     visibility: visible;
-    transform: translateX(-50%) translateY(0);
+    transform: translateY(0) scale(1);
 }
 
-.floating-toc-content {
-    padding: 20px;
+.floating-toc-island i {
+    font-size: 1.25rem;
+    transition: all 0.2s ease;
 }
 
-.floating-toc-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-}
-
-.floating-toc-header span {
-    font-size: 1rem;
-    font-weight: 600;
+.floating-toc-island:hover {
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: 
+        0 16px 48px rgba(0, 0, 0, 0.15),
+        0 4px 16px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.5);
     color: var(--text-primary);
 }
 
-.floating-toc-close {
-    width: 28px;
-    height: 28px;
+.floating-toc-island:active {
+    transform: translateY(-2px) scale(1.02);
+}
+
+/* 全屏目录弹窗 */
+.fullscreen-toc {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 9999;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fullscreen-toc.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.fullscreen-toc-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0;
+}
+
+.fullscreen-toc.visible .fullscreen-toc-backdrop {
+    opacity: 1;
+}
+
+.fullscreen-toc-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.8);
+    width: 90vw;
+    max-width: 600px;
+    max-height: 80vh;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 
+        0 24px 64px rgba(0, 0, 0, 0.15),
+        0 8px 32px rgba(0, 0, 0, 0.1),
+        inset 0 2px 0 rgba(255, 255, 255, 0.5);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0;
+    overflow: hidden;
+}
+
+.fullscreen-toc.visible .fullscreen-toc-container {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+}
+
+.fullscreen-toc-content {
+    padding: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.fullscreen-toc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 28px 20px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.fullscreen-toc-header h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.fullscreen-toc-close {
+    width: 40px;
+    height: 40px;
     border: none;
-    background: rgba(0, 0, 0, 0.05);
-    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.06);
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -311,66 +362,83 @@
     transition: all 0.2s ease;
 }
 
-.floating-toc-close:hover {
+.fullscreen-toc-close:hover {
     background: rgba(0, 0, 0, 0.1);
     color: var(--text-primary);
+    transform: scale(1.05);
 }
 
-.floating-toc-list {
+.fullscreen-toc-close i {
+    font-size: 1.125rem;
+}
+
+.fullscreen-toc-list-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 28px 28px;
+}
+
+.fullscreen-toc-list {
     list-style: none;
     padding: 0;
     margin: 0;
-    max-height: 320px;
-    overflow-y: auto;
 }
 
-.floating-toc-list li {
+.fullscreen-toc-list li {
     margin: 0;
     padding: 0;
 }
 
-.floating-toc-list a {
+.fullscreen-toc-list a {
     display: block;
-    padding: 8px 12px;
+    padding: 12px 16px;
     color: var(--text-secondary);
     text-decoration: none;
-    border-radius: 8px;
-    transition: all 0.2s ease;
-    font-size: 0.875rem;
-    line-height: 1.4;
-    border-left: 2px solid transparent;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+    line-height: 1.5;
+    border-left: 3px solid transparent;
+    margin-bottom: 4px;
+    cursor: pointer;
 }
 
-.floating-toc-list a:hover {
+.fullscreen-toc-list a:hover {
     background: rgba(59, 130, 246, 0.08);
     color: var(--text-primary);
     border-left-color: rgba(59, 130, 246, 0.3);
+    transform: translateX(4px);
 }
 
-.floating-toc-list a.active {
-    background: rgba(59, 130, 246, 0.1);
+.fullscreen-toc-list a.active {
+    background: rgba(59, 130, 246, 0.12);
     color: var(--primary-color);
     border-left-color: var(--primary-color);
+    font-weight: 600;
+    transform: translateX(4px);
+}
+
+/* 标题层级样式 */
+.fullscreen-toc-list .level-1 {
+    padding-left: 16px;
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.fullscreen-toc-list .level-2 {
+    padding-left: 32px;
+    font-size: 1rem;
     font-weight: 500;
 }
 
-/* 标题层级缩进 */
-.floating-toc-list .level-1 {
-    padding-left: 12px;
-}
-
-.floating-toc-list .level-2 {
-    padding-left: 24px;
-    font-size: 0.8125rem;
-}
-
-.floating-toc-list .level-3 {
-    padding-left: 36px;
-    font-size: 0.8125rem;
+.fullscreen-toc-list .level-3 {
+    padding-left: 48px;
+    font-size: 0.9375rem;
     color: var(--text-tertiary);
+    font-weight: 400;
 }
 
-/* Dark theme floating header */
+/* Dark theme styles */
 @media (prefers-color-scheme: dark) {
     .floating-header {
         background: rgba(17, 24, 39, 0.95);
@@ -389,45 +457,54 @@
             inset 0 1px 0 rgba(255, 255, 255, 0.15);
     }
     
-    .floating-toc-button,
     .floating-header .copy-link-button {
         background: rgba(55, 65, 81, 0.8);
         border-color: rgba(255, 255, 255, 0.1);
         color: var(--text-tertiary);
     }
     
-    .floating-toc-button:hover,
     .floating-header .copy-link-button:hover {
         background: rgba(75, 85, 99, 1);
         border-color: rgba(255, 255, 255, 0.2);
         color: var(--text-primary);
     }
     
-    .floating-toc-button.active {
-        background: rgba(59, 130, 246, 0.9);
-        border-color: rgba(59, 130, 246, 0.3);
-        color: white;
-    }
-    
-    .floating-toc {
-        background: rgba(17, 24, 39, 0.98);
+    .floating-toc-island {
+        background: rgba(17, 24, 39, 0.95);
         border-color: rgba(255, 255, 255, 0.1);
         box-shadow: 
-            0 12px 40px rgba(0, 0, 0, 0.4),
-            0 4px 16px rgba(0, 0, 0, 0.3),
+            0 8px 32px rgba(0, 0, 0, 0.3),
+            0 2px 12px rgba(0, 0, 0, 0.2),
             inset 0 1px 0 rgba(255, 255, 255, 0.1);
     }
     
-    .floating-toc-header {
+    .floating-toc-island:hover {
+        box-shadow: 
+            0 16px 48px rgba(0, 0, 0, 0.4),
+            0 4px 16px rgba(0, 0, 0, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    }
+    
+    .fullscreen-toc-container {
+        background: rgba(17, 24, 39, 0.98);
+        border-color: rgba(255, 255, 255, 0.1);
+        box-shadow: 
+            0 24px 64px rgba(0, 0, 0, 0.4),
+            0 8px 32px rgba(0, 0, 0, 0.3),
+            inset 0 2px 0 rgba(255, 255, 255, 0.1);
+    }
+    
+    .fullscreen-toc-header {
+        background: rgba(17, 24, 39, 0.9);
         border-bottom-color: rgba(255, 255, 255, 0.1);
     }
     
-    .floating-toc-close {
-        background: rgba(255, 255, 255, 0.05);
+    .fullscreen-toc-close {
+        background: rgba(255, 255, 255, 0.06);
     }
     
-    .floating-toc-close:hover {
-        background: rgba(255, 255, 255, 0.1);
+    .fullscreen-toc-close:hover {
+        background: rgba(255, 255, 255, 0.12);
     }
 }
 
@@ -506,7 +583,6 @@
         line-height: 1.5; /* 增加行高 */
     }
     
-    .floating-toc-button,
     .floating-header .copy-link-button {
         width: 36px; /* 增大按钮尺寸便于触摸 */
         height: 36px;
@@ -514,36 +590,64 @@
         border-radius: 9px;
     }
     
-    .floating-toc-button i,
     .floating-header .copy-link-button i {
         font-size: 0.9rem; /* 稍微增大图标 */
     }
     
-    /* 移动端浮动目录调整 */
-    .floating-toc {
-        top: 80px;
-        width: calc(100vw - 20px);
-        min-width: 260px;
-        max-width: calc(100vw - 20px);
-        max-height: 60vh;
+    /* 移动端独立目录岛 */
+    .floating-toc-island {
+        bottom: 80px;
+        right: 16px;
+        width: 52px;
+        height: 52px;
+        border-radius: 26px;
     }
     
-    .floating-toc-content {
-        padding: 16px;
+    .floating-toc-island i {
+        font-size: 1.125rem;
     }
     
-    .floating-toc-header {
-        margin-bottom: 12px;
-        padding-bottom: 10px;
+    /* 移动端全屏目录 */
+    .fullscreen-toc-container {
+        width: 95vw;
+        max-height: 85vh;
+        border-radius: 20px;
     }
     
-    .floating-toc-list {
-        max-height: calc(60vh - 80px);
+    .fullscreen-toc-header {
+        padding: 20px 24px 16px;
     }
     
-    .floating-toc-list a {
-        padding: 10px 12px; /* 增加触摸区域 */
-        font-size: 0.9rem;
+    .fullscreen-toc-header h2 {
+        font-size: 1.375rem;
+    }
+    
+    .fullscreen-toc-close {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+    }
+    
+    .fullscreen-toc-list-container {
+        padding: 16px 24px 24px;
+    }
+    
+    .fullscreen-toc-list a {
+        padding: 14px 16px; /* 增加触摸区域 */
+        font-size: 1rem;
+        margin-bottom: 6px;
+    }
+    
+    .fullscreen-toc-list .level-1 {
+        font-size: 1.0625rem;
+    }
+    
+    .fullscreen-toc-list .level-2 {
+        font-size: 0.9375rem;
+    }
+    
+    .fullscreen-toc-list .level-3 {
+        font-size: 0.875rem;
     }
     
     /* 移动端深色模式悬浮效果 */

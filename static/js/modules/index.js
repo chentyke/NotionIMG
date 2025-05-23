@@ -11,7 +11,7 @@ let floatingHeaderVisible = false;
 let lastScrollTop = 0;
 
 // Floating TOC management
-let floatingTocVisible = false;
+let fullscreenTocVisible = false;
 let floatingTocHeadings = [];
 
 /**
@@ -20,7 +20,7 @@ let floatingTocHeadings = [];
 function initFloatingHeader() {
     const floatingHeader = document.getElementById('floatingHeader');
     const floatingTitle = document.getElementById('floatingTitle');
-    const floatingTocButton = document.getElementById('floatingTocButton');
+    const floatingTocIsland = document.getElementById('floatingTocIsland');
     const pageTitle = document.getElementById('pageTitle');
     
     if (!floatingHeader || !floatingTitle) return;
@@ -54,19 +54,19 @@ function initFloatingHeader() {
                 floatingHeader.classList.add('visible');
                 floatingHeaderVisible = true;
                 
-                // Show TOC button if headings exist
-                if (floatingTocHeadings.length > 0 && floatingTocButton) {
-                    floatingTocButton.style.display = 'flex';
+                // Show TOC island if headings exist
+                if (floatingTocHeadings.length > 0 && floatingTocIsland) {
+                    floatingTocIsland.classList.add('visible');
                 }
             } else if (!shouldShow && floatingHeaderVisible) {
                 floatingHeader.classList.remove('visible');
                 floatingHeaderVisible = false;
                 
-                // Hide TOC button and close TOC panel
-                if (floatingTocButton) {
-                    floatingTocButton.style.display = 'none';
+                // Hide TOC island and close TOC modal
+                if (floatingTocIsland) {
+                    floatingTocIsland.classList.remove('visible');
                 }
-                hideFloatingToc();
+                hideFullscreenToc();
             }
         }
         
@@ -111,38 +111,38 @@ function initFloatingToc() {
         floatingTocHeadings.push({ level, text, id });
     });
     
-    // Build floating TOC HTML
-    buildFloatingToc();
+    // Build fullscreen TOC HTML
+    buildFullscreenToc();
     
     // Update scroll spy
-    updateFloatingTocScrollSpy();
+    updateFullscreenTocScrollSpy();
 }
 
 /**
- * Build floating TOC HTML structure
+ * Build fullscreen TOC HTML structure
  */
-function buildFloatingToc() {
-    const floatingTocList = document.getElementById('floatingTocList');
-    if (!floatingTocList || floatingTocHeadings.length === 0) return;
+function buildFullscreenToc() {
+    const fullscreenTocList = document.getElementById('fullscreenTocList');
+    if (!fullscreenTocList || floatingTocHeadings.length === 0) return;
     
     let html = '';
     floatingTocHeadings.forEach(heading => {
         html += `
             <li>
-                <a href="#${heading.id}" class="level-${heading.level}" onclick="scrollToHeading('${heading.id}')">
+                <a class="level-${heading.level}" onclick="scrollToHeading('${heading.id}'); return false;">
                     ${heading.text}
                 </a>
             </li>
         `;
     });
     
-    floatingTocList.innerHTML = html;
+    fullscreenTocList.innerHTML = html;
 }
 
 /**
- * Update floating TOC scroll spy to highlight current section
+ * Update fullscreen TOC scroll spy to highlight current section
  */
-function updateFloatingTocScrollSpy() {
+function updateFullscreenTocScrollSpy() {
     if (floatingTocHeadings.length === 0) return;
     
     const handleScrollSpy = () => {
@@ -162,9 +162,12 @@ function updateFloatingTocScrollSpy() {
         }
         
         // Update active states
-        const tocLinks = document.querySelectorAll('#floatingTocList a');
+        const tocLinks = document.querySelectorAll('#fullscreenTocList a');
         tocLinks.forEach(link => {
-            if (currentHeading && link.getAttribute('href') === `#${currentHeading}`) {
+            const linkText = link.textContent.trim();
+            const matchingHeading = floatingTocHeadings.find(h => h.text === linkText);
+            
+            if (currentHeading && matchingHeading && matchingHeading.id === currentHeading) {
                 link.classList.add('active');
             } else {
                 link.classList.remove('active');
@@ -186,58 +189,51 @@ function updateFloatingTocScrollSpy() {
 }
 
 /**
- * Toggle floating TOC visibility
+ * Toggle fullscreen TOC visibility
  */
-function toggleFloatingToc() {
-    const floatingToc = document.getElementById('floatingToc');
-    const floatingTocButton = document.getElementById('floatingTocButton');
-    
-    if (!floatingToc || !floatingTocButton) return;
-    
-    if (floatingTocVisible) {
-        hideFloatingToc();
+function toggleFullscreenToc() {
+    if (fullscreenTocVisible) {
+        hideFullscreenToc();
     } else {
-        showFloatingToc();
+        showFullscreenToc();
     }
 }
 
 /**
- * Show floating TOC
+ * Show fullscreen TOC
  */
-function showFloatingToc() {
-    const floatingToc = document.getElementById('floatingToc');
-    const floatingTocButton = document.getElementById('floatingTocButton');
+function showFullscreenToc() {
+    const fullscreenToc = document.getElementById('fullscreenToc');
+    if (!fullscreenToc) return;
     
-    if (!floatingToc || !floatingTocButton) return;
+    fullscreenToc.classList.add('visible');
+    fullscreenTocVisible = true;
     
-    floatingToc.classList.add('visible');
-    floatingTocButton.classList.add('active');
-    floatingTocVisible = true;
+    // Prevent body scroll
+    document.body.style.overflow = 'hidden';
     
-    // Close on outside click
-    setTimeout(() => {
-        const handleOutsideClick = (e) => {
-            if (!floatingToc.contains(e.target) && !floatingTocButton.contains(e.target)) {
-                hideFloatingToc();
-                document.removeEventListener('click', handleOutsideClick);
-            }
-        };
-        document.addEventListener('click', handleOutsideClick);
-    }, 100);
+    // Close on Escape key
+    const handleEscape = (e) => {
+        if (e.key === 'Escape') {
+            hideFullscreenToc();
+            document.removeEventListener('keydown', handleEscape);
+        }
+    };
+    document.addEventListener('keydown', handleEscape);
 }
 
 /**
- * Hide floating TOC
+ * Hide fullscreen TOC
  */
-function hideFloatingToc() {
-    const floatingToc = document.getElementById('floatingToc');
-    const floatingTocButton = document.getElementById('floatingTocButton');
+function hideFullscreenToc() {
+    const fullscreenToc = document.getElementById('fullscreenToc');
+    if (!fullscreenToc) return;
     
-    if (!floatingToc || !floatingTocButton) return;
+    fullscreenToc.classList.remove('visible');
+    fullscreenTocVisible = false;
     
-    floatingToc.classList.remove('visible');
-    floatingTocButton.classList.remove('active');
-    floatingTocVisible = false;
+    // Restore body scroll
+    document.body.style.overflow = '';
 }
 
 /**
@@ -249,13 +245,14 @@ function scrollToHeading(headingId) {
         const offset = 100; // Account for floating header
         const top = heading.getBoundingClientRect().top + window.pageYOffset - offset;
         
+        // Hide TOC first
+        hideFullscreenToc();
+        
+        // Smooth scroll to heading
         window.scrollTo({
             top: top,
             behavior: 'smooth'
         });
-        
-        // Hide TOC after scrolling
-        hideFloatingToc();
     }
 }
 
@@ -307,7 +304,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.copyPageLink = NotionRenderer.copyPageLink;
     window.openImageModal = Modal.openImageModal;
     window.closeImageModal = Modal.closeImageModal;
-    window.toggleFloatingToc = toggleFloatingToc;
+    window.toggleFullscreenToc = toggleFullscreenToc;
     window.scrollToHeading = scrollToHeading;
 });
 
