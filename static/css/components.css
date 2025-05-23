@@ -116,19 +116,21 @@
 
 /* Column layout styles */
 .column-list {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
+    display: flex;
+    gap: 1rem;
     margin: 1rem 0;
+    align-items: flex-start;
 }
 
-@media (min-width: 768px) {
+@media (max-width: 767px) {
     .column-list {
-        grid-template-columns: repeat(var(--columns, 2), 1fr);
+        flex-direction: column;
+        gap: 1.5rem;
     }
 }
 
 .column {
+    flex: 1;
     min-width: 0;
 }
 

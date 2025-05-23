@@ -448,14 +448,15 @@ async function renderBlock(block) {
         case 'column_list':
             // Handle column list blocks
             if (block.columns && block.columns.length > 0) {
-                const columnsHtml = await Promise.all(block.columns.map(async column => {
+                const columnsHtml = await Promise.all(block.columns.map(async (column, index) => {
                     if (column.children && column.children.length > 0) {
                         const columnContent = await Promise.all(column.children.map(async child => {
                             return await renderBlock(child);
                         }));
-                        return `<div class="column flex-1 px-2">${columnContent.join('')}</div>`;
+                        // Remove px-2 padding to ensure proper alignment - first column should align with other elements
+                        return `<div class="column flex-1">${columnContent.join('')}</div>`;
                     }
-                    return '<div class="column flex-1 px-2"></div>';
+                    return '<div class="column flex-1"></div>';
                 }));
                 
                 return `
