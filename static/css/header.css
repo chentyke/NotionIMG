@@ -581,11 +581,6 @@
         0 6px 16px rgba(0, 0, 0, 0.06);
 }
 
-.floating-toc-list .level-2.active::before,
-.floating-toc-list .level-2.active::after {
-    background: rgba(75, 85, 99, 0.8);
-}
-
 .floating-toc-list .level-3.active {
     background: rgba(75, 85, 99, 0.08);
     color: var(--text-primary);
@@ -594,11 +589,6 @@
     box-shadow: 
         0 12px 32px rgba(75, 85, 99, 0.1),
         0 6px 16px rgba(0, 0, 0, 0.05);
-}
-
-.floating-toc-list .level-3.active::before,
-.floating-toc-list .level-3.active::after {
-    background: rgba(75, 85, 99, 0.7);
 }
 
 /* 素雅的选中指示器 */
@@ -615,34 +605,36 @@
     box-shadow: 0 2px 8px rgba(75, 85, 99, 0.3);
 }
 
+/* Level-2选中时增强连接线样式 */
 .floating-toc-list .level-2.active::before {
-    content: '';
-    position: absolute;
-    left: 32px;
-    top: 0;
-    bottom: 0;
-    width: 2px;
     background: linear-gradient(to bottom, 
         transparent 0%, 
         rgba(75, 85, 99, 0.8) 20%, 
         rgba(75, 85, 99, 0.8) 80%, 
         transparent 100%);
-    border-radius: 1px;
+    width: 2px;
 }
 
+.floating-toc-list .level-2.active::after {
+    background: rgba(75, 85, 99, 0.8);
+    width: 14px;
+    height: 2px;
+}
+
+/* Level-3选中时增强连接线样式 */  
 .floating-toc-list .level-3.active::before {
-    content: '';
-    position: absolute;
-    left: 52px;
-    top: 0;
-    bottom: 0;
-    width: 2px;
     background: linear-gradient(to bottom, 
         transparent 0%, 
         rgba(75, 85, 99, 0.7) 20%, 
         rgba(75, 85, 99, 0.7) 80%, 
         transparent 100%);
-    border-radius: 1px;
+    width: 2px;
+}
+
+.floating-toc-list .level-3.active::after {
+    background: rgba(75, 85, 99, 0.7);
+    width: 14px;
+    height: 2px;
 }
 
 /* 添加关闭时的收缩动画 */
@@ -1004,22 +996,12 @@
             0 6px 16px rgba(0, 0, 0, 0.45);
     }
     
-    .floating-toc-list .level-2.active::before,
-    .floating-toc-list .level-2.active::after {
-        background: rgba(156, 163, 175, 0.8);
-    }
-    
     .floating-toc-list .level-3.active {
         background: rgba(156, 163, 175, 0.12);
         color: #d1d5db;
         box-shadow: 
             0 12px 32px rgba(156, 163, 175, 0.18),
             0 6px 16px rgba(0, 0, 0, 0.4);
-    }
-    
-    .floating-toc-list .level-3.active::before,
-    .floating-toc-list .level-3.active::after {
-        background: rgba(156, 163, 175, 0.7);
     }
     
     /* 暗色主题选中指示器 */
@@ -1034,6 +1016,13 @@
             rgba(156, 163, 175, 0.8) 20%, 
             rgba(156, 163, 175, 0.8) 80%, 
             transparent 100%);
+        width: 2px;
+    }
+    
+    .floating-toc-list .level-2.active::after {
+        background: rgba(156, 163, 175, 0.8);
+        width: 14px;
+        height: 2px;
     }
     
     .floating-toc-list .level-3.active::before {
@@ -1042,6 +1031,13 @@
             rgba(156, 163, 175, 0.7) 20%, 
             rgba(156, 163, 175, 0.7) 80%, 
             transparent 100%);
+        width: 2px;
+    }
+    
+    .floating-toc-list .level-3.active::after {
+        background: rgba(156, 163, 175, 0.7);
+        width: 14px;
+        height: 2px;
     }
     
     /* 暗色主题关闭动画 */
