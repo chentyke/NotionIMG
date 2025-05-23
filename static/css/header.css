@@ -342,16 +342,49 @@
 }
 
 .floating-toc-close:hover {
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(0, 0, 0, 0.1);
+    color: var(--text-primary);
+    transform: scale(1.05);
 }
 
 .floating-toc-content {
-    padding: 0 40px 50px;
+    padding: 0 20px 40px; /* 压缩横向内边距，增加底部空间 */
+    /* 移动端隐藏滚动条，保持干净外观 */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
     flex: 1;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
     position: relative; /* 为伪元素定位 */
+    /* 自定义滚动条样式 */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(156, 163, 175, 0.3) transparent;
+}
+
+/* 自定义滚动条样式 - Webkit */
+.floating-toc-content::-webkit-scrollbar {
+    display: none;
+}
+
+.floating-toc-content::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 3px;
+}
+
+.floating-toc-content::-webkit-scrollbar-thumb {
+    background: rgba(156, 163, 175, 0.3);
+    border-radius: 3px;
+    transition: background 0.3s ease;
+}
+
+.floating-toc-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(156, 163, 175, 0.5);
+}
+
+/* 滚动时显示滚动条 */
+.floating-toc-content.scrolled::-webkit-scrollbar-thumb {
+    background: rgba(156, 163, 175, 0.4);
 }
 
 /* 顶部渐变毛玻璃遮罩 - 增强滚动质感 */
@@ -361,29 +394,55 @@
     top: 0;
     left: 0;
     right: 0;
-    height: 60px; /* 渐变高度 */
+    height: 80px; /* 增加渐变高度 */
     background: linear-gradient(
         to bottom,
-        rgba(255, 255, 255, 0.95) 0%,
-        rgba(255, 255, 255, 0.85) 30%,
-        rgba(255, 255, 255, 0.4) 70%,
+        rgba(255, 255, 255, 0.98) 0%,
+        rgba(255, 255, 255, 0.92) 25%,
+        rgba(255, 255, 255, 0.75) 50%,
+        rgba(255, 255, 255, 0.4) 75%,
         rgba(255, 255, 255, 0) 100%
     );
-    backdrop-filter: blur(8px) saturate(120%);
-    -webkit-backdrop-filter: blur(8px) saturate(120%);
+    backdrop-filter: blur(12px) saturate(120%) brightness(1.05);
+    -webkit-backdrop-filter: blur(12px) saturate(120%) brightness(1.05);
     z-index: 10;
     pointer-events: none; /* 不阻挡鼠标事件 */
     opacity: 0;
-    transform: translateY(-10px); /* 添加微妙的位移动画 */
-    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
-                transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     border-radius: 0; /* 确保遮罩与内容区域无缝衔接 */
 }
 
 /* 滚动时激活遮罩 */
 .floating-toc-content.scrolled::before {
     opacity: 1;
-    transform: translateY(0);
+}
+
+/* 底部渐变遮罩 - 增强滚动质感 */
+.floating-toc-content::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px; /* 底部渐变高度 */
+    background: linear-gradient(
+        to top,
+        rgba(255, 255, 255, 0.95) 0%,
+        rgba(255, 255, 255, 0.8) 30%,
+        rgba(255, 255, 255, 0.4) 70%,
+        rgba(255, 255, 255, 0) 100%
+    );
+    backdrop-filter: blur(8px) saturate(110%);
+    -webkit-backdrop-filter: blur(8px) saturate(110%);
+    z-index: 10;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+/* 滚动时激活底部遮罩 */
+.floating-toc-content.scrolled-bottom::after {
+    opacity: 1;
 }
 
 .floating-toc-list {
@@ -819,12 +878,9 @@
     
     .floating-toc-content {
         padding: 0 20px 40px; /* 压缩横向内边距，增加底部空间 */
-        position: relative; /* 确保伪元素定位正确 */
-    }
-    
-    /* 移动端渐变遮罩适配 */
-    .floating-toc-content::before {
-        height: 50px; /* 移动端稍微减少遮罩高度 */
+        /* 移动端隐藏滚动条，保持干净外观 */
+        scrollbar-width: none;
+        -ms-overflow-style: none;
     }
     
     .floating-toc-list {
@@ -1087,23 +1143,44 @@
     .floating-toc-content::before {
         background: linear-gradient(
             to bottom,
+            rgba(17, 24, 39, 0.98) 0%,
+            rgba(17, 24, 39, 0.92) 25%,
+            rgba(17, 24, 39, 0.75) 50%,
+            rgba(17, 24, 39, 0.4) 75%,
+            rgba(17, 24, 39, 0) 100%
+        );
+        backdrop-filter: blur(15px) saturate(140%) brightness(0.95);
+        -webkit-backdrop-filter: blur(15px) saturate(140%) brightness(0.95);
+    }
+
+    /* 暗色主题底部渐变毛玻璃遮罩 */
+    .floating-toc-content::after {
+        background: linear-gradient(
+            to top,
             rgba(17, 24, 39, 0.95) 0%,
-            rgba(17, 24, 39, 0.85) 30%,
+            rgba(17, 24, 39, 0.8) 30%,
             rgba(17, 24, 39, 0.4) 70%,
             rgba(17, 24, 39, 0) 100%
         );
-        backdrop-filter: blur(10px) saturate(140%);
-        -webkit-backdrop-filter: blur(10px) saturate(140%);
-        /* 继承动画效果 */
-        transform: translateY(-10px);
-        transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
-                    transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        backdrop-filter: blur(10px) saturate(120%);
+        -webkit-backdrop-filter: blur(10px) saturate(120%);
     }
 
-    /* 暗色主题滚动激活状态 */
-    .floating-toc-content.scrolled::before {
-        opacity: 1;
-        transform: translateY(0);
+    /* 暗色主题滚动条样式 */
+    .floating-toc-content {
+        scrollbar-color: rgba(156, 163, 175, 0.4) transparent;
+    }
+
+    .floating-toc-content::-webkit-scrollbar-thumb {
+        background: rgba(156, 163, 175, 0.4);
+    }
+
+    .floating-toc-content::-webkit-scrollbar-thumb:hover {
+        background: rgba(156, 163, 175, 0.6);
+    }
+
+    .floating-toc-content.scrolled::-webkit-scrollbar-thumb {
+        background: rgba(156, 163, 175, 0.5);
     }
 
     /* 移动端深色模式悬浮效果 */
