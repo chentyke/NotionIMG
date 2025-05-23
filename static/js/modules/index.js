@@ -43,12 +43,14 @@ function initFloatingHeader() {
             floatingHeader.style.cursor = 'default';
             floatingHeader.removeAttribute('title');
             floatingHeader.removeAttribute('aria-label');
+            floatingHeader.removeAttribute('onclick');
         } else {
             // 有标题时，显示面包屑和启用点击
             floatingBreadcrumb.style.display = 'block';
             floatingHeader.style.cursor = 'pointer';
             floatingHeader.setAttribute('title', '点击查看目录');
             floatingHeader.setAttribute('aria-label', '点击查看目录');
+            floatingHeader.setAttribute('onclick', 'toggleFloatingToc()');
             
             if (currentActiveHeading) {
                 const heading = floatingTocHeadings.find(h => h.id === currentActiveHeading);
@@ -70,7 +72,7 @@ function initFloatingHeader() {
     const observer = new MutationObserver(() => {
         updateFloatingTitle();
         // 延迟更新面包屑，确保TOC已初始化
-        setTimeout(updateBreadcrumb, 100);
+        setTimeout(updateBreadcrumb, 200);
     });
     if (pageTitle) {
         observer.observe(pageTitle, { childList: true, characterData: true, subtree: true });
@@ -107,6 +109,9 @@ function initFloatingHeader() {
         }
         scrollTimeout = setTimeout(handleScroll, 10);
     }, { passive: true });
+    
+    // Store update function for later use
+    floatingHeader._updateBreadcrumb = updateBreadcrumb;
     
     // Initial check
     setTimeout(() => {
@@ -148,18 +153,28 @@ function initFloatingToc() {
         
         // Generate ID if not exists
         if (!id) {
-            id = `heading-${index}`;
+            id = `heading-${level}-${index}`;
             heading.id = id;
         }
         
         floatingTocHeadings.push({ level, text, id });
     });
     
+    console.log('Initialized TOC with headings:', floatingTocHeadings);
+    
     // Build floating TOC HTML
     buildFloatingToc();
     
     // Update scroll spy
     updateFloatingTocScrollSpy();
+    
+    // Update floating header breadcrumb
+    const floatingHeader = document.getElementById('floatingHeader');
+    if (floatingHeader && floatingHeader._updateBreadcrumb) {
+        setTimeout(() => {
+            floatingHeader._updateBreadcrumb();
+        }, 100);
+    }
 }
 
 /**
@@ -199,13 +214,31 @@ function updateFloatingTocScrollSpy() {
         let newActiveHeading = null;
         
         // Find the current heading based on scroll position
-        for (let i = floatingTocHeadings.length - 1; i >= 0; i--) {
+        // 遍历所有标题，找到当前可见的标题
+        for (let i = 0; i < floatingTocHeadings.length; i++) {
             const heading = document.getElementById(floatingTocHeadings[i].id);
             if (heading) {
-                const headingTop = heading.getBoundingClientRect().top + scrollTop;
-                if (scrollTop >= headingTop - 150) {
+                // 使用 offsetTop 获取元素距离文档顶部的准确位置
+                const headingTop = heading.offsetTop;
+                const headingBottom = headingTop + heading.offsetHeight;
+                
+                // 考虑浮动标题头的高度偏移
+                const offset = 100;
+                
+                // 如果当前滚动位置在这个标题的范围内，或者超过了这个标题
+                if (scrollTop + offset >= headingTop) {
                     newActiveHeading = floatingTocHeadings[i].id;
-                    break;
+                    
+                    // 检查是否有下一个标题，如果当前位置还没到下一个标题，就继续使用当前标题
+                    if (i < floatingTocHeadings.length - 1) {
+                        const nextHeading = document.getElementById(floatingTocHeadings[i + 1].id);
+                        if (nextHeading && scrollTop + offset < nextHeading.offsetTop) {
+                            break; // 找到了当前标题，停止查找
+                        }
+                    } else {
+                        // 这是最后一个标题
+                        break;
+                    }
                 }
             }
         }
@@ -227,11 +260,16 @@ function updateFloatingTocScrollSpy() {
             // Update breadcrumb if floating header is visible
             if (floatingHeaderVisible) {
                 const floatingBreadcrumb = document.getElementById('floatingBreadcrumb');
-                if (floatingBreadcrumb && currentActiveHeading) {
-                    const heading = floatingTocHeadings.find(h => h.id === currentActiveHeading);
-                    if (heading) {
-                        const breadcrumbPath = buildBreadcrumbPath(heading);
-                        floatingBreadcrumb.innerHTML = breadcrumbPath;
+                if (floatingBreadcrumb) {
+                    if (currentActiveHeading) {
+                        const heading = floatingTocHeadings.find(h => h.id === currentActiveHeading);
+                        if (heading) {
+                            const breadcrumbPath = buildBreadcrumbPath(heading);
+                            floatingBreadcrumb.innerHTML = breadcrumbPath;
+                        }
+                    } else {
+                        // 如果没有活跃标题，显示默认文本
+                        floatingBreadcrumb.innerHTML = '<span class="breadcrumb-separator">/</span><span style="color: var(--text-tertiary);">选择章节...</span>';
                     }
                 }
             }
@@ -318,13 +356,42 @@ function scrollToHeading(headingId) {
         
         // 延迟滚动，让目录动画完成
         setTimeout(() => {
+            // 使用 offsetTop 获取准确的位置
+            const headingTop = heading.offsetTop;
             const offset = 120; // Account for floating header
-            const top = heading.getBoundingClientRect().top + window.pageYOffset - offset;
+            const targetPosition = headingTop - offset;
             
             window.scrollTo({
-                top: top,
+                top: Math.max(0, targetPosition), // 确保不会滚动到负数位置
                 behavior: 'smooth'
             });
+            
+            // 强制更新当前活跃标题
+            setTimeout(() => {
+                currentActiveHeading = headingId;
+                
+                // 更新 TOC 中的活跃状态
+                const tocLinks = document.querySelectorAll('#floatingTocList a');
+                tocLinks.forEach(link => {
+                    if (link.getAttribute('href') === `#${headingId}`) {
+                        link.classList.add('active');
+                    } else {
+                        link.classList.remove('active');
+                    }
+                });
+                
+                // 更新面包屑
+                if (floatingHeaderVisible) {
+                    const floatingBreadcrumb = document.getElementById('floatingBreadcrumb');
+                    if (floatingBreadcrumb) {
+                        const heading = floatingTocHeadings.find(h => h.id === headingId);
+                        if (heading) {
+                            const breadcrumbPath = buildBreadcrumbPath(heading);
+                            floatingBreadcrumb.innerHTML = breadcrumbPath;
+                        }
+                    }
+                }
+            }, 300);
         }, 200);
     }
 }
