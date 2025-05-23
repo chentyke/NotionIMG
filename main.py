@@ -1224,6 +1224,7 @@ async def get_blocks(page_id: str):
 async def get_more_blocks(page_id: str, cursor: str, limit: Optional[int] = 20):
     """
     获取页面的更多块内容 - 用于增量加载避免API限制
+    支持超长文档的渐进式加载
     """
     try:
         logger.info(f"Fetching more blocks for page {page_id} with cursor {cursor}, limit={limit}")
@@ -1236,9 +1237,12 @@ async def get_more_blocks(page_id: str, cursor: str, limit: Optional[int] = 20):
         next_cursor = cursor
         blocks_processed = 0
         
-        logger.info(f"Loading more blocks with limit={limit}")
+        # 增加单次请求的最大限制，支持更大的文档
+        max_limit = min(limit, 100) if limit else 50
+        
+        logger.info(f"Loading more blocks with limit={max_limit}")
         try:
-            while has_more and blocks_processed < limit:
+            while has_more and blocks_processed < max_limit:
                 # Wrap block children list call with timeout
                 loop = asyncio.get_event_loop()
                 
@@ -1246,30 +1250,63 @@ async def get_more_blocks(page_id: str, cursor: str, limit: Optional[int] = 20):
                 api_params = {
                     "block_id": page_id,
                     "start_cursor": next_cursor,
-                    "page_size": min(100, limit - blocks_processed)
+                    "page_size": min(100, max_limit - blocks_processed)
                 }
                 
-                response = await asyncio.wait_for(
-                    loop.run_in_executor(None, partial(notion.blocks.children.list, **api_params)),
-                    timeout=20.0  # 20 second timeout for blocks
-                )
+                logger.info(f"Requesting blocks with params: {api_params}")
+                
+                try:
+                    response = await asyncio.wait_for(
+                        loop.run_in_executor(None, partial(notion.blocks.children.list, **api_params)),
+                        timeout=30.0  # 增加超时时间到30秒
+                    )
+                except asyncio.TimeoutError:
+                    logger.error(f"Timeout retrieving more blocks for page {page_id}, cursor {cursor}")
+                    # 返回部分内容而不是完全失败
+                    break
+                except Exception as e:
+                    logger.error(f"Error retrieving blocks: {e}")
+                    # 对于其他错误，也尝试返回已获取的内容
+                    break
                 
                 current_blocks = response["results"]
                 logger.info(f"Retrieved {len(current_blocks)} more blocks")
                 
+                if not current_blocks:
+                    logger.info("No more blocks returned from API")
+                    break
+                
                 # Process blocks in the exact order received from Notion API
                 batch_processed_blocks = []
                 for i, block in enumerate(current_blocks):
-                    if blocks_processed >= limit:
+                    if blocks_processed >= max_limit:
                         break
                         
                     logger.info(f"Processing additional block {i+1}/{len(current_blocks)}, type: {block['type']}, id: {block.get('id', 'unknown')}")
-                    processed_block = process_block_content(block)
-                    if processed_block:
-                        # Add sequence information to help with ordering
-                        processed_block["_sequence"] = blocks_processed
-                        processed_block["_cursor_batch"] = next_cursor[:10] if next_cursor else "initial"  # Identifier for this batch
-                        batch_processed_blocks.append(processed_block)
+                    
+                    try:
+                        processed_block = process_block_content(block)
+                        if processed_block:
+                            # Add sequence information to help with ordering
+                            processed_block["_sequence"] = blocks_processed
+                            processed_block["_cursor_batch"] = next_cursor[:10] if next_cursor else "initial"  # Identifier for this batch
+                            processed_block["_batch_index"] = i  # Position in this batch
+                            batch_processed_blocks.append(processed_block)
+                            blocks_processed += 1
+                        else:
+                            logger.warning(f"Block {block.get('id', 'unknown')} returned None after processing")
+                    except Exception as e:
+                        logger.error(f"Error processing block {block.get('id', 'unknown')}: {e}")
+                        # 创建一个错误块而不是跳过
+                        error_block = {
+                            "type": "paragraph",
+                            "text": f"[错误: 无法加载此块 - {str(e)[:100]}]",
+                            "color": "red",
+                            "id": block.get('id', 'error'),
+                            "_sequence": blocks_processed,
+                            "_error": True
+                        }
+                        batch_processed_blocks.append(error_block)
                         blocks_processed += 1
                 
                 # Add batch to blocks list while preserving order
@@ -1282,15 +1319,17 @@ async def get_more_blocks(page_id: str, cursor: str, limit: Optional[int] = 20):
                     logger.info(f"More blocks still available, next_cursor: {next_cursor}")
                 else:
                     next_cursor = None
+                    logger.info("No more blocks available from API")
                     
                 # Stop if we've reached the limit
-                if blocks_processed >= limit:
-                    logger.info(f"Reached limit of {limit} additional blocks")
+                if blocks_processed >= max_limit:
+                    logger.info(f"Reached limit of {max_limit} additional blocks")
                     break
                     
-        except asyncio.TimeoutError:
-            logger.error(f"Timeout retrieving more blocks for page {page_id}")
-            logger.info(f"Returning partial additional content with {len(blocks)} blocks")
+        except Exception as e:
+            logger.error(f"Unexpected error in more blocks loading: {e}")
+            logger.error("Stack trace:", exc_info=True)
+            # 不要抛出异常，而是返回已获取的内容
             
         logger.info(f"Successfully processed {len(blocks)} additional blocks")
         
@@ -1298,7 +1337,18 @@ async def get_more_blocks(page_id: str, cursor: str, limit: Optional[int] = 20):
             "blocks": blocks,
             "has_more": has_more,
             "next_cursor": next_cursor,
-            "total_loaded": blocks_processed
+            "total_loaded": blocks_processed,
+            "debug_info": {
+                "requested_limit": limit,
+                "actual_limit": max_limit,
+                "blocks_with_sequence": len([b for b in blocks if "_sequence" in b]),
+                "first_block_sequence": blocks[0].get("_sequence") if blocks else None,
+                "last_block_sequence": blocks[-1].get("_sequence") if blocks else None,
+                "request_cursor": cursor,
+                "response_cursor": next_cursor,
+                "error_blocks": len([b for b in blocks if b.get("_error")]),
+                "total_batches_processed": 1  # This endpoint processes one batch at a time
+            }
         }
         
     except HTTPException:
@@ -1306,7 +1356,21 @@ async def get_more_blocks(page_id: str, cursor: str, limit: Optional[int] = 20):
     except Exception as e:
         logger.error(f"Error getting more blocks for page {page_id}: {e}")
         logger.error("Stack trace:", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        
+        # 即使出错也尝试返回有用的信息
+        return {
+            "blocks": [],
+            "has_more": False,
+            "next_cursor": None,
+            "total_loaded": 0,
+            "error": str(e),
+            "debug_info": {
+                "error_occurred": True,
+                "error_message": str(e),
+                "request_cursor": cursor,
+                "requested_limit": limit
+            }
+        }
 
 @app.get("/api/notion/page/{page_id}")
 async def get_notion_page(page_id: str):

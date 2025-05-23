@@ -1038,6 +1038,7 @@ async function loadMoreContentInBackground(pageId, cursor, pageContent) {
             <div class="flex items-center justify-center space-x-2">
                 <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
                 <span>正在加载更多内容...</span>
+                <span id="loading-progress" class="text-sm"></span>
             </div>
         `;
         pageContent.appendChild(loadingIndicator);
@@ -1045,159 +1046,371 @@ async function loadMoreContentInBackground(pageId, cursor, pageContent) {
         let hasMore = true;
         let nextCursor = cursor;
         let batchCount = 0;
+        let failedAttempts = 0;
+        let totalBlocksCollected = 0;
         const allNewBlocks = []; // 收集所有新块以确保正确顺序
+        const maxRetries = 3;
+        const maxFailedAttempts = 5; // 允许5次失败
+        const maxBatches = 100; // 大幅增加批次限制，支持超长文档
         
-        // 第一步：收集所有剩余的块
-        while (hasMore && batchCount < 20) { // 增加限制以防止无限循环
-            try {
-                // Load next batch with rate limiting delay
-                if (batchCount > 0) {
-                    await new Promise(resolve => setTimeout(resolve, 500)); // 减少延迟到500ms
-                }
+        // 更新进度指示器
+        const updateProgress = (current, failed = 0) => {
+            const progressElement = document.getElementById('loading-progress');
+            if (progressElement) {
+                const percentage = Math.round((current / maxBatches) * 100);
+                const statusText = failed > 0 ? ` (失败: ${failed})` : '';
+                progressElement.textContent = `批次 ${current}/${maxBatches} (${percentage}%)${statusText}`;
                 
-                const response = await fetch(`/api/page/${pageId}/more?cursor=${nextCursor}&limit=30`);
-                
-                if (!response.ok) {
-                    throw new Error(`Server returned ${response.status}: ${response.statusText}`);
-                }
-                
-                const moreData = await response.json();
-                
-                if (moreData.blocks && moreData.blocks.length > 0) {
-                    // 按顺序添加到allNewBlocks数组中
-                    allNewBlocks.push(...moreData.blocks);
-                    console.log(`Collected batch ${batchCount + 1}: ${moreData.blocks.length} blocks (total collected: ${allNewBlocks.length})`);
+                // 更新加载指示器的详细状态
+                const loadingIndicator = document.getElementById('background-loading');
+                if (loadingIndicator) {
+                    const statusDiv = loadingIndicator.querySelector('.loading-status') || document.createElement('div');
+                    statusDiv.className = 'loading-status text-xs text-gray-400 mt-2';
+                    statusDiv.innerHTML = `
+                        <div>已收集: ${totalBlocksCollected} 个块</div>
+                        ${failed > 0 ? `<div class="text-red-400">失败批次: ${failed}</div>` : ''}
+                        <div>预计剩余: ${hasMore ? '加载中...' : '完成'}</div>
+                    `;
                     
-                    // Log debug information if available
-                    if (moreData.debug_info) {
-                        console.log(`Batch ${batchCount + 1} Debug Info:`, moreData.debug_info);
+                    if (!loadingIndicator.querySelector('.loading-status')) {
+                        loadingIndicator.appendChild(statusDiv);
                     }
                 }
-                
-                hasMore = moreData.has_more;
-                nextCursor = moreData.next_cursor;
-                batchCount++;
-                
-            } catch (error) {
-                console.error(`Error loading batch ${batchCount + 1}:`, error);
-                break; // Stop loading more on error
+            }
+        };
+        
+        // 第一步：收集所有剩余的块，使用改进的错误处理和重试机制
+        while (hasMore && batchCount < maxBatches && failedAttempts < maxFailedAttempts) {
+            let retryCount = 0;
+            let batchSuccess = false;
+            
+            updateProgress(batchCount + 1, failedAttempts);
+            
+            while (retryCount < maxRetries && !batchSuccess) {
+                try {
+                    // 动态调整延迟时间，随着批次增加而增加
+                    const baseDelay = 800; // 增加基础延迟
+                    const dynamicDelay = baseDelay + (batchCount * 200) + (failedAttempts * 500);
+                    
+                    if (batchCount > 0 || retryCount > 0) {
+                        console.log(`Waiting ${dynamicDelay}ms before next batch (batch ${batchCount + 1}, retry ${retryCount + 1})`);
+                        await new Promise(resolve => setTimeout(resolve, dynamicDelay));
+                    }
+                    
+                    // 动态调整每批次的块数量，避免单次请求过大
+                    const batchSize = Math.max(20, Math.min(50, 50 - Math.floor(batchCount / 10) * 5));
+                    
+                    console.log(`Loading batch ${batchCount + 1} with ${batchSize} blocks limit (retry ${retryCount + 1}/${maxRetries})`);
+                    
+                    const response = await fetch(`/api/page/${pageId}/more?cursor=${nextCursor}&limit=${batchSize}`);
+                    
+                    if (!response.ok) {
+                        throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    const moreData = await response.json();
+                    
+                    // 检查服务器是否返回了错误信息
+                    if (moreData.error) {
+                        console.warn(`Server returned error for batch ${batchCount + 1}:`, moreData.error);
+                        // 即使服务器返回错误，如果有部分数据，也要处理
+                        if (!moreData.blocks || moreData.blocks.length === 0) {
+                            throw new Error(`Server error: ${moreData.error}`);
+                        }
+                    }
+                    
+                    if (moreData.blocks && moreData.blocks.length > 0) {
+                        // 按顺序添加到allNewBlocks数组中
+                        allNewBlocks.push(...moreData.blocks);
+                        totalBlocksCollected += moreData.blocks.length;
+                        console.log(`✓ Collected batch ${batchCount + 1}: ${moreData.blocks.length} blocks (total collected: ${totalBlocksCollected})`);
+                        
+                        // Log debug information if available
+                        if (moreData.debug_info) {
+                            console.log(`Batch ${batchCount + 1} Debug Info:`, moreData.debug_info);
+                            
+                            // 检查是否有错误块
+                            if (moreData.debug_info.error_blocks > 0) {
+                                console.warn(`Batch ${batchCount + 1} contains ${moreData.debug_info.error_blocks} error blocks`);
+                            }
+                        }
+                    } else {
+                        console.log(`Batch ${batchCount + 1} returned no blocks`);
+                    }
+                    
+                    hasMore = moreData.has_more;
+                    nextCursor = moreData.next_cursor;
+                    batchSuccess = true;
+                    
+                    // 重置失败计数器，因为这次成功了
+                    if (retryCount > 0) {
+                        console.log(`Batch ${batchCount + 1} succeeded after ${retryCount + 1} attempts`);
+                    }
+                    
+                } catch (error) {
+                    retryCount++;
+                    console.error(`Error loading batch ${batchCount + 1} (attempt ${retryCount}/${maxRetries}):`, error);
+                    
+                    if (retryCount >= maxRetries) {
+                        failedAttempts++;
+                        console.warn(`Failed to load batch ${batchCount + 1} after ${maxRetries} attempts. Failed attempts: ${failedAttempts}/${maxFailedAttempts}`);
+                        
+                        // 即使这个批次失败，也继续尝试下一个批次（如果有的话）
+                        if (failedAttempts < maxFailedAttempts && hasMore) {
+                            console.log('Continuing with next batch despite failure...');
+                            batchSuccess = true; // 允许继续到下一个批次
+                            
+                            // 为失败的批次创建一个占位符块
+                            const errorBlock = {
+                                type: "paragraph",
+                                text: `<span class="text-red-500">[加载错误: 批次 ${batchCount + 1} 无法加载 - ${error.message}]</span>`,
+                                color: "red",
+                                id: `error-batch-${batchCount + 1}`,
+                                _sequence: totalBlocksCollected,
+                                _error: true
+                            };
+                            allNewBlocks.push(errorBlock);
+                            totalBlocksCollected += 1;
+                        }
+                    } else {
+                        // 等待更长时间再重试
+                        const retryDelay = 1000 * retryCount + Math.random() * 1000; // 添加随机延迟避免同步重试
+                        console.log(`Waiting ${retryDelay}ms before retry ${retryCount + 1}`);
+                        await new Promise(resolve => setTimeout(resolve, retryDelay));
+                    }
+                }
+            }
+            
+            batchCount++;
+            
+            // 检查是否应该停止
+            if (!hasMore) {
+                console.log('No more blocks available');
+                break;
+            }
+            
+            if (failedAttempts >= maxFailedAttempts) {
+                console.warn(`Stopping background loading due to too many failed attempts (${failedAttempts})`);
+                break;
+            }
+            
+            // 每隔几个批次就渲染一下已经收集的块，提高用户体验
+            if (allNewBlocks.length > 0 && batchCount % 5 === 0) {
+                console.log(`Rendering intermediate batch: ${allNewBlocks.length} blocks`);
+                await renderIntermediateBatch(allNewBlocks, pageContent, loadingIndicator);
+                allNewBlocks.length = 0; // 清空已渲染的块
             }
         }
         
-        // 第二步：一次性渲染所有新块以保证顺序
+        // 处理加载完成的情况
+        if (batchCount >= maxBatches) {
+            console.warn(`Reached maximum batch limit (${maxBatches}). There might be more content available.`);
+            const indicator = document.getElementById('background-loading');
+            if (indicator) {
+                indicator.innerHTML = `
+                    <div class="text-amber-600 text-center">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        <span>内容过长，已加载 ${totalBlocksCollected} 个块。可能还有更多内容。</span>
+                        <button onclick="window.location.reload()" class="ml-2 text-blue-600 underline">刷新查看完整内容</button>
+                    </div>
+                `;
+                setTimeout(() => {
+                    if (indicator && indicator.parentNode) {
+                        indicator.remove();
+                    }
+                }, 10000);
+            }
+        }
+        
+        // 第二步：渲染剩余的新块（如果有的话）
         if (allNewBlocks.length > 0) {
-            console.log(`Rendering ${allNewBlocks.length} additional blocks in correct order...`);
-            
-            // Validate block order before sorting
-            validateBlockOrder(allNewBlocks, "Background load - before sorting");
-            
-            // 确保块按序列顺序排列（如果有序列信息的话）
-            if (allNewBlocks[0]._sequence !== undefined) {
-                allNewBlocks.sort((a, b) => (a._sequence || 0) - (b._sequence || 0));
-                console.log(`Sorted ${allNewBlocks.length} additional blocks by sequence number`);
-                
-                // Validate again after sorting
-                validateBlockOrder(allNewBlocks, "Background load - after sorting");
+            console.log(`Rendering final batch: ${allNewBlocks.length} additional blocks`);
+            await renderFinalBatch(allNewBlocks, pageContent, loadingIndicator);
+        } else {
+            // Remove loading indicator if no blocks to render
+            const indicator = document.getElementById('background-loading');
+            if (indicator) {
+                indicator.remove();
             }
-            
-            // 检查最后一个元素是否是列表，以便正确续接
-            const lastElement = pageContent.children[pageContent.children.length - 2]; // -2 because last is loading indicator
-            let currentList = null;
-            
-            // 检查是否可以续接现有列表
-            if (lastElement && (lastElement.tagName === 'UL' || lastElement.tagName === 'OL')) {
-                const firstNewBlock = allNewBlocks[0];
-                if (firstNewBlock && 
-                    ((firstNewBlock.type === 'bulleted_list_item' && lastElement.tagName === 'UL') ||
-                     (firstNewBlock.type === 'numbered_list_item' && lastElement.tagName === 'OL'))) {
-                    currentList = { 
-                        tag: lastElement.tagName.toLowerCase(), 
-                        type: firstNewBlock.type,
-                        element: lastElement 
-                    };
-                    console.log(`Will extend existing ${currentList.tag} list`);
+        }
+        
+        console.log(`Background loading completed. Processed ${batchCount} batches, collected ${totalBlocksCollected} total blocks, failed attempts: ${failedAttempts}`);
+        
+    } catch (error) {
+        console.error('Error in background loading:', error);
+        const indicator = document.getElementById('background-loading');
+        if (indicator) {
+            indicator.innerHTML = `
+                <div class="text-red-500 text-center">
+                    <i class="fas fa-exclamation-circle mr-2"></i>
+                    <span>加载更多内容时出错</span>
+                    <button onclick="window.location.reload()" class="ml-2 text-blue-600 underline">重新加载</button>
+                </div>
+            `;
+            setTimeout(() => {
+                if (indicator && indicator.parentNode) {
+                    indicator.remove();
                 }
+            }, 10000);
+        }
+    }
+}
+
+/**
+ * Render intermediate batch of blocks during background loading
+ */
+async function renderIntermediateBatch(blocks, pageContent, loadingIndicator) {
+    if (blocks.length === 0) return;
+    
+    try {
+        console.log(`Rendering intermediate batch: ${blocks.length} blocks`);
+        
+        // Validate and sort blocks
+        validateBlockOrder(blocks, "Intermediate batch - before sorting");
+        
+        if (blocks[0]._sequence !== undefined) {
+            blocks.sort((a, b) => (a._sequence || 0) - (b._sequence || 0));
+            validateBlockOrder(blocks, "Intermediate batch - after sorting");
+        }
+        
+        const content = await renderBlocks(blocks);
+        
+        if (content.trim()) {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = content;
+            
+            const fragment = document.createDocumentFragment();
+            while (tempDiv.firstChild) {
+                fragment.appendChild(tempDiv.firstChild);
             }
+            pageContent.insertBefore(fragment, loadingIndicator);
             
-            // 渲染所有新块
-            let processedContent = '';
-            let listContinuationHandled = false;
+            // Post-process the new content
+            postProcessContent(pageContent);
             
-            for (let i = 0; i < allNewBlocks.length; i++) {
-                const block = allNewBlocks[i];
-                try {
-                    // Log block processing for debugging
-                    if (block._sequence !== undefined) {
-                        console.log(`Processing additional block ${i+1}/${allNewBlocks.length}, sequence: ${block._sequence}, type: ${block.type}`);
+            console.log(`Successfully rendered intermediate batch: ${blocks.length} blocks`);
+        }
+    } catch (error) {
+        console.error('Error rendering intermediate batch:', error);
+    }
+}
+
+/**
+ * Render final batch of blocks
+ */
+async function renderFinalBatch(allNewBlocks, pageContent, loadingIndicator) {
+    try {
+        console.log(`Rendering ${allNewBlocks.length} final additional blocks in correct order...`);
+        
+        // Validate block order before sorting
+        validateBlockOrder(allNewBlocks, "Final batch - before sorting");
+        
+        // 确保块按序列顺序排列（如果有序列信息的话）
+        if (allNewBlocks[0]._sequence !== undefined) {
+            allNewBlocks.sort((a, b) => (a._sequence || 0) - (b._sequence || 0));
+            console.log(`Sorted ${allNewBlocks.length} additional blocks by sequence number`);
+            
+            // Validate again after sorting
+            validateBlockOrder(allNewBlocks, "Final batch - after sorting");
+        }
+        
+        // 检查最后一个元素是否是列表，以便正确续接
+        const lastElement = pageContent.children[pageContent.children.length - 2]; // -2 because last is loading indicator
+        let currentList = null;
+        
+        // 检查是否可以续接现有列表
+        if (lastElement && (lastElement.tagName === 'UL' || lastElement.tagName === 'OL')) {
+            const firstNewBlock = allNewBlocks[0];
+            if (firstNewBlock && 
+                ((firstNewBlock.type === 'bulleted_list_item' && lastElement.tagName === 'UL') ||
+                 (firstNewBlock.type === 'numbered_list_item' && lastElement.tagName === 'OL'))) {
+                currentList = { 
+                    tag: lastElement.tagName.toLowerCase(), 
+                    type: firstNewBlock.type,
+                    element: lastElement 
+                };
+                console.log(`Will extend existing ${currentList.tag} list`);
+            }
+        }
+        
+        // 渲染所有新块
+        let processedContent = '';
+        let listContinuationHandled = false;
+        
+        for (let i = 0; i < allNewBlocks.length; i++) {
+            const block = allNewBlocks[i];
+            try {
+                // Log block processing for debugging
+                if (block._sequence !== undefined) {
+                    console.log(`Processing final block ${i+1}/${allNewBlocks.length}, sequence: ${block._sequence}, type: ${block.type}`);
+                }
+                
+                // 特殊处理列表项以确保正确分组
+                if (block.type === 'bulleted_list_item' || block.type === 'numbered_list_item') {
+                    const listTag = block.type === 'bulleted_list_item' ? 'ul' : 'ol';
+                    
+                    // 如果是第一个块且可以续接现有列表
+                    if (i === 0 && currentList && currentList.tag === listTag && currentList.element && !listContinuationHandled) {
+                        // 直接渲染列表项并添加到现有列表
+                        const listItem = await renderBlock(block);
+                        currentList.element.insertAdjacentHTML('beforeend', listItem);
+                        listContinuationHandled = true;
+                        continue;
                     }
                     
-                    // 特殊处理列表项以确保正确分组
-                    if (block.type === 'bulleted_list_item' || block.type === 'numbered_list_item') {
-                        const listTag = block.type === 'bulleted_list_item' ? 'ul' : 'ol';
-                        
-                        // 如果是第一个块且可以续接现有列表
-                        if (i === 0 && currentList && currentList.tag === listTag && currentList.element && !listContinuationHandled) {
-                            // 直接渲染列表项并添加到现有列表
-                            const listItem = await renderBlock(block);
-                            currentList.element.insertAdjacentHTML('beforeend', listItem);
-                            listContinuationHandled = true;
-                            continue;
-                        }
-                        
-                        // 开始新列表或继续当前列表
-                        if (!currentList || currentList.tag !== listTag || currentList.element) {
-                            // 关闭之前的列表
-                            if (currentList && !currentList.element) {
-                                processedContent += `</${currentList.tag}>`;
-                            }
-                            
-                            // 开始新列表
-                            processedContent += `<${listTag} class="my-4 ${listTag === 'ul' ? 'list-disc' : 'list-decimal'} ml-6">`;
-                            currentList = { tag: listTag, type: block.type, element: null };
-                        }
-                        
-                        // 添加列表项
-                        processedContent += await renderBlock(block);
-                    } else {
-                        // 非列表项：关闭任何打开的列表
+                    // 开始新列表或继续当前列表
+                    if (!currentList || currentList.tag !== listTag || currentList.element) {
+                        // 关闭之前的列表
                         if (currentList && !currentList.element) {
                             processedContent += `</${currentList.tag}>`;
-                            currentList = null;
                         }
                         
-                        // 添加块内容
-                        processedContent += await renderBlock(block);
+                        // 开始新列表
+                        processedContent += `<${listTag} class="my-4 ${listTag === 'ul' ? 'list-disc' : 'list-decimal'} ml-6">`;
+                        currentList = { tag: listTag, type: block.type, element: null };
                     }
-                } catch (error) {
-                    console.error(`Error rendering block ${block.id}:`, error);
-                    processedContent += `<div class="text-red-500">Error rendering a block: ${error.message}</div>`;
+                    
+                    // 添加列表项
+                    processedContent += await renderBlock(block);
+                } else {
+                    // 非列表项：关闭任何打开的列表
+                    if (currentList && !currentList.element) {
+                        processedContent += `</${currentList.tag}>`;
+                        currentList = null;
+                    }
+                    
+                    // 添加块内容
+                    processedContent += await renderBlock(block);
                 }
+            } catch (error) {
+                console.error(`Error rendering block ${block.id}:`, error);
+                processedContent += `<div class="text-red-500">Error rendering a block: ${error.message}</div>`;
             }
-            
-            // 关闭任何剩余的打开列表
-            if (currentList && !currentList.element) {
-                processedContent += `</${currentList.tag}>`;
-            }
-            
-            // 只有在有处理过的内容时才添加到页面
-            if (processedContent.trim()) {
-                // 创建临时容器
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = processedContent;
-                
-                // 按顺序插入新内容到加载指示器之前
-                const fragment = document.createDocumentFragment();
-                while (tempDiv.firstChild) {
-                    fragment.appendChild(tempDiv.firstChild);
-                }
-                pageContent.insertBefore(fragment, loadingIndicator);
-                
-                console.log(`Successfully added ${allNewBlocks.length} blocks in correct order`);
-            }
-            
-            // 后处理新内容（这也会刷新目录）
-            postProcessContent(pageContent);
         }
+        
+        // 关闭任何剩余的打开列表
+        if (currentList && !currentList.element) {
+            processedContent += `</${currentList.tag}>`;
+        }
+        
+        // 只有在有处理过的内容时才添加到页面
+        if (processedContent.trim()) {
+            // 创建临时容器
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = processedContent;
+            
+            // 按顺序插入新内容到加载指示器之前
+            const fragment = document.createDocumentFragment();
+            while (tempDiv.firstChild) {
+                fragment.appendChild(tempDiv.firstChild);
+            }
+            pageContent.insertBefore(fragment, loadingIndicator);
+            
+            console.log(`Successfully added ${allNewBlocks.length} blocks in correct order`);
+        }
+        
+        // 后处理新内容（这也会刷新目录）
+        postProcessContent(pageContent);
         
         // Remove loading indicator
         const indicator = document.getElementById('background-loading');
@@ -1205,18 +1418,20 @@ async function loadMoreContentInBackground(pageId, cursor, pageContent) {
             indicator.remove();
         }
         
-        console.log(`Background loading completed. Loaded ${batchCount} batches with ${allNewBlocks.length} total blocks.`);
-        
     } catch (error) {
-        console.error('Error in background loading:', error);
+        console.error('Error rendering final batch:', error);
         const indicator = document.getElementById('background-loading');
         if (indicator) {
             indicator.innerHTML = `
                 <div class="text-red-500">
-                    <span>加载更多内容时出错</span>
+                    <span>渲染内容时出错</span>
                 </div>
             `;
-            setTimeout(() => indicator.remove(), 3000);
+            setTimeout(() => {
+                if (indicator && indicator.parentNode) {
+                    indicator.remove();
+                }
+            }, 3000);
         }
     }
 }
