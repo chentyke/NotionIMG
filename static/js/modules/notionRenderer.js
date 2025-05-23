@@ -215,48 +215,42 @@ async function renderBlock(block) {
 
     switch (block.type) {
         case 'paragraph':
-            const paragraphText = block.paragraph?.rich_text 
-                ? processRichText(block.paragraph.rich_text)
-                : '';
+            // Use the processed text from our API response
+            const paragraphText = block.text || '';
             return `<p ${blockColorStyle ? `style="${blockColorStyle}"` : ''}>${paragraphText}</p>`;
         
         case 'heading_1':
-            const h1Text = block.heading_1?.rich_text 
-                ? processRichText(block.heading_1.rich_text)
-                : '';
+            // Use the processed text from our API response
+            const h1Text = block.text || '';
             const h1Id = `heading-${block.id || generateHeadingId(h1Text)}`;
             // Add to table of contents
             TableOfContents.addHeading(1, h1Text.replace(/<[^>]*>/g, ''), h1Id);
             return `<h1 id="${h1Id}" ${blockColorStyle ? `style="${blockColorStyle}"` : ''}>${h1Text}</h1>`;
         
         case 'heading_2':
-            const h2Text = block.heading_2?.rich_text 
-                ? processRichText(block.heading_2.rich_text)
-                : '';
+            // Use the processed text from our API response
+            const h2Text = block.text || '';
             const h2Id = `heading-${block.id || generateHeadingId(h2Text)}`;
             // Add to table of contents
             TableOfContents.addHeading(2, h2Text.replace(/<[^>]*>/g, ''), h2Id);
             return `<h2 id="${h2Id}" ${blockColorStyle ? `style="${blockColorStyle}"` : ''}>${h2Text}</h2>`;
         
         case 'heading_3':
-            const h3Text = block.heading_3?.rich_text 
-                ? processRichText(block.heading_3.rich_text)
-                : '';
+            // Use the processed text from our API response
+            const h3Text = block.text || '';
             const h3Id = `heading-${block.id || generateHeadingId(h3Text)}`;
             // Add to table of contents
             TableOfContents.addHeading(3, h3Text.replace(/<[^>]*>/g, ''), h3Id);
             return `<h3 id="${h3Id}" ${blockColorStyle ? `style="${blockColorStyle}"` : ''}>${h3Text}</h3>`;
         
         case 'bulleted_list_item':
-            const bulletText = block.bulleted_list_item?.rich_text 
-                ? processRichText(block.bulleted_list_item.rich_text)
-                : '';
+            // Use the processed text from our API response
+            const bulletText = block.text || '';
             return `<li ${blockColorStyle ? `style="${blockColorStyle}"` : ''}>${bulletText}</li>`;
         
         case 'numbered_list_item':
-            const numberedText = block.numbered_list_item?.rich_text 
-                ? processRichText(block.numbered_list_item.rich_text)
-                : '';
+            // Use the processed text from our API response
+            const numberedText = block.text || '';
             return `<li ${blockColorStyle ? `style="${blockColorStyle}"` : ''}>${numberedText}</li>`;
         
         case 'to_do':
