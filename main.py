@@ -1106,12 +1106,12 @@ async def get_page(page_id: str, limit: Optional[int] = None, cursor: Optional[s
                 
                 # Calculate page size for this request
                 remaining_limit = effective_limit - blocks_processed if effective_limit else 100
-                page_size = min(100, remaining_limit) if effective_limit else 100
+                page_size = min(30, remaining_limit) if effective_limit else 100
                 api_params["page_size"] = page_size
                 
                 response = await asyncio.wait_for(
                     loop.run_in_executor(None, partial(notion.blocks.children.list, **api_params)),
-                    timeout=20.0  # 20 second timeout for blocks
+                    timeout=8.0  # 减少到8秒避免Vercel的10秒限制
                 )
                 
                 current_blocks = response["results"]
@@ -1221,10 +1221,10 @@ async def get_blocks(page_id: str):
 
 # 添加专门的增量加载更多内容的端点
 @app.get("/api/page/{page_id}/more")
-async def get_more_blocks(page_id: str, cursor: str, limit: Optional[int] = 20):
+async def get_more_blocks(page_id: str, cursor: str, limit: Optional[int] = 15):
     """
     获取页面的更多块内容 - 用于增量加载避免API限制
-    支持超长文档的渐进式加载
+    支持超长文档的渐进式加载，针对Vercel的10秒函数限制优化
     """
     try:
         logger.info(f"Fetching more blocks for page {page_id} with cursor {cursor}, limit={limit}")
@@ -1237,8 +1237,8 @@ async def get_more_blocks(page_id: str, cursor: str, limit: Optional[int] = 20):
         next_cursor = cursor
         blocks_processed = 0
         
-        # 增加单次请求的最大限制，支持更大的文档
-        max_limit = min(limit, 100) if limit else 50
+        # 减少单次请求的最大限制以适应Vercel的10秒函数限制
+        max_limit = min(limit, 20) if limit else 15  # 大幅减少避免超时
         
         logger.info(f"Loading more blocks with limit={max_limit}")
         try:
@@ -1250,7 +1250,7 @@ async def get_more_blocks(page_id: str, cursor: str, limit: Optional[int] = 20):
                 api_params = {
                     "block_id": page_id,
                     "start_cursor": next_cursor,
-                    "page_size": min(100, max_limit - blocks_processed)
+                    "page_size": min(30, max_limit - blocks_processed)  # 减少页面大小
                 }
                 
                 logger.info(f"Requesting blocks with params: {api_params}")
@@ -1258,7 +1258,7 @@ async def get_more_blocks(page_id: str, cursor: str, limit: Optional[int] = 20):
                 try:
                     response = await asyncio.wait_for(
                         loop.run_in_executor(None, partial(notion.blocks.children.list, **api_params)),
-                        timeout=30.0  # 增加超时时间到30秒
+                        timeout=8.0  # 减少到8秒避免Vercel的10秒限制
                     )
                 except asyncio.TimeoutError:
                     logger.error(f"Timeout retrieving more blocks for page {page_id}, cursor {cursor}")

@@ -1052,6 +1052,7 @@ async function loadMoreContentInBackground(pageId, cursor, pageContent) {
         const maxRetries = 3;
         const maxFailedAttempts = 5; // 允许5次失败
         const maxBatches = 100; // 大幅增加批次限制，支持超长文档
+        let consecutiveTimeouts = 0; // 跟踪连续超时次数
         
         // 更新进度指示器
         const updateProgress = (current, failed = 0) => {
@@ -1089,26 +1090,58 @@ async function loadMoreContentInBackground(pageId, cursor, pageContent) {
             while (retryCount < maxRetries && !batchSuccess) {
                 try {
                     // 动态调整延迟时间，随着批次增加而增加
-                    const baseDelay = 800; // 增加基础延迟
-                    const dynamicDelay = baseDelay + (batchCount * 200) + (failedAttempts * 500);
+                    // 考虑Vercel冷启动的影响，增加基础延迟
+                    const baseDelay = 1200; // 增加基础延迟以适应Vercel
+                    const dynamicDelay = baseDelay + (batchCount * 300) + (failedAttempts * 800);
                     
                     if (batchCount > 0 || retryCount > 0) {
                         console.log(`Waiting ${dynamicDelay}ms before next batch (batch ${batchCount + 1}, retry ${retryCount + 1})`);
                         await new Promise(resolve => setTimeout(resolve, dynamicDelay));
                     }
                     
-                    // 动态调整每批次的块数量，避免单次请求过大
-                    const batchSize = Math.max(20, Math.min(50, 50 - Math.floor(batchCount / 10) * 5));
+                    // 动态调整每批次的块数量，考虑Vercel的10秒限制
+                    // 较小的批次避免函数超时
+                    let batchSize = Math.max(10, Math.min(20, 25 - Math.floor(batchCount / 5) * 2));
+                    
+                    // 如果有连续超时，进一步减少批次大小
+                    if (consecutiveTimeouts > 0) {
+                        batchSize = Math.max(5, Math.floor(batchSize / (consecutiveTimeouts + 1)));
+                        console.log(`Reducing batch size to ${batchSize} due to ${consecutiveTimeouts} consecutive timeouts`);
+                    }
+                    
+                    // 在重试时进一步减少批次大小
+                    if (retryCount > 0) {
+                        batchSize = Math.max(3, Math.floor(batchSize / (retryCount + 1)));
+                        console.log(`Further reducing batch size to ${batchSize} for retry ${retryCount + 1}`);
+                    }
                     
                     console.log(`Loading batch ${batchCount + 1} with ${batchSize} blocks limit (retry ${retryCount + 1}/${maxRetries})`);
                     
                     const response = await fetch(`/api/page/${pageId}/more?cursor=${nextCursor}&limit=${batchSize}`);
                     
                     if (!response.ok) {
+                        // 特殊处理不同的HTTP错误
+                        if (response.status === 504 || response.status === 503) {
+                            throw new Error(`Function timeout (${response.status}): Reducing batch size for next attempt`);
+                        }
                         throw new Error(`Server returned ${response.status}: ${response.statusText}`);
                     }
                     
-                    const moreData = await response.json();
+                    const responseText = await response.text();
+                    
+                    // 检查是否是Vercel的错误页面
+                    if (responseText.includes('FUNCTION_INVOCATION_TIMEOUT') || 
+                        responseText.includes('An error occurred with your deployment')) {
+                        throw new Error('Vercel function timeout - reducing batch size');
+                    }
+                    
+                    let moreData;
+                    try {
+                        moreData = JSON.parse(responseText);
+                    } catch (parseError) {
+                        console.error('Failed to parse response:', responseText.substring(0, 200));
+                        throw new Error(`Invalid JSON response: ${parseError.message}`);
+                    }
                     
                     // 检查服务器是否返回了错误信息
                     if (moreData.error) {
@@ -1142,6 +1175,9 @@ async function loadMoreContentInBackground(pageId, cursor, pageContent) {
                     nextCursor = moreData.next_cursor;
                     batchSuccess = true;
                     
+                    // 重置连续超时计数器，因为这次成功了
+                    consecutiveTimeouts = 0;
+                    
                     // 重置失败计数器，因为这次成功了
                     if (retryCount > 0) {
                         console.log(`Batch ${batchCount + 1} succeeded after ${retryCount + 1} attempts`);
@@ -1149,10 +1185,27 @@ async function loadMoreContentInBackground(pageId, cursor, pageContent) {
                     
                 } catch (error) {
                     retryCount++;
+                    const isTimeoutError = error.message.includes('timeout') || 
+                                         error.message.includes('Timeout') || 
+                                         error.message.includes('FUNCTION_INVOCATION_TIMEOUT');
+                    
                     console.error(`Error loading batch ${batchCount + 1} (attempt ${retryCount}/${maxRetries}):`, error);
+                    
+                    // 如果是超时错误，尝试减少批次大小
+                    if (isTimeoutError && retryCount < maxRetries) {
+                        console.warn(`Timeout detected for batch ${batchCount + 1}, will use smaller batch size on retry`);
+                        // 在重试时动态减少批次大小，但不修改当前批次的batchSize变量
+                    }
                     
                     if (retryCount >= maxRetries) {
                         failedAttempts++;
+                        
+                        // 如果是超时错误，增加连续超时计数器
+                        if (isTimeoutError) {
+                            consecutiveTimeouts++;
+                            console.warn(`Consecutive timeout #${consecutiveTimeouts} for batch ${batchCount + 1}`);
+                        }
+                        
                         console.warn(`Failed to load batch ${batchCount + 1} after ${maxRetries} attempts. Failed attempts: ${failedAttempts}/${maxFailedAttempts}`);
                         
                         // 即使这个批次失败，也继续尝试下一个批次（如果有的话）
@@ -1161,9 +1214,13 @@ async function loadMoreContentInBackground(pageId, cursor, pageContent) {
                             batchSuccess = true; // 允许继续到下一个批次
                             
                             // 为失败的批次创建一个占位符块
+                            const errorMessage = isTimeoutError ? 
+                                `批次 ${batchCount + 1} 超时无法加载 (可能因为Vercel函数限制)` :
+                                `批次 ${batchCount + 1} 无法加载 - ${error.message}`;
+                            
                             const errorBlock = {
                                 type: "paragraph",
-                                text: `<span class="text-red-500">[加载错误: 批次 ${batchCount + 1} 无法加载 - ${error.message}]</span>`,
+                                text: `<span class="text-red-500">[加载错误: ${errorMessage}]</span>`,
                                 color: "red",
                                 id: `error-batch-${batchCount + 1}`,
                                 _sequence: totalBlocksCollected,
@@ -1173,8 +1230,10 @@ async function loadMoreContentInBackground(pageId, cursor, pageContent) {
                             totalBlocksCollected += 1;
                         }
                     } else {
-                        // 等待更长时间再重试
-                        const retryDelay = 1000 * retryCount + Math.random() * 1000; // 添加随机延迟避免同步重试
+                        // 等待更长时间再重试，超时错误等待更久
+                        const retryDelay = isTimeoutError ? 
+                            2000 * retryCount + Math.random() * 1000 : 
+                            1000 * retryCount + Math.random() * 1000;
                         console.log(`Waiting ${retryDelay}ms before retry ${retryCount + 1}`);
                         await new Promise(resolve => setTimeout(resolve, retryDelay));
                     }
