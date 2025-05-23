@@ -36,6 +36,25 @@ const TableOfContents = {
     }
 };
 
+// Debounced TOC refresh function to avoid too frequent updates
+let tocRefreshTimeout = null;
+function debouncedTocRefresh() {
+    if (tocRefreshTimeout) {
+        clearTimeout(tocRefreshTimeout);
+    }
+    
+    tocRefreshTimeout = setTimeout(() => {
+        try {
+            if (window.initFloatingToc && typeof window.initFloatingToc === 'function') {
+                window.initFloatingToc();
+                console.log('Debounced TOC refresh completed');
+            }
+        } catch (error) {
+            console.error('Error in debounced TOC refresh:', error);
+        }
+    }, 300); // 300ms delay to debounce rapid updates
+}
+
 // Page Transition module
 const PageTransition = {
     isTransitioning: false,
@@ -792,6 +811,19 @@ async function loadPage(pageId = null) {
             // Clear the fallback timer since we completed successfully
             clearTimeout(fallbackTimer);
             
+            // Initialize floating TOC for the initial content
+            console.log('Initializing floating TOC after page load...');
+            try {
+                if (window.initFloatingToc && typeof window.initFloatingToc === 'function') {
+                    window.initFloatingToc();
+                    console.log('Floating TOC initialized successfully after page load');
+                } else {
+                    console.warn('initFloatingToc function not available after page load');
+                }
+            } catch (error) {
+                console.error('Error initializing floating TOC after page load:', error);
+            }
+            
             // Start loading remaining content in background if there's more
             if (data.has_more && data.next_cursor) {
                 console.log('Starting background loading for remaining content...');
@@ -882,7 +914,7 @@ async function loadMoreContentInBackground(pageId, cursor, pageContent) {
                         pageContent.insertBefore(tempDiv.firstChild, loadingIndicator);
                     }
                     
-                    // Post-process the new content
+                    // Post-process the new content (this will also refresh the TOC)
                     postProcessContent(pageContent);
                     
                     console.log(`Loaded batch ${batchCount + 1}: ${moreData.blocks.length} blocks`);
@@ -1001,6 +1033,15 @@ function postProcessContent(container) {
             console.log('Image lazy loading set up successfully');
         } catch (error) {
             console.error('Error setting up image lazy loading:', error);
+        }
+        
+        // Refresh floating TOC to include new headings
+        console.log('Refreshing floating TOC...');
+        try {
+            debouncedTocRefresh();
+            console.log('Floating TOC refresh scheduled');
+        } catch (error) {
+            console.error('Error refreshing floating TOC:', error);
         }
         
         console.log('Post-processing completed');

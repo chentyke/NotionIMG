@@ -608,6 +608,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.toggleFloatingToc = toggleFloatingToc;
     window.hideFloatingToc = hideFloatingToc;
     window.scrollToHeading = scrollToHeading;
+    window.initFloatingToc = initFloatingToc;
 });
 
 // Handle errors globally
