@@ -1326,6 +1326,48 @@ async function loadMoreContentInBackground(pageId, cursor, pageContent) {
 }
 
 /**
+ * Calculate the starting number for an ordered list to continue numbering
+ * @param {HTMLElement} pageContent - Page content container
+ * @returns {number} - The next number to start from
+ */
+function calculateOrderedListStart(pageContent) {
+    let totalOrderedItems = 0;
+    
+    // 查找页面中所有的有序列表
+    const orderedLists = pageContent.querySelectorAll('ol');
+    
+    for (const ol of orderedLists) {
+        const listItems = ol.querySelectorAll('li');
+        totalOrderedItems += listItems.length;
+    }
+    
+    return totalOrderedItems + 1;
+}
+
+/**
+ * Get the last list context for proper continuation
+ * @param {HTMLElement} pageContent - Page content container  
+ * @param {HTMLElement} loadingIndicator - Loading indicator element
+ * @returns {Object|null} - List context or null
+ */
+function getLastListContext(pageContent, loadingIndicator) {
+    // 找到加载指示器之前的最后一个元素
+    const lastElement = pageContent.children[pageContent.children.length - 2]; // -2 because last is loading indicator
+    
+    if (lastElement && (lastElement.tagName === 'UL' || lastElement.tagName === 'OL')) {
+        const listItems = lastElement.querySelectorAll('li');
+        return {
+            element: lastElement,
+            tag: lastElement.tagName.toLowerCase(),
+            type: lastElement.tagName === 'UL' ? 'bulleted_list_item' : 'numbered_list_item',
+            itemCount: listItems.length
+        };
+    }
+    
+    return null;
+}
+
+/**
  * Render incremental blocks during background loading (every 10 blocks)
  * @param {Array} blocks - Blocks to render
  * @param {HTMLElement} pageContent - Page content container
@@ -1345,22 +1387,15 @@ async function renderIncrementalBlocks(blocks, pageContent, loadingIndicator) {
             validateBlockOrder(blocks, "Incremental blocks - after sorting");
         }
         
-        // 检查最后一个元素是否是列表，以便正确续接
-        const lastElement = pageContent.children[pageContent.children.length - 2]; // -2 because last is loading indicator
-        let currentList = null;
+        // 获取最后的列表上下文
+        let currentList = getLastListContext(pageContent, loadingIndicator);
+        let orderedListStart = null; // 有序列表的起始编号
         
-        // 检查是否可以续接现有列表
-        if (lastElement && (lastElement.tagName === 'UL' || lastElement.tagName === 'OL')) {
-            const firstNewBlock = blocks[0];
-            if (firstNewBlock && 
-                ((firstNewBlock.type === 'bulleted_list_item' && lastElement.tagName === 'UL') ||
-                 (firstNewBlock.type === 'numbered_list_item' && lastElement.tagName === 'OL'))) {
-                currentList = { 
-                    tag: lastElement.tagName.toLowerCase(), 
-                    type: firstNewBlock.type,
-                    element: lastElement 
-                };
-                console.log(`Will extend existing ${currentList.tag} list with incremental blocks`);
+        if (currentList) {
+            console.log(`Found existing ${currentList.tag} list with ${currentList.itemCount} items`);
+            if (currentList.tag === 'ol') {
+                orderedListStart = currentList.itemCount + 1;
+                console.log(`Next ordered list should start from ${orderedListStart}`);
             }
         }
         
@@ -1391,18 +1426,36 @@ async function renderIncrementalBlocks(blocks, pageContent, loadingIndicator) {
                             processedContent += `</${currentList.tag}>`;
                         }
                         
-                        // 开始新列表
-                        processedContent += `<${listTag} class="my-4 ${listTag === 'ul' ? 'list-disc' : 'list-decimal'} ml-6">`;
+                        // 开始新列表，对于有序列表需要设置起始编号
+                        if (listTag === 'ol') {
+                            // 如果还没有计算起始编号，现在计算
+                            if (orderedListStart === null) {
+                                orderedListStart = calculateOrderedListStart(pageContent);
+                                console.log(`Calculated ordered list start: ${orderedListStart}`);
+                            }
+                            processedContent += `<ol class="my-4 list-decimal ml-6" start="${orderedListStart}">`;
+                            console.log(`Starting new ordered list from ${orderedListStart}`);
+                        } else {
+                            processedContent += `<ul class="my-4 list-disc ml-6">`;
+                        }
+                        
                         currentList = { tag: listTag, type: block.type, element: null };
                     }
                     
                     // 添加列表项
-                    processedContent += await renderBlock(block);
+                    const renderedItem = await renderBlock(block);
+                    processedContent += renderedItem;
+                    
+                    // 更新有序列表的计数
+                    if (listTag === 'ol' && orderedListStart !== null) {
+                        orderedListStart++;
+                    }
                 } else {
                     // 非列表项：关闭任何打开的列表
                     if (currentList && !currentList.element) {
                         processedContent += `</${currentList.tag}>`;
                         currentList = null;
+                        orderedListStart = null; // 重置编号
                     }
                     
                     // 添加块内容
