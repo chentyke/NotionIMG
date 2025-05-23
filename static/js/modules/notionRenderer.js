@@ -140,6 +140,37 @@ const PageTransition = {
     }
 };
 
+// Color mapping for Notion colors to CSS classes and styles
+function getNotionColorStyle(color) {
+    if (!color || color === 'default') return '';
+    
+    const colorMap = {
+        // Text colors
+        'gray': 'color: #6B7280;',
+        'brown': 'color: #92400E;',
+        'orange': 'color: #EA580C;',
+        'yellow': 'color: #D97706;',
+        'green': 'color: #059669;',
+        'blue': 'color: #2563EB;',
+        'purple': 'color: #7C3AED;',
+        'pink': 'color: #DB2777;',
+        'red': 'color: #DC2626;',
+        
+        // Background colors
+        'gray_background': 'background-color: #F3F4F6; padding: 0.25rem 0.5rem; border-radius: 0.25rem;',
+        'brown_background': 'background-color: #FEF3C7; color: #92400E; padding: 0.25rem 0.5rem; border-radius: 0.25rem;',
+        'orange_background': 'background-color: #FED7AA; color: #EA580C; padding: 0.25rem 0.5rem; border-radius: 0.25rem;',
+        'yellow_background': 'background-color: #FEF3C7; color: #D97706; padding: 0.25rem 0.5rem; border-radius: 0.25rem;',
+        'green_background': 'background-color: #D1FAE5; color: #059669; padding: 0.25rem 0.5rem; border-radius: 0.25rem;',
+        'blue_background': 'background-color: #DBEAFE; color: #2563EB; padding: 0.25rem 0.5rem; border-radius: 0.25rem;',
+        'purple_background': 'background-color: #E9D5FF; color: #7C3AED; padding: 0.25rem 0.5rem; border-radius: 0.25rem;',
+        'pink_background': 'background-color: #FCE7F3; color: #DB2777; padding: 0.25rem 0.5rem; border-radius: 0.25rem;',
+        'red_background': 'background-color: #FEE2E2; color: #DC2626; padding: 0.25rem 0.5rem; border-radius: 0.25rem;'
+    };
+    
+    return colorMap[color] || '';
+}
+
 /**
  * Load a child page
  * @param {string} pageId - The ID of the page to load
@@ -179,18 +210,15 @@ async function renderBlock(block) {
     updateLoadingProgress((getLoadedBlocks() / getTotalBlocks()) * 100);
     
     let content = '';
-    const blockColor = block.color && block.color !== 'default' 
-        ? block.color.endsWith('_background') 
-            ? `bg-${block.color}` 
-            : `text-${block.color}`
-        : '';
+    // Fix color handling - use inline styles instead of classes
+    const blockColorStyle = getNotionColorStyle(block.color);
 
     switch (block.type) {
         case 'paragraph':
             const paragraphText = block.paragraph?.rich_text 
                 ? processRichText(block.paragraph.rich_text)
                 : '';
-            return `<p class="${blockColor}">${paragraphText}</p>`;
+            return `<p ${blockColorStyle ? `style="${blockColorStyle}"` : ''}>${paragraphText}</p>`;
         
         case 'heading_1':
             const h1Text = block.heading_1?.rich_text 
@@ -199,7 +227,7 @@ async function renderBlock(block) {
             const h1Id = `heading-${block.id || generateHeadingId(h1Text)}`;
             // Add to table of contents
             TableOfContents.addHeading(1, h1Text.replace(/<[^>]*>/g, ''), h1Id);
-            return `<h1 id="${h1Id}" class="${blockColor}">${h1Text}</h1>`;
+            return `<h1 id="${h1Id}" ${blockColorStyle ? `style="${blockColorStyle}"` : ''}>${h1Text}</h1>`;
         
         case 'heading_2':
             const h2Text = block.heading_2?.rich_text 
@@ -208,7 +236,7 @@ async function renderBlock(block) {
             const h2Id = `heading-${block.id || generateHeadingId(h2Text)}`;
             // Add to table of contents
             TableOfContents.addHeading(2, h2Text.replace(/<[^>]*>/g, ''), h2Id);
-            return `<h2 id="${h2Id}" class="${blockColor}">${h2Text}</h2>`;
+            return `<h2 id="${h2Id}" ${blockColorStyle ? `style="${blockColorStyle}"` : ''}>${h2Text}</h2>`;
         
         case 'heading_3':
             const h3Text = block.heading_3?.rich_text 
@@ -217,19 +245,19 @@ async function renderBlock(block) {
             const h3Id = `heading-${block.id || generateHeadingId(h3Text)}`;
             // Add to table of contents
             TableOfContents.addHeading(3, h3Text.replace(/<[^>]*>/g, ''), h3Id);
-            return `<h3 id="${h3Id}" class="${blockColor}">${h3Text}</h3>`;
+            return `<h3 id="${h3Id}" ${blockColorStyle ? `style="${blockColorStyle}"` : ''}>${h3Text}</h3>`;
         
         case 'bulleted_list_item':
             const bulletText = block.bulleted_list_item?.rich_text 
                 ? processRichText(block.bulleted_list_item.rich_text)
                 : '';
-            return `<li class="${blockColor}">${bulletText}</li>`;
+            return `<li ${blockColorStyle ? `style="${blockColorStyle}"` : ''}>${bulletText}</li>`;
         
         case 'numbered_list_item':
             const numberedText = block.numbered_list_item?.rich_text 
                 ? processRichText(block.numbered_list_item.rich_text)
                 : '';
-            return `<li class="${blockColor}">${numberedText}</li>`;
+            return `<li ${blockColorStyle ? `style="${blockColorStyle}"` : ''}>${numberedText}</li>`;
         
         case 'to_do':
             try {
@@ -247,7 +275,7 @@ async function renderBlock(block) {
                             class="todo-checkbox">
                         <span class="todo-text ${isChecked ? 'completed' : ''}" 
                             ${color !== 'default' ? 
-                                `style="color: ${color === 'gray' ? '#9CA3AF' : color};"` : ''}>
+                                `style="${getNotionColorStyle(color)}"` : ''}>
                             ${todoText}
                         </span>
                     </div>`;
@@ -302,10 +330,29 @@ async function renderBlock(block) {
             return '<hr class="my-6 border-gray-200">';
         
         case 'quote':
+            // Handle quote blocks
             const quoteText = block.quote?.rich_text 
                 ? processRichText(block.quote.rich_text)
                 : '';
-            return `<blockquote class="border-l-4 pl-4 italic ${blockColor} my-4">${quoteText}</blockquote>`;
+            let quoteChildren = '';
+            
+            // Process children if present
+            if (block.children && block.children.length > 0) {
+                try {
+                    const childBlocks = await Promise.all(block.children.map(async child => {
+                        return await renderBlock(child);
+                    }));
+                    quoteChildren = childBlocks.join('');
+                } catch (error) {
+                    console.error(`Error processing quote children: ${error}`);
+                }
+            }
+            
+            return `
+                <blockquote class="border-l-4 pl-4 italic my-4" ${blockColorStyle ? `style="${blockColorStyle}"` : ''}>
+                    ${quoteText}
+                    ${quoteChildren}
+                </blockquote>`;
         
         case 'code':
             try {
@@ -315,8 +362,11 @@ async function renderBlock(block) {
                 const language = block.code?.language || 'plain text';
                 const codeId = `code-${Math.random().toString(36).substr(2, 9)}`;
                 
+                // Apply color to the code block container if specified
+                const codeContainerStyle = blockColorStyle ? ` style="${blockColorStyle}"` : '';
+                
                 return `
-                    <div class="code-block relative my-4">
+                    <div class="code-block relative my-4"${codeContainerStyle}>
                         <div class="flex justify-between items-center bg-gray-800 text-white px-4 py-2 text-sm rounded-t-lg">
                             <span>${language}</span>
                             <button onclick="copyCode(this)" data-code-id="${codeId}" class="copy-code-btn">
@@ -387,7 +437,7 @@ async function renderBlock(block) {
 
             return `
                 <div class="toggle-block" id="${toggleId}">
-                    <div class="toggle-header" onclick="toggleBlock('${toggleId}')" class="${blockColor}">
+                    <div class="toggle-header" onclick="toggleBlock('${toggleId}')" ${blockColorStyle ? `style="${blockColorStyle}"` : ''}>
                         <svg class="toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5l7 7-7 7"></path>
                         </svg>
@@ -490,7 +540,7 @@ async function renderBlock(block) {
             }
             
             return `
-                <div class="callout border-l-4 border-blue-400 bg-blue-50 p-4 my-4 ${blockColor}">
+                <div class="callout border-l-4 border-blue-400 bg-blue-50 p-4 my-4" ${blockColorStyle ? `style="${blockColorStyle}"` : ''}>
                     <div class="flex items-start gap-3">
                         <div class="callout-icon text-lg">${icon}</div>
                         <div class="callout-content flex-1">${calloutContent}</div>

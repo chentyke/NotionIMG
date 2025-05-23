@@ -1,5 +1,36 @@
 // Utility functions for Notion Page Renderer
 
+// Color mapping for Notion colors to CSS styles (same as in notionRenderer.js)
+function getNotionColorStyle(color) {
+    if (!color || color === 'default') return '';
+    
+    const colorMap = {
+        // Text colors
+        'gray': 'color: #6B7280;',
+        'brown': 'color: #92400E;',
+        'orange': 'color: #EA580C;',
+        'yellow': 'color: #D97706;',
+        'green': 'color: #059669;',
+        'blue': 'color: #2563EB;',
+        'purple': 'color: #7C3AED;',
+        'pink': 'color: #DB2777;',
+        'red': 'color: #DC2626;',
+        
+        // Background colors
+        'gray_background': 'background-color: #F3F4F6; padding: 0.25rem 0.5rem; border-radius: 0.25rem;',
+        'brown_background': 'background-color: #FEF3C7; color: #92400E; padding: 0.25rem 0.5rem; border-radius: 0.25rem;',
+        'orange_background': 'background-color: #FED7AA; color: #EA580C; padding: 0.25rem 0.5rem; border-radius: 0.25rem;',
+        'yellow_background': 'background-color: #FEF3C7; color: #D97706; padding: 0.25rem 0.5rem; border-radius: 0.25rem;',
+        'green_background': 'background-color: #D1FAE5; color: #059669; padding: 0.25rem 0.5rem; border-radius: 0.25rem;',
+        'blue_background': 'background-color: #DBEAFE; color: #2563EB; padding: 0.25rem 0.5rem; border-radius: 0.25rem;',
+        'purple_background': 'background-color: #E9D5FF; color: #7C3AED; padding: 0.25rem 0.5rem; border-radius: 0.25rem;',
+        'pink_background': 'background-color: #FCE7F3; color: #DB2777; padding: 0.25rem 0.5rem; border-radius: 0.25rem;',
+        'red_background': 'background-color: #FEE2E2; color: #DC2626; padding: 0.25rem 0.5rem; border-radius: 0.25rem;'
+    };
+    
+    return colorMap[color] || '';
+}
+
 /**
  * Processes rich text array from Notion API
  * @param {Array} richTextArray - Array of rich text objects
@@ -29,8 +60,13 @@ function processRichText(richTextArray) {
         if (annotations.strikethrough) content = `<del>${content}</del>`;
         if (annotations.underline) content = `<u>${content}</u>`;
         if (annotations.code) content = `<code>${content}</code>`;
+        
+        // Apply color using inline styles
         if (annotations.color && annotations.color !== 'default') {
-            content = `<span class="color-${annotations.color}">${content}</span>`;
+            const colorStyle = getNotionColorStyle(annotations.color);
+            if (colorStyle) {
+                content = `<span style="${colorStyle}">${content}</span>`;
+            }
         }
         
         // Apply link if present
