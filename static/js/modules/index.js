@@ -90,6 +90,10 @@ function initFloatingHeader() {
                             const breadcrumbPath = buildBreadcrumbPath(heading);
                             floatingBreadcrumb.innerHTML = breadcrumbPath;
                             floatingBreadcrumb.classList.remove('changing');
+                            
+                            // 移动端动态调整标题宽度
+                            adjustMobileTitleWidth();
+                            
                             setTimeout(() => {
                                 floatingBreadcrumb.classList.add('visible');
                             }, 50);
@@ -98,6 +102,10 @@ function initFloatingHeader() {
                         // 初次显示或无动画模式
                         const breadcrumbPath = buildBreadcrumbPath(heading);
                         floatingBreadcrumb.innerHTML = breadcrumbPath;
+                        
+                        // 移动端动态调整标题宽度
+                        adjustMobileTitleWidth();
+                        
                         setTimeout(() => {
                             floatingBreadcrumb.classList.add('visible');
                         }, 100);
@@ -173,6 +181,7 @@ function initFloatingHeader() {
         }
         resizeTimeout = setTimeout(() => {
             updateBreadcrumb(false); // 屏幕旋转时不需要动画
+            adjustMobileTitleWidth(); // 调整移动端标题宽度
         }, 100);
     }, { passive: true });
     
@@ -181,6 +190,44 @@ function initFloatingHeader() {
         handleScroll();
         updateBreadcrumb();
     }, 100);
+}
+
+/**
+ * Adjust mobile title width based on breadcrumb space requirements
+ */
+function adjustMobileTitleWidth() {
+    const isMobile = window.innerWidth <= 640;
+    if (!isMobile) return;
+    
+    const dynamicHeader = document.getElementById('dynamicHeader');
+    const floatingTitle = document.getElementById('floatingTitle');
+    const floatingBreadcrumb = document.getElementById('floatingBreadcrumb');
+    
+    if (!dynamicHeader || !floatingTitle || !floatingBreadcrumb) return;
+    
+    // 只在小标题状态时调整
+    if (!floatingHeaderVisible) return;
+    
+    // 获取容器和面包屑宽度
+    const headerWidth = dynamicHeader.offsetWidth;
+    const padding = 40; // 左右内边距
+    const gap = 12; // 标题和面包屑之间的间距
+    const availableWidth = headerWidth - padding * 2;
+    
+    // 测量面包屑的实际宽度
+    const breadcrumbWidth = floatingBreadcrumb.offsetWidth;
+    
+    // 计算标题可用宽度
+    const titleAvailableWidth = availableWidth - breadcrumbWidth - gap;
+    
+    // 设置标题的最大宽度
+    if (titleAvailableWidth > 0) {
+        floatingTitle.style.maxWidth = `${titleAvailableWidth}px`;
+    } else {
+        // 如果空间不足，给标题设置最小宽度
+        const minTitleWidth = Math.max(100, availableWidth * 0.4);
+        floatingTitle.style.maxWidth = `${minTitleWidth}px`;
+    }
 }
 
 /**
@@ -193,10 +240,72 @@ function buildBreadcrumbPath(currentHeading) {
     const isMobile = window.innerWidth <= 640;
     const separator = '<span class="breadcrumb-separator">/</span>';
     
-    // 移动端只显示最后一级（当前标题）
+    // 移动端优化：动态计算可用空间
     if (isMobile) {
+        const dynamicHeader = document.getElementById('dynamicHeader');
+        const floatingTitle = document.getElementById('floatingTitle');
+        
+        if (dynamicHeader && floatingTitle) {
+            // 获取头部容器的宽度
+            const headerWidth = dynamicHeader.offsetWidth;
+            const padding = 40; // 左右内边距
+            const gap = 12; // 标题和面包屑之间的间距
+            const availableWidth = headerWidth - padding * 2;
+            
+            // 测量标题的实际宽度
+            const titleText = floatingTitle.textContent;
+            const titleMeasureSpan = document.createElement('span');
+            titleMeasureSpan.style.cssText = `
+                position: absolute;
+                visibility: hidden;
+                font-size: 1rem;
+                font-weight: 600;
+                line-height: 1.4;
+                white-space: nowrap;
+            `;
+            titleMeasureSpan.textContent = titleText;
+            document.body.appendChild(titleMeasureSpan);
+            const titleWidth = titleMeasureSpan.offsetWidth;
+            document.body.removeChild(titleMeasureSpan);
+            
+            // 计算面包屑可用宽度
+            const breadcrumbAvailableWidth = availableWidth - titleWidth - gap;
+            
+            // 根据可用宽度决定显示内容
+            let headingText = currentHeading.text;
+            const minBreadcrumbWidth = 80; // 最小面包屑宽度
+            
+            if (breadcrumbAvailableWidth >= minBreadcrumbWidth) {
+                // 有足够空间显示面包屑
+                const charWidth = 8; // 估算字符宽度（px）
+                const maxChars = Math.floor(breadcrumbAvailableWidth / charWidth);
+                
+                if (headingText.length > maxChars) {
+                    headingText = headingText.substring(0, maxChars - 1) + '…';
+                }
+                
+                return `<span style="color: var(--primary-color); font-weight: 600;">${headingText}</span>`;
+            } else {
+                // 空间不足，可能需要缩短标题为面包屑让路
+                const titleMaxWidth = availableWidth - minBreadcrumbWidth - gap;
+                if (titleWidth > titleMaxWidth) {
+                    // 标题需要截断，但这里只返回面包屑内容
+                    // 标题的截断由CSS处理
+                    const charWidth = 8;
+                    const maxChars = Math.floor(minBreadcrumbWidth / charWidth);
+                    
+                    if (headingText.length > maxChars) {
+                        headingText = headingText.substring(0, maxChars - 1) + '…';
+                    }
+                    
+                    return `<span style="color: var(--primary-color); font-weight: 600;">${headingText}</span>`;
+                }
+            }
+        }
+        
+        // 默认移动端处理（当无法测量时）
         let headingText = currentHeading.text;
-        const maxMobileLength = 25; // 移动端单个标题最大长度
+        const maxMobileLength = 20; // 保守的默认长度
         
         if (headingText.length > maxMobileLength) {
             headingText = headingText.substring(0, maxMobileLength - 1) + '…';

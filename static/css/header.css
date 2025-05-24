@@ -157,23 +157,37 @@
 .dynamic-header.small .main-title {
     font-size: 1rem;
     font-weight: 600;
-    line-height: 1.3;
+    line-height: 1.4;
 }
 
 .dynamic-header.small .breadcrumb-trail {
-    font-size: 0.875rem;
+    margin-left: auto; /* 推到右边 */
     margin-top: 0;
-    margin-left: 8px;
+    font-size: 0.8125rem; /* 移动端面包屑字体 13px */
+    transition: all 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    transform: translateY(6px) scale(0.97);
+}
+
+/* 移动端面包屑显示优化 */
+.dynamic-header.small .floating-breadcrumb .breadcrumb-trail.visible {
+    opacity: 0.8;
+    transform: translateY(0) scale(1);
+    transition-delay: 0.08s;
+}
+
+/* 章节切换时的动画效果 */
+.floating-breadcrumb .breadcrumb-trail.changing {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(-5px) scale(0.95);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.6, 1);
 }
 
-.dynamic-header.small .breadcrumb-trail.visible {
-    opacity: 1;
-    transform: translateY(0);
+.floating-breadcrumb .breadcrumb-separator {
+    color: var(--text-tertiary);
+    margin: 0 4px;
+    flex-shrink: 0;
 }
 
-/* 动态头部响应式交互效果 */
 .dynamic-header:hover {
     transform: translateX(-50%) translateY(-2px);
     box-shadow: 
@@ -912,24 +926,34 @@
         font-weight: 600;
         line-height: 1.4;
         transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        max-width: calc(50vw - 30px); /* 小状态下为面包屑预留空间 */
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        flex-shrink: 1; /* 允许标题收缩为面包屑让路 */
+        min-width: 0; /* 确保flex收缩生效 */
     }
     
+    /* 移动端面包屑文本优化 */
     .floating-breadcrumb .breadcrumb-trail {
-        font-size: 0.8125rem; /* 移动端面包屑字体 13px */
-        max-width: 160px; /* 移动端面包屑宽度 */
-        transition: all 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        transform: translateY(6px) scale(0.97);
+        max-width: none; /* 移除固定宽度限制 */
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        flex-shrink: 0; /* 面包屑优先显示，不收缩 */
+        text-align: right; /* 移动端面包屑靠右对齐 */
     }
     
-    /* 移动端面包屑显示优化 */
-    .dynamic-header.small .floating-breadcrumb .breadcrumb-trail.visible {
-        opacity: 0.8;
-        transform: translateY(0) scale(1);
-        transition-delay: 0.08s;
+    /* 移动端小状态下的特殊布局 */
+    .dynamic-header.small .floating-breadcrumb {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+    }
+    
+    .dynamic-header.small .floating-breadcrumb .breadcrumb-trail {
+        margin-left: auto; /* 推到右边 */
+        margin-top: 0;
     }
     
     /* 移动端章节切换动画 */
@@ -937,14 +961,6 @@
         opacity: 0;
         transform: translateY(-4px) scale(0.96);
         transition: all 0.18s cubic-bezier(0.4, 0, 0.6, 1);
-    }
-    
-    /* 移动端面包屑文本优化 */
-    .floating-breadcrumb .breadcrumb-trail {
-        max-width: 180px; /* 增加移动端宽度 */
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
     }
     
     /* 移动端全屏目录调整 */
