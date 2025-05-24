@@ -37,7 +37,7 @@ function initFloatingHeader() {
     };
     
     // Update breadcrumb based on current heading
-    const updateBreadcrumb = () => {
+    const updateBreadcrumb = (animated = true) => {
         if (!floatingBreadcrumb) return;
         
         if (floatingTocHeadings.length === 0) {
@@ -79,13 +79,29 @@ function initFloatingHeader() {
             if (currentActiveHeading) {
                 const heading = floatingTocHeadings.find(h => h.id === currentActiveHeading);
                 if (heading) {
-                    // 构建面包屑路径
-                    const breadcrumbPath = buildBreadcrumbPath(heading);
-                    floatingBreadcrumb.innerHTML = breadcrumbPath;
-                    // 添加显示动画
-                    setTimeout(() => {
-                        floatingBreadcrumb.classList.add('visible');
-                    }, 100);
+                    // 章节切换时的动画效果
+                    if (animated && floatingBreadcrumb.innerHTML && floatingBreadcrumb.classList.contains('visible')) {
+                        // 先淡出旧内容
+                        floatingBreadcrumb.classList.add('changing');
+                        floatingBreadcrumb.classList.remove('visible');
+                        
+                        setTimeout(() => {
+                            // 更新内容并淡入新内容
+                            const breadcrumbPath = buildBreadcrumbPath(heading);
+                            floatingBreadcrumb.innerHTML = breadcrumbPath;
+                            floatingBreadcrumb.classList.remove('changing');
+                            setTimeout(() => {
+                                floatingBreadcrumb.classList.add('visible');
+                            }, 50);
+                        }, 200);
+                    } else {
+                        // 初次显示或无动画模式
+                        const breadcrumbPath = buildBreadcrumbPath(heading);
+                        floatingBreadcrumb.innerHTML = breadcrumbPath;
+                        setTimeout(() => {
+                            floatingBreadcrumb.classList.add('visible');
+                        }, 100);
+                    }
                 } else {
                     floatingBreadcrumb.classList.remove('visible');
                     setTimeout(() => {
@@ -149,6 +165,17 @@ function initFloatingHeader() {
     dynamicHeader._updateBreadcrumb = updateBreadcrumb;
     dynamicHeader._updateTitle = updateFloatingTitle;
     
+    // Listen for window resize to update breadcrumb on orientation change
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+        if (resizeTimeout) {
+            clearTimeout(resizeTimeout);
+        }
+        resizeTimeout = setTimeout(() => {
+            updateBreadcrumb(false); // 屏幕旋转时不需要动画
+        }, 100);
+    }, { passive: true });
+    
     // Initial check
     setTimeout(() => {
         handleScroll();
@@ -162,10 +189,23 @@ function initFloatingHeader() {
 function buildBreadcrumbPath(currentHeading) {
     if (!currentHeading) return '';
     
-    // 构建层级路径，不包含页面标题（避免重复）
+    // 检测是否为移动端
+    const isMobile = window.innerWidth <= 640;
     const separator = '<span class="breadcrumb-separator">/</span>';
     
-    // 根据当前标题的级别，构建完整的路径
+    // 移动端只显示最后一级（当前标题）
+    if (isMobile) {
+        let headingText = currentHeading.text;
+        const maxMobileLength = 25; // 移动端单个标题最大长度
+        
+        if (headingText.length > maxMobileLength) {
+            headingText = headingText.substring(0, maxMobileLength - 1) + '…';
+        }
+        
+        return `<span style="color: var(--primary-color); font-weight: 600;">${headingText}</span>`;
+    }
+    
+    // 桌面端显示完整层级路径
     if (currentHeading.level >= 1) {
         // 找到当前标题在列表中的位置
         const currentIndex = floatingTocHeadings.findIndex(h => h.id === currentHeading.id);
@@ -397,26 +437,11 @@ function updateFloatingTocScrollSpy() {
                 }
             });
             
-            // Update breadcrumb if floating header is visible
+            // Update breadcrumb if floating header is visible with animation
             if (floatingHeaderVisible) {
-                const floatingBreadcrumb = document.getElementById('floatingBreadcrumb');
-                if (floatingBreadcrumb) {
-                    if (currentActiveHeading) {
-                        const heading = floatingTocHeadings.find(h => h.id === currentActiveHeading);
-                        if (heading) {
-                            const breadcrumbPath = buildBreadcrumbPath(heading);
-                            floatingBreadcrumb.innerHTML = breadcrumbPath;
-                            // 添加显示动画
-                            setTimeout(() => {
-                                floatingBreadcrumb.classList.add('visible');
-                            }, 100);
-                        }
-                    } else {
-                        floatingBreadcrumb.classList.remove('visible');
-                        setTimeout(() => {
-                            floatingBreadcrumb.innerHTML = '';
-                        }, 300);
-                    }
+                const floatingHeader = document.getElementById('dynamicHeader');
+                if (floatingHeader && floatingHeader._updateBreadcrumb) {
+                    floatingHeader._updateBreadcrumb(true); // 启用章节切换动画
                 }
             }
         }
