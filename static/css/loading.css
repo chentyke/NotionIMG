@@ -1,6 +1,6 @@
-/* Enhanced Loading Animations - Flat & Minimalist Design */
+/* Refined Loading Animation - Minimalist & Elegant */
 
-/* Main loading overlay with subtle gradient */
+/* Main loading overlay with clean background */
 .loading-overlay {
     position: fixed;
     top: 0;
@@ -8,251 +8,112 @@
     width: 100%;
     height: 100%;
     background: linear-gradient(135deg, 
-        var(--bg-primary) 0%, 
-        rgba(var(--bg-secondary-rgb, 249, 250, 251), 0.95) 100%);
+        var(--bg-primary, #f9fafb) 0%, 
+        rgba(var(--bg-secondary-rgb, 249, 250, 251), 0.98) 100%);
     z-index: 2000;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     opacity: 1;
-    transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    backdrop-filter: blur(1px);
+    transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(2px);
 }
 
 .loading-overlay.fade-out {
     opacity: 0;
 }
 
-/* Loading container with gentle animation */
+/* Elegant loading container */
 .loading-container {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 2rem;
     text-align: center;
-    animation: float 3s ease-in-out infinite;
+    animation: gentleFloat 4s ease-in-out infinite;
 }
 
-/* Multi-stage loading indicator */
-.loading-stages {
-    display: flex;
-    gap: 0.75rem;
-    align-items: center;
-    margin-bottom: 1rem;
-}
-
-.stage-dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background-color: var(--border-color);
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+/* Premium loading spinner with sophisticated animation */
+.loading-spinner {
+    width: 60px;
+    height: 60px;
     position: relative;
-    overflow: hidden;
+    margin: 0 auto;
 }
 
-.stage-dot.active {
-    background-color: var(--link-color);
-    transform: scale(1.2);
-    box-shadow: 0 0 0 4px rgba(var(--link-color-rgb), 0.2);
-}
-
-.stage-dot.completed {
-    background-color: var(--success-color, #10b981);
-    transform: scale(1);
-}
-
-.stage-dot.active::before {
+.loading-spinner::before {
     content: '';
     position: absolute;
     top: 0;
-    left: -100%;
+    left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, 
-        transparent 0%, 
-        rgba(255, 255, 255, 0.4) 50%, 
-        transparent 100%);
-    animation: shimmer 1.5s ease-in-out infinite;
-}
-
-/* Central loading spinner with breathing animation */
-.loading-spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid var(--border-color);
-    border-top: 3px solid var(--link-color);
+    border: 3px solid transparent;
+    border-top: 3px solid var(--link-color, #3b82f6);
+    border-right: 3px solid var(--link-color, #3b82f6);
     border-radius: 50%;
-    animation: spin 1.2s linear infinite, breathe 2s ease-in-out infinite;
-    position: relative;
+    animation: elegantSpin 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
 }
 
 .loading-spinner::after {
     content: '';
     position: absolute;
-    top: 2px;
-    left: 2px;
-    right: 2px;
-    bottom: 2px;
-    border-radius: 50%;
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
     border: 2px solid transparent;
-    border-top: 2px solid rgba(var(--link-color-rgb), 0.3);
-    animation: spin 2s linear infinite reverse;
+    border-top: 2px solid rgba(var(--link-color-rgb, 59, 130, 246), 0.4);
+    border-radius: 50%;
+    animation: elegantSpin 2.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite reverse;
 }
 
-/* Enhanced progress bar with gradient and animations */
-.loading-progress {
-    width: 280px;
-    height: 4px;
-    background-color: var(--border-color);
-    border-radius: 2px;
-    overflow: hidden;
-    position: relative;
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-.loading-progress-bar {
-    height: 100%;
-    background: linear-gradient(90deg, 
-        var(--link-color) 0%, 
-        rgba(var(--link-color-rgb), 0.8) 50%, 
-        var(--link-color) 100%);
-    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    will-change: width;
-    position: relative;
-    border-radius: 2px;
-}
-
-.loading-progress-bar::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(90deg, 
-        transparent 0%, 
-        rgba(255, 255, 255, 0.3) 50%, 
-        transparent 100%);
-    animation: progressShine 2s ease-in-out infinite;
-}
-
-.loading-progress.complete .loading-progress-bar {
-    background: linear-gradient(90deg, 
-        var(--success-color, #10b981) 0%, 
-        rgba(16, 185, 129, 0.8) 50%, 
-        var(--success-color, #10b981) 100%);
-    animation: completePulse 0.6s ease-out;
-}
-
-/* Loading text with typing animation */
+/* Elegant loading text */
 .loading-text {
-    color: var(--text-secondary);
-    font-size: 0.9rem;
+    color: var(--text-secondary, #6b7280);
+    font-size: 1rem;
     font-weight: 500;
-    opacity: 0.9;
-    margin-top: 0.5rem;
-    min-height: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+    letter-spacing: 0.025em;
+    opacity: 0.8;
+    animation: textPulse 2s ease-in-out infinite;
 }
 
-.loading-text::after {
-    content: '';
-    width: 2px;
-    height: 1rem;
-    background-color: var(--link-color);
-    animation: blink 1s ease-in-out infinite;
-}
-
-/* Status indicators */
-.loading-status {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    margin-top: 1rem;
-    opacity: 0.7;
-}
-
-.status-item {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.8rem;
-    color: var(--text-tertiary);
-    transition: all 0.3s ease;
-}
-
-.status-item.active {
-    color: var(--link-color);
-    opacity: 1;
-    transform: translateX(4px);
-}
-
-.status-item.completed {
-    color: var(--success-color, #10b981);
-}
-
-.status-icon {
-    width: 16px;
-    height: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.7rem;
-}
-
-/* Animations */
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-@keyframes breathe {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-}
-
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-8px); }
-}
-
-@keyframes shimmer {
-    0% { left: -100%; }
-    100% { left: 100%; }
-}
-
-@keyframes progressShine {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
-}
-
-@keyframes blink {
-    0%, 50% { opacity: 1; }
-    51%, 100% { opacity: 0; }
-}
-
-@keyframes completePulse {
-    0% { transform: scaleY(1); }
-    50% { transform: scaleY(1.2); }
-    100% { transform: scaleY(1); }
-}
-
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
+/* Sophisticated animations */
+@keyframes elegantSpin {
+    0% { 
+        transform: rotate(0deg) scale(1);
         opacity: 1;
-        transform: translateY(0);
+    }
+    50% { 
+        transform: rotate(180deg) scale(1.05);
+        opacity: 0.8;
+    }
+    100% { 
+        transform: rotate(360deg) scale(1);
+        opacity: 1;
     }
 }
 
-/* Page transition overlay */
+@keyframes gentleFloat {
+    0%, 100% { 
+        transform: translateY(0px) scale(1);
+    }
+    50% { 
+        transform: translateY(-8px) scale(1.02);
+    }
+}
+
+@keyframes textPulse {
+    0%, 100% { 
+        opacity: 0.6;
+    }
+    50% { 
+        opacity: 1;
+    }
+}
+
+/* Page transition effect */
 .page-transition {
     position: fixed;
     top: 0;
@@ -260,332 +121,132 @@
     width: 100%;
     height: 100%;
     background: linear-gradient(135deg, 
-        var(--bg-primary) 0%, 
-        rgba(var(--bg-secondary-rgb, 249, 250, 251), 0.98) 100%);
-    z-index: 1999;
+        var(--bg-primary, #f9fafb) 0%, 
+        rgba(var(--bg-secondary-rgb, 249, 250, 251), 0.95) 100%);
+    z-index: 1500;
     opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    backdrop-filter: blur(2px);
+    visibility: hidden;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .page-transition.active {
     opacity: 1;
-    pointer-events: auto;
+    visibility: visible;
 }
 
-/* Mobile optimizations */
+/* Responsive design */
 @media (max-width: 640px) {
     .loading-container {
         gap: 1.5rem;
         padding: 0 1rem;
-        transform: translateY(-5vh); /* 轻微上移以适应移动端视觉中心 */
-    }
-    
-    /* 移动端多阶段指示器优化 */
-    .loading-stages {
-        gap: 0.625rem; /* 稍微增大间距以适应手指触摸 */
-        margin-bottom: 1.25rem;
-    }
-    
-    .stage-dot {
-        width: 14px; /* 增大以便移动端查看 */
-        height: 14px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* 添加阴影增强立体感 */
-    }
-    
-    .stage-dot.active {
-        transform: scale(1.3); /* 增大缩放比例 */
-        box-shadow: 
-            0 0 0 5px rgba(var(--link-color-rgb), 0.2),
-            0 4px 8px rgba(0, 0, 0, 0.15); /* 更明显的视觉反馈 */
-    }
-    
-    /* 移动端加载旋转器优化 */
-    .loading-progress {
-        width: 90%; /* 更好地利用移动端屏幕宽度 */
-        max-width: 300px;
-        height: 6px; /* 增加高度便于查看 */
-        border-radius: 3px;
-        box-shadow: 
-            inset 0 1px 3px rgba(0, 0, 0, 0.12),
-            0 1px 2px rgba(0, 0, 0, 0.08); /* 增强立体感 */
-    }
-    
-    .loading-progress-bar {
-        border-radius: 3px;
-        box-shadow: 0 1px 2px rgba(var(--link-color-rgb), 0.3); /* 进度条阴影 */
     }
     
     .loading-spinner {
-        width: 44px; /* 增大旋转器 */
-        height: 44px;
-        border-width: 4px; /* 增加边框宽度 */
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* 添加阴影 */
+        width: 50px;
+        height: 50px;
     }
     
     .loading-spinner::after {
-        border-width: 3px;
+        top: 6px;
+        left: 6px;
+        right: 6px;
+        bottom: 6px;
     }
     
-    /* 移动端加载文字优化 */
     .loading-text {
-        font-size: 1rem; /* 增大字体 */
-        font-weight: 600; /* 增加字重 */
-        margin-top: 0.75rem;
-        text-align: center;
-        color: var(--text-primary); /* 使用主要文字颜色增强可读性 */
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); /* 轻微文字阴影 */
-        min-height: 1.75rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
+        font-size: 0.9rem;
     }
     
-    .loading-text::after {
-        width: 3px;
-        height: 1.2rem;
-        border-radius: 1.5px;
-        animation: blink 1.2s ease-in-out infinite; /* 稍微放慢动画 */
-    }
-    
-    /* 移动端状态指示器优化 */
-    .loading-status {
-        gap: 0.75rem; /* 增加间距 */
-        margin-top: 1.5rem;
-        opacity: 0.85;
-        max-width: 280px; /* 限制最大宽度避免过长 */
-    }
-    
-    .status-item {
-        font-size: 0.875rem; /* 增大字体 */
-        padding: 0.5rem 0; /* 增加垂直内边距便于触摸 */
-        border-radius: 8px; /* 添加圆角 */
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); /* 更流畅的过渡 */
-        position: relative;
-    }
-    
-    .status-item.active {
-        transform: translateX(6px) scale(1.02); /* 更明显的激活状态 */
-        background: rgba(var(--link-color-rgb), 0.05); /* 轻微背景色 */
-        border-radius: 10px;
-        padding: 0.75rem 1rem;
-        margin: 0 -1rem; /* 负边距补偿内边距 */
-        box-shadow: 0 2px 8px rgba(var(--link-color-rgb), 0.15); /* 添加阴影 */
-    }
-    
-    .status-item.completed {
-        background: rgba(var(--success-color, 16, 185, 129), 0.05);
-        border-radius: 10px;
-        padding: 0.5rem 0.75rem;
-    }
-    
-    .status-icon {
-        width: 20px; /* 增大图标 */
-        height: 20px;
-        font-size: 0.875rem;
-        margin-right: 0.125rem;
-    }
-    
-    /* 移动端优化动画 */
-    @keyframes float {
-        0%, 100% { transform: translateY(-5vh); }
-        50% { transform: translateY(-6vh); } /* 更轻微的浮动 */
-    }
-    
-    /* 页面过渡优化 */
-    .page-transition {
-        backdrop-filter: blur(3px); /* 增强模糊效果 */
-        -webkit-backdrop-filter: blur(3px);
-    }
-    
-    /* 移动端加载覆盖层优化 */
-    .loading-overlay {
-        background: linear-gradient(135deg, 
-            var(--bg-primary) 0%, 
-            rgba(var(--bg-secondary-rgb, 249, 250, 251), 0.98) 70%,
-            var(--bg-primary) 100%); /* 更丰富的渐变 */
-        backdrop-filter: blur(2px);
-        -webkit-backdrop-filter: blur(2px);
+    @keyframes gentleFloat {
+        0%, 100% { 
+            transform: translateY(0px) scale(1);
+        }
+        50% { 
+            transform: translateY(-4px) scale(1.01);
+        }
     }
 }
 
-/* 针对更小的移动设备（iPhone SE等）*/
 @media (max-width: 375px) {
-    .loading-container {
-        gap: 1.25rem;
-        padding: 0 0.75rem;
-        transform: translateY(-8vh); /* 更多上移以适应小屏幕 */
-    }
-    
-    .loading-progress {
-        width: 95%;
-        max-width: 280px;
-    }
-    
-    .loading-text {
-        font-size: 0.9375rem; /* 稍微减小字体避免换行 */
-    }
-    
-    .status-item {
-        font-size: 0.8125rem;
-    }
-    
-    .loading-stages {
-        gap: 0.5rem; /* 减少间距以适应小屏幕 */
-    }
-    
-    .loading-status {
-        max-width: 260px;
-    }
-}
-
-/* 针对大屏移动设备（iPhone Plus, iPad mini等）*/
-@media (min-width: 641px) and (max-width: 768px) {
-    .loading-container {
-        gap: 2rem;
-        transform: translateY(-3vh);
-    }
-    
     .loading-spinner {
-        width: 48px;
-        height: 48px;
+        width: 40px;
+        height: 40px;
+    }
+    
+    .loading-spinner::after {
+        top: 5px;
+        left: 5px;
+        right: 5px;
+        bottom: 5px;
     }
     
     .loading-text {
-        font-size: 1.125rem;
-    }
-    
-    .status-item {
-        font-size: 1rem;
-    }
-    
-    .loading-progress {
-        width: 85%;
-        max-width: 400px;
-        height: 8px;
+        font-size: 0.85rem;
     }
 }
 
-/* 触摸设备特有的优化 */
-@media (hover: none) and (pointer: coarse) {
-    .loading-container {
-        user-select: none; /* 防止意外选择文本 */
-        -webkit-user-select: none;
-        -webkit-touch-callout: none; /* 禁用iOS长按菜单 */
-    }
-    
-    .status-item.active {
-        animation: gentlePulse 2s ease-in-out infinite; /* 添加脉冲动画增强反馈 */
-    }
-    
-    @keyframes gentlePulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.9; }
-    }
-    
-    /* 确保在触摸设备上有更好的视觉层次 */
-    .loading-overlay {
-        background: linear-gradient(135deg, 
-            var(--bg-primary) 0%, 
-            rgba(var(--bg-secondary-rgb, 249, 250, 251), 0.96) 50%,
-            rgba(var(--bg-primary-rgb, 249, 250, 251), 0.98) 100%);
-    }
-}
-
-/* 横屏模式优化 */
-@media (max-width: 640px) and (orientation: landscape) {
-    .loading-container {
-        gap: 1rem;
-        transform: translateY(-2vh); /* 横屏时减少上移 */
-        padding: 0 2rem; /* 增加横向内边距 */
-    }
-    
-    .loading-text {
-        font-size: 0.9375rem; /* 横屏时减小字体节省空间 */
-    }
-    
-    .loading-status {
-        gap: 0.5rem; /* 减少间距节省垂直空间 */
-        margin-top: 1rem;
-    }
-    
-    .status-item {
-        font-size: 0.8125rem;
-        padding: 0.375rem 0;
-    }
-    
-    .loading-stages {
-        margin-bottom: 1rem;
-    }
-}
-
-/* 高像素密度屏幕优化 */
-@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
-    .stage-dot {
-        box-shadow: 
-            0 1px 2px rgba(0, 0, 0, 0.1),
-            0 0 0 0.5px rgba(0, 0, 0, 0.05); /* 在高分辨率屏幕上的精细边框 */
-    }
-    
-    .loading-spinner {
-        box-shadow: 
-            0 2px 4px rgba(0, 0, 0, 0.1),
-            0 0 0 0.5px rgba(0, 0, 0, 0.05);
-    }
-    
-    .loading-progress {
-        box-shadow: 
-            inset 0 0.5px 1.5px rgba(0, 0, 0, 0.12),
-            0 0.5px 1px rgba(0, 0, 0, 0.08);
-    }
-}
-
-/* Dark mode adjustments */
+/* Dark mode support */
 @media (prefers-color-scheme: dark) {
     .loading-overlay {
         background: linear-gradient(135deg, 
-            var(--bg-primary) 0%, 
-            rgba(17, 24, 39, 0.95) 100%);
+            #111827 0%, 
+            rgba(17, 24, 39, 0.98) 100%);
     }
     
     .page-transition {
         background: linear-gradient(135deg, 
-            var(--bg-primary) 0%, 
-            rgba(17, 24, 39, 0.98) 100%);
+            #111827 0%, 
+            rgba(17, 24, 39, 0.95) 100%);
     }
     
-    /* 暗黑模式下的移动端优化 */
-    @media (max-width: 640px) {
-        .stage-dot {
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-        }
-        
-        .stage-dot.active {
-            box-shadow: 
-                0 0 0 5px rgba(var(--link-color-rgb), 0.3),
-                0 4px 8px rgba(0, 0, 0, 0.4);
-        }
-        
-        .loading-spinner {
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-        }
-        
-        .loading-text {
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-        }
-        
-        .status-item.active {
-            background: rgba(var(--link-color-rgb), 0.1);
-            box-shadow: 0 2px 8px rgba(var(--link-color-rgb), 0.2);
-        }
-        
-        .loading-overlay {
-            background: linear-gradient(135deg, 
-                var(--bg-primary) 0%, 
-                rgba(17, 24, 39, 0.96) 50%,
-                rgba(var(--bg-primary-rgb, 17, 24, 39), 0.98) 100%);
-        }
+    .loading-text {
+        color: #9ca3af;
+    }
+    
+    .loading-spinner::before {
+        border-top-color: #60a5fa;
+        border-right-color: #60a5fa;
+    }
+    
+    .loading-spinner::after {
+        border-top-color: rgba(96, 165, 250, 0.4);
+    }
+}
+
+/* High-DPI display optimization */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .loading-spinner::before,
+    .loading-spinner::after {
+        border-width: 2px;
+    }
+    
+    .loading-spinner::before {
+        border-top-width: 3px;
+        border-right-width: 3px;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .loading-container {
+        animation: none;
+    }
+    
+    .loading-spinner::before {
+        animation: elegantSpin 3s linear infinite;
+    }
+    
+    .loading-spinner::after {
+        animation: elegantSpin 4s linear infinite reverse;
+    }
+    
+    .loading-text {
+        animation: none;
+        opacity: 0.8;
+    }
+    
+    @keyframes elegantSpin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
     }
 } 
