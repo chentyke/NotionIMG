@@ -1367,66 +1367,25 @@ async function renderIncrementalBlocks(blocks, pageContent, loadingIndicator) {
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = content;
             
-            // 检查是否需要列表续接处理
-            const lastElement = pageContent.children[pageContent.children.length - 2];
-            const firstNewElement = tempDiv.firstChild;
-            
-            // 如果第一个新元素是列表，且最后一个现有元素也是同类型列表，则合并
-            if (lastElement && firstNewElement && 
-                (lastElement.tagName === 'OL' || lastElement.tagName === 'UL') &&
-                lastElement.tagName === firstNewElement.tagName) {
-                
-                console.log(`Merging ${firstNewElement.tagName} lists`);
-                
-                // 将新列表的所有项目移动到现有列表中
-                while (firstNewElement.firstChild) {
-                    const listItem = firstNewElement.firstChild;
-                    if (listItem.nodeType === Node.ELEMENT_NODE) {
-                        listItem.classList.add('new-content-block');
-                        
-                        // 添加动画效果
-                        setTimeout(() => {
-                            listItem.classList.add('new-content-show');
-                            
-                            setTimeout(() => {
-                                listItem.classList.remove('new-content-block', 'new-content-show');
-                            }, 300);
-                        }, 30);
-                    }
-                    lastElement.appendChild(listItem);
-                }
-                
-                // 移除空的新列表元素
-                tempDiv.removeChild(firstNewElement);
-            }
-            
-            // 处理剩余的内容（如果有的话）
+            // 为新内容添加动画类
             const fragment = document.createDocumentFragment();
             while (tempDiv.firstChild) {
                 const element = tempDiv.firstChild;
                 
-                // 添加微妙的淡入动画
+                // 添加新内容动画类
                 if (element.nodeType === Node.ELEMENT_NODE) {
                     element.classList.add('new-content-block');
                     
-                    // 延迟添加显示动画
+                    // 延迟添加显示动画，创建交错效果
                     setTimeout(() => {
                         element.classList.add('new-content-show');
-                        
-                        // 动画完成后移除临时类
-                        setTimeout(() => {
-                            element.classList.remove('new-content-block', 'new-content-show');
-                        }, 300);
-                    }, 30);
+                    }, 50);
                 }
                 
                 fragment.appendChild(element);
             }
             
-            // 只有在有剩余内容时才插入
-            if (fragment.hasChildNodes()) {
-                pageContent.insertBefore(fragment, loadingIndicator);
-            }
+            pageContent.insertBefore(fragment, loadingIndicator);
             
             // Post-process the new content
             postProcessContent(pageContent);
@@ -1462,17 +1421,9 @@ async function renderIntermediateBatch(blocks, pageContent, loadingIndicator) {
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = content;
             
-            // 为中间批次也添加统一的处理，确保间距一致
             const fragment = document.createDocumentFragment();
             while (tempDiv.firstChild) {
-                const element = tempDiv.firstChild;
-                
-                // 不添加动画类，但确保DOM结构一致
-                if (element.nodeType === Node.ELEMENT_NODE) {
-                    // 可以在这里添加任何必要的后处理
-                }
-                
-                fragment.appendChild(element);
+                fragment.appendChild(tempDiv.firstChild);
             }
             pageContent.insertBefore(fragment, loadingIndicator);
             
@@ -1514,17 +1465,10 @@ async function renderFinalBatch(allNewBlocks, pageContent, loadingIndicator) {
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = content;
             
-            // 按顺序插入新内容到加载指示器之前，确保DOM结构一致
+            // 按顺序插入新内容到加载指示器之前
             const fragment = document.createDocumentFragment();
             while (tempDiv.firstChild) {
-                const element = tempDiv.firstChild;
-                
-                // 不添加动画类，但确保DOM结构一致
-                if (element.nodeType === Node.ELEMENT_NODE) {
-                    // 可以在这里添加任何必要的后处理
-                }
-                
-                fragment.appendChild(element);
+                fragment.appendChild(tempDiv.firstChild);
             }
             pageContent.insertBefore(fragment, loadingIndicator);
             
@@ -1602,45 +1546,34 @@ async function renderBlocksWithContext(blocks, pageContent = null, loadingIndica
                 if (i === 0 && pageContent && loadingIndicator && !listContinuationHandled) {
                     const lastElement = pageContent.children[pageContent.children.length - 2];
                     if (lastElement && lastElement.tagName === listTag.toUpperCase()) {
-                        // 标记列表续接已处理，但不在这里直接操作DOM
-                        // 而是设置currentList状态，让后续逻辑继续在现有列表中添加
+                        // 直接添加到现有列表，不创建新列表
+                        const listItem = await renderBlock(block);
+                        lastElement.insertAdjacentHTML('beforeend', listItem);
                         listContinuationHandled = true;
                         
-                        // 设置当前列表状态为现有列表
-                        currentList = { 
-                            tag: listTag, 
-                            type: block.type, 
-                            startNumber: orderedListStart,
-                            isExtension: true // 标记这是列表扩展
-                        };
-                        
-                        console.log(`Will extend existing ${listTag} list from number ${orderedListStart}`);
-                        
-                        // 不要continue，让后续逻辑处理这个block
+                        // 更新编号（如果是有序列表）
+                        if (listTag === 'ol') {
+                            orderedListStart++;
+                        }
+                        continue;
                     }
                 }
                 
-                // Start a new list if needed (除非我们正在扩展现有列表)
-                if (!currentList || (currentList.tag !== listTag || currentList.isExtension)) {
-                    // Close previous list if exists (但不关闭正在扩展的列表)
-                    if (currentList && !currentList.isExtension) {
+                // Start a new list if needed
+                if (!currentList || currentList.tag !== listTag) {
+                    // Close previous list if exists
+                    if (currentList) {
                         content += `</${currentList.tag}>`;
                     }
                     
-                    // 如果不是扩展现有列表，则创建新列表标签
-                    if (!currentList || !currentList.isExtension) {
-                        // For ordered lists, use calculated start number
-                        if (listTag === 'ol') {
-                            content += `<${listTag} class="my-4 list-decimal ml-6" start="${orderedListStart}">`;
-                            console.log(`Starting new ordered list from ${orderedListStart}`);
-                        } else {
-                            content += `<${listTag} class="my-4 list-disc ml-6">`;
-                        }
+                    // For ordered lists, use calculated start number
+                    if (listTag === 'ol') {
+                        content += `<${listTag} class="my-4 list-decimal ml-6" start="${orderedListStart}">`;
+                        console.log(`Starting new ordered list from ${orderedListStart}`);
                     } else {
-                        console.log(`Extending existing ${listTag} list, not creating new list tag`);
+                        content += `<${listTag} class="my-4 list-disc ml-6">`;
                     }
                     
-                    // 更新currentList状态，移除扩展标记
                     currentList = { tag: listTag, type: block.type, startNumber: orderedListStart };
                 }
                 
