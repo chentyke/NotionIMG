@@ -5,6 +5,8 @@
     let debugMode = false;
     let blockCounter = 0;
     let spacingMeasurements = [];
+    let contentObserver = null;
+    let refreshTimeout = null;
     
     // 创建调试按钮
     function createDebugButton() {
@@ -33,16 +35,21 @@
     // 切换调试模式
     function toggleDebugMode() {
         debugMode = !debugMode;
-        const button = document.querySelector('[style*="调试间距"]') || createDebugButton();
+        const buttons = document.querySelectorAll('button');
+        const button = Array.from(buttons).find(btn => btn.textContent.includes('调试间距') || btn.textContent.includes('关闭调试'));
         
         if (debugMode) {
             button.textContent = '关闭调试';
             button.style.background = '#10b981';
             startDebugging();
+            
+            // 持续监控内容变化
+            startContentMonitoring();
         } else {
             button.textContent = '调试间距';
             button.style.background = '#ef4444';
             stopDebugging();
+            stopContentMonitoring();
         }
     }
     
@@ -230,11 +237,77 @@
         createDebugButton();
     }
     
+    // 内容监控功能
+    function startContentMonitoring() {
+        const pageContent = document.getElementById('pageContent');
+        if (!pageContent) return;
+        
+        // 使用 MutationObserver 监控内容变化
+        contentObserver = new MutationObserver((mutations) => {
+            let hasNewContent = false;
+            
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                    // 检查是否有新的元素被添加
+                    mutation.addedNodes.forEach((node) => {
+                        if (node.nodeType === Node.ELEMENT_NODE && 
+                            node.id !== 'background-loading' && 
+                            !node.classList.contains('debug-block-indicator') &&
+                            !node.classList.contains('debug-class-indicator') &&
+                            !node.classList.contains('debug-spacing-highlight')) {
+                            hasNewContent = true;
+                        }
+                    });
+                }
+            });
+            
+            if (hasNewContent) {
+                // 延迟刷新，避免过于频繁的更新
+                if (refreshTimeout) {
+                    clearTimeout(refreshTimeout);
+                }
+                
+                refreshTimeout = setTimeout(() => {
+                    console.log('检测到新内容，刷新调试信息...');
+                    stopDebugging();
+                    startDebugging();
+                }, 500);
+            }
+        });
+        
+        contentObserver.observe(pageContent, {
+            childList: true,
+            subtree: true
+        });
+        
+        console.log('内容监控已启动');
+    }
+    
+    function stopContentMonitoring() {
+        if (contentObserver) {
+            contentObserver.disconnect();
+            contentObserver = null;
+        }
+        
+        if (refreshTimeout) {
+            clearTimeout(refreshTimeout);
+            refreshTimeout = null;
+        }
+        
+        console.log('内容监控已停止');
+    }
+    
     // 暴露到全局作用域以便调试
     window.debugSpacing = {
         toggle: toggleDebugMode,
         start: startDebugging,
         stop: stopDebugging,
-        measurements: () => spacingMeasurements
+        measurements: () => spacingMeasurements,
+        refresh: () => {
+            if (debugMode) {
+                stopDebugging();
+                startDebugging();
+            }
+        }
     };
 })(); 

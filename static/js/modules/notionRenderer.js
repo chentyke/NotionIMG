@@ -923,7 +923,11 @@ async function loadPage(pageId = null) {
         // Initialize image lazy loading for the initial content
         console.log('Initializing image observer...');
         try {
-            imageObserver.init();
+            const images = pageContent.querySelectorAll('img[data-src]');
+            console.log(`Found ${images.length} images to observe`);
+            images.forEach(img => {
+                imageObserver.observe(img);
+            });
             console.log('Image observer initialized');
         } catch (error) {
             console.error('Error initializing image observer:', error);
