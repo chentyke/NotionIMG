@@ -1593,10 +1593,10 @@ async function renderBlocksWithContext(blocks, pageContent = null, loadingIndica
                     
                     // For ordered lists, use calculated start number
                     if (listTag === 'ol') {
-                        content += `<${listTag} class="my-4 list-decimal ml-6" start="${orderedListStart}">`;
+                        content += `<${listTag} class="prose-list list-decimal ml-6" start="${orderedListStart}">`;
                         console.log(`Starting new ordered list from ${orderedListStart}`);
                     } else {
-                        content += `<${listTag} class="my-4 list-disc ml-6">`;
+                        content += `<${listTag} class="prose-list list-disc ml-6">`;
                     }
                     
                     currentList = { tag: listTag, type: block.type, startNumber: orderedListStart };

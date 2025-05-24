@@ -60,8 +60,11 @@
     <h1>🔧 行距修复测试</h1>
     
     <div class="fix-indicator">
-        ✅ <strong>修复内容：</strong>移除了 new-content-block 动画类中的 transform: translateY 属性，
-        现在只使用 opacity 过渡，避免了布局偏移导致的异常行距。
+        ✅ <strong>修复内容：</strong>
+        <br>1. 移除了 new-content-block 动画类中的 transform: translateY 属性，现在只使用 opacity 过渡
+        <br>2. 统一了动态列表的CSS类，从 my-4 改为 prose-list，确保与 prose 样式一致
+        <br>3. 添加了调试工具，可以在实际页面中检测第16-17块间距问题
+        <br>4. 在页面中添加右上角红色"调试间距"按钮，点击可以看到每个块的编号和间距测量
     </div>
     
     <div class="test-section">
