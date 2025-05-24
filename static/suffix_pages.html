@@ -560,22 +560,10 @@
             <div class="container mx-auto px-4 py-6 max-w-7xl">
                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div class="flex items-center space-x-3">
-                        <button 
-                            @click="goBack"
-                            class="flat-button p-2 rounded-lg"
-                            title="返回页面列表"
-                        >
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-                            </svg>
-                        </button>
                         <div class="stats-info flex items-center space-x-3">
                             <h1 class="text-2xl font-semibold">
                                 标签: <span class="suffix-tag px-3 py-1 rounded-lg text-sm">{{ suffix }}</span>
                             </h1>
-                            <span class="stats-badge px-3 py-1 rounded-full text-sm">
-                                {{ filteredPages.length }} 个页面
-                            </span>
                         </div>
                     </div>
                     

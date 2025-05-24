@@ -8,33 +8,88 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <style>
+        /* CSS变量用于主题切换 */
+        :root {
+            --bg-primary: #f9fafb;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f3f4f6;
+            --text-primary: #111827;
+            --text-secondary: #6b7280;
+            --text-tertiary: #9ca3af;
+            --border-primary: #e5e7eb;
+            --border-secondary: #d1d5db;
+            --accent-primary: #3b82f6;
+            --accent-secondary: #dbeafe;
+            --success-primary: #10b981;
+            --error-primary: #ef4444;
+            --error-secondary: #fecaca;
+            --warning-primary: #f59e0b;
+            --warning-secondary: #fef3c7;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 深夜模式 */
+        [data-theme="dark"] {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --text-primary: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --text-tertiary: #94a3b8;
+            --border-primary: #334155;
+            --border-secondary: #475569;
+            --accent-primary: #60a5fa;
+            --accent-secondary: #1e3a8a;
+            --success-primary: #34d399;
+            --error-primary: #f87171;
+            --error-secondary: #7f1d1d;
+            --warning-primary: #fbbf24;
+            --warning-secondary: #451a03;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6);
+        }
+
+        /* 基础样式 */
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
         /* 现代扁平化设计风格 */
         .flat-card {
-            background: #ffffff;
-            border: 1px solid #e5e7eb;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: var(--shadow-sm);
         }
         
         .flat-card:hover {
-            border-color: #3b82f6;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.08);
+            border-color: var(--accent-primary);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
         }
 
         .flat-button {
-            background: transparent;
-            border: 1px solid #e5e7eb;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+            color: var(--text-primary);
             transition: all 0.2s ease;
         }
 
         .flat-button:hover {
-            background: #f9fafb;
-            border-color: #d1d5db;
+            background: var(--bg-tertiary);
+            border-color: var(--border-secondary);
         }
 
         .flat-button.active {
-            background: #3b82f6;
-            border-color: #3b82f6;
+            background: var(--accent-primary);
+            border-color: var(--accent-primary);
             color: white;
         }
 
@@ -44,16 +99,21 @@
         }
 
         .search-input {
-            background: #f9fafb;
-            border: 1px solid #e5e7eb;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-primary);
+            color: var(--text-primary);
             transition: all 0.2s ease;
             padding: 10px 16px;
             padding-left: 44px;
         }
 
+        .search-input::placeholder {
+            color: var(--text-tertiary);
+        }
+
         .search-input:focus {
-            background: white;
-            border-color: #3b82f6;
+            background: var(--bg-secondary);
+            border-color: var(--accent-primary);
             outline: none;
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
@@ -63,71 +123,124 @@
             left: 14px;
             top: 50%;
             transform: translateY(-50%);
-            color: #6b7280;
+            color: var(--text-tertiary);
             transition: color 0.2s ease;
         }
 
         .search-input:focus + .search-icon {
-            color: #3b82f6;
+            color: var(--accent-primary);
+        }
+
+        /* 主题切换按钮 */
+        .theme-toggle {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+            color: var(--text-primary);
+            border-radius: 8px;
+            padding: 10px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .theme-toggle:hover {
+            background: var(--bg-tertiary);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .theme-toggle:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        /* Header样式 */
+        .header-bg {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-primary);
+            backdrop-filter: blur(8px);
         }
 
         .dropdown {
-            background: white;
-            border: 1px solid #e5e7eb;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
             border-radius: 12px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            box-shadow: var(--shadow-xl);
             z-index: 50;
-            animation: dropdownSlide 0.2s ease-out;
+            animation: elegantDropdown 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
 
-        @keyframes dropdownSlide {
+        @keyframes elegantDropdown {
             from {
                 opacity: 0;
-                transform: translateY(-8px);
+                transform: translateY(-12px) scale(0.95);
             }
             to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .filter-chip {
+            background: var(--accent-secondary);
+            color: var(--accent-primary);
+            border: 1px solid var(--accent-primary);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+
+        .filter-chip:hover {
+            background: var(--accent-primary);
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .filter-chip.selected {
+            background: var(--accent-primary);
+            color: white;
+            border-color: var(--accent-primary);
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* 优雅的动画效果 */
+        .elegant-fade-in {
+            animation: elegantFadeIn 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .gentle-slide-up {
+            animation: gentleSlideUp 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .smooth-slide-down {
+            animation: smoothSlideDown 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        @keyframes elegantFadeIn {
+            from { 
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to { 
                 opacity: 1;
                 transform: translateY(0);
             }
         }
 
-        .filter-chip {
-            background: #eff6ff;
-            color: #1d4ed8;
-            border: 1px solid #bfdbfe;
-            transition: all 0.2s ease;
-            cursor: pointer;
-        }
-
-        .filter-chip:hover {
-            background: #dbeafe;
-            border-color: #93c5fd;
-            transform: translateY(-1px);
-        }
-
-        .filter-chip.selected {
-            background: #1d4ed8;
-            color: white;
-            border-color: #1d4ed8;
-        }
-
-        .fade-in {
-            animation: fadeIn 0.3s ease-out;
-        }
-
-        .slide-up {
-            animation: slideUp 0.3s ease-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        @keyframes slideUp {
+        @keyframes gentleSlideUp {
             from { 
                 opacity: 0;
-                transform: translateY(20px);
+                transform: translateY(16px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes smoothSlideDown {
+            from { 
+                opacity: 0;
+                transform: translateY(-8px);
             }
             to { 
                 opacity: 1;
@@ -140,7 +253,7 @@
         }
 
         .grid-item:hover {
-            transform: scale(1.02);
+            transform: translateY(-2px);
         }
 
         .loading-dots {
@@ -152,63 +265,142 @@
             width: 6px;
             height: 6px;
             border-radius: 50%;
-            background: #3b82f6;
-            animation: bounce 1.4s ease-in-out infinite both;
+            background: var(--accent-primary);
+            animation: gentleBounce 1.4s ease-in-out infinite both;
         }
 
         .loading-dots div:nth-child(1) { animation-delay: -0.32s; }
         .loading-dots div:nth-child(2) { animation-delay: -0.16s; }
 
-        @keyframes bounce {
+        @keyframes gentleBounce {
             0%, 80%, 100% { 
-                transform: scale(0);
+                transform: scale(0.8);
+                opacity: 0.5;
             } 40% { 
                 transform: scale(1);
+                opacity: 1;
             }
         }
 
-        /* 空状态美化 */
+        /* 状态样式 */
         .empty-state {
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-            border: 2px dashed #cbd5e1;
+            background: var(--bg-secondary);
+            border: 2px dashed var(--border-secondary);
             transition: all 0.3s ease;
         }
 
         .empty-state:hover {
-            border-color: #94a3b8;
-            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+            border-color: var(--border-primary);
         }
 
         .empty-icon {
-            color: #94a3b8;
+            color: var(--text-tertiary);
             transition: all 0.3s ease;
         }
 
-        .empty-state:hover .empty-icon {
-            color: #64748b;
-            transform: scale(1.05);
-        }
-
-        /* 404 页面特殊样式 */
         .not-found-state {
-            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-            border: 2px dashed #fca5a5;
+            background: var(--bg-secondary);
+            border: 2px dashed var(--error-primary);
             transition: all 0.3s ease;
-        }
-
-        .not-found-state:hover {
-            border-color: #f87171;
-            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
         }
 
         .not-found-icon {
-            color: #f87171;
+            color: var(--error-primary);
             transition: all 0.3s ease;
         }
 
-        .not-found-state:hover .not-found-icon {
-            color: #ef4444;
-            transform: scale(1.05);
+        /* 控件样式 */
+        .controls-section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .advanced-controls {
+            opacity: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-bottom: 0;
+        }
+        
+        .advanced-controls.show {
+            opacity: 1;
+            max-height: 300px;
+            margin-bottom: 1.5rem;
+        }
+
+        .mobile-advanced-controls {
+            opacity: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-bottom: 0;
+        }
+        
+        .mobile-advanced-controls.show {
+            opacity: 1;
+            max-height: 600px;
+            margin-bottom: 1.5rem;
+        }
+
+        /* 后缀标签样式 */
+        .suffix-tag {
+            background: var(--accent-secondary);
+            color: var(--accent-primary);
+            border: 1px solid var(--accent-primary);
+            font-weight: 500;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .suffix-tag:hover {
+            background: var(--accent-primary);
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* 筛选器计数徽章 */
+        .filter-badge {
+            background: var(--error-primary);
+            color: white;
+            font-weight: 600;
+            animation: gentlePulse 2s infinite;
+        }
+
+        @keyframes gentlePulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* 旋转箭头动画 */
+        .rotate-arrow {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .rotate-arrow.open {
+            transform: rotate(180deg);
+        }
+
+        /* 渐进式加载动画 */
+        .stagger-item {
+            opacity: 0;
+            animation: staggerFadeIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+        }
+
+        @keyframes staggerFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         /* 移动端优化 */
@@ -221,14 +413,6 @@
             .search-container {
                 max-width: none;
                 width: 100%;
-            }
-            
-            .controls-section {
-                background: white;
-                border-radius: 12px;
-                border: 1px solid #e5e7eb;
-                padding: 1rem;
-                margin-bottom: 1rem;
             }
             
             .mobile-controls {
@@ -278,6 +462,7 @@
             
             .grid-cols-responsive {
                 grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                gap: 1rem;
             }
             
             header .container {
@@ -291,25 +476,15 @@
                 margin-bottom: 1rem;
             }
 
-            /* 移动端也默认隐藏控制面板 */
-            .mobile-advanced-controls {
-                opacity: 0;
-                max-height: 0;
-                overflow: hidden;
-                transition: all 0.3s ease;
-                margin-bottom: 0;
-            }
-            
-            .mobile-advanced-controls.show {
-                opacity: 1;
-                max-height: 500px;
-                margin-bottom: 1rem;
+            .controls-section {
+                padding: 1rem;
             }
         }
 
         @media (max-width: 480px) {
             .grid-cols-responsive {
                 grid-template-columns: 1fr;
+                gap: 0.75rem;
             }
             
             .mobile-button-group {
@@ -323,39 +498,32 @@
             }
         }
 
-        /* 桌面端控制面板隐藏筛选 */
+        /* 桌面端控制面板 */
         @media (min-width: 769px) {
             .advanced-controls {
-                opacity: 0;
-                max-height: 0;
-                overflow: hidden;
-                transition: all 0.3s ease;
-                margin-bottom: 0;
-            }
-            
-            .advanced-controls.show {
-                opacity: 1;
-                max-height: 200px;
-                margin-bottom: 1.5rem;
+                margin-top: 1rem;
             }
             
             .controls-toggle {
                 margin-bottom: 1rem;
             }
+
+            .grid-cols-responsive {
+                grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+                gap: 1.5rem;
+            }
         }
 
-        /* 大屏幕优化 - 增加宽度和字体大小以提高可读性 */
+        /* 大屏幕优化 */
         @media (min-width: 1200px) {
             .container {
                 max-width: 1400px;
             }
             
-            /* 增加主要字体大小 */
             header h1 {
                 font-size: 2rem;
             }
             
-            /* 增加卡片内容字体 */
             .flat-card h2 {
                 font-size: 1.5rem;
             }
@@ -365,7 +533,6 @@
                 line-height: 1.7;
             }
             
-            /* 增加搜索框大小 */
             .search-input {
                 font-size: 1.1rem;
                 padding: 14px 20px;
@@ -378,33 +545,25 @@
                 height: 1.25rem;
             }
             
-            /* 增加按钮字体 */
             .flat-button {
                 font-size: 1rem;
                 padding: 0.75rem 1.25rem;
             }
             
-            /* 增加网格间距 */
-            .grid-item {
-                margin-bottom: 2rem;
+            .grid-cols-responsive {
+                grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+                gap: 2rem;
             }
             
-            /* 增加控件区域字体 */
             .controls-section label {
                 font-size: 1rem;
             }
             
-            .controls-section button {
-                font-size: 1rem;
-            }
-            
-            /* 增加后缀标签大小 */
             .suffix-tag {
                 font-size: 1rem;
                 padding: 0.75rem 1rem;
             }
             
-            /* 增加筛选下拉框字体 */
             .dropdown {
                 padding: 2rem;
             }
@@ -420,7 +579,6 @@
                 max-width: 1600px;
             }
             
-            /* 超大屏幕进一步优化 */
             header h1 {
                 font-size: 2.25rem;
             }
@@ -439,7 +597,6 @@
                 max-width: 500px;
             }
             
-            /* 增加内边距 */
             .flat-card {
                 padding: 2rem;
             }
@@ -451,51 +608,59 @@
             .dropdown {
                 padding: 2.5rem;
             }
+
+            .grid-cols-responsive {
+                grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
+                gap: 2.5rem;
+            }
         }
 
-        /* 后缀标签统一样式 */
-        .suffix-tag {
-            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-            color: #0369a1;
-            border: 1px solid #bae6fd;
-            font-weight: 500;
-            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
-        }
-
-        /* 筛选器计数徽章 */
-        .filter-badge {
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-            color: white;
-            font-weight: 600;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
+        /* 无障碍支持 */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
         }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body>
     <div id="app" class="min-h-screen">
         <!-- Header -->
-        <header class="bg-white border-b border-gray-200">
+        <header class="header-bg">
             <div class="container mx-auto px-4 py-6 max-w-7xl">
                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <h1 class="text-2xl font-semibold text-gray-900">页面管理</h1>
+                    <h1 class="text-2xl font-semibold">页面管理</h1>
                     
-                    <!-- Search -->
-                    <div class="search-container">
-                        <input 
-                            type="text" 
-                            v-model="searchQuery" 
-                            placeholder="搜索页面标题或后缀..." 
-                            class="search-input w-full rounded-lg"
+                    <div class="flex items-center gap-3">
+                        <!-- Theme Toggle -->
+                        <button 
+                            @click="toggleTheme"
+                            class="theme-toggle"
+                            title="切换主题"
+                            aria-label="切换深夜模式"
                         >
-                        <svg class="search-icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                        </svg>
+                            <svg v-if="!isDarkMode" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                            </svg>
+                            <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                            </svg>
+                        </button>
+                        
+                        <!-- Search -->
+                        <div class="search-container">
+                            <input 
+                                type="text" 
+                                v-model="searchQuery" 
+                                placeholder="搜索页面标题或后缀..." 
+                                class="search-input w-full rounded-lg"
+                            >
+                            <svg class="search-icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -513,7 +678,7 @@
                     </svg>
                     <span>{{ showAdvancedControls ? '隐藏' : '显示' }}高级选项</span>
                     <svg 
-                        :class="['w-4 h-4 transition-transform', showAdvancedControls ? 'rotate-180' : '']" 
+                        :class="['w-4 h-4 rotate-arrow', showAdvancedControls ? 'open' : '']" 
                         fill="none" stroke="currentColor" viewBox="0 0 24 24"
                     >
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
@@ -532,7 +697,7 @@
                     </svg>
                     <span>{{ showMobileAdvancedControls ? '隐藏' : '显示' }}筛选和排序</span>
                     <svg 
-                        :class="['w-4 h-4 transition-transform', showMobileAdvancedControls ? 'rotate-180' : '']" 
+                        :class="['w-4 h-4 rotate-arrow', showMobileAdvancedControls ? 'open' : '']" 
                         fill="none" stroke="currentColor" viewBox="0 0 24 24"
                     >
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
@@ -542,11 +707,11 @@
 
             <!-- Desktop Advanced Controls -->
             <div :class="['advanced-controls hidden md:block', showAdvancedControls ? 'show' : '']">
-                <div class="controls-section">
+                <div class="controls-section smooth-slide-down">
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <!-- Sort Options -->
                         <div class="flex flex-col space-y-3">
-                            <label class="text-sm font-semibold text-gray-700">排序方式</label>
+                            <label class="text-sm font-semibold">排序方式</label>
                             <div class="flex space-x-2">
                                 <button 
                                     v-for="option in sortOptions" 
@@ -561,7 +726,7 @@
 
                         <!-- Sort Order -->
                         <div class="flex flex-col space-y-3">
-                            <label class="text-sm font-semibold text-gray-700">排序顺序</label>
+                            <label class="text-sm font-semibold">排序顺序</label>
                             <div class="flex space-x-2">
                                 <button 
                                     @click="sortOrder = 'desc'"
@@ -586,7 +751,7 @@
 
                         <!-- Filter and Refresh -->
                         <div class="flex flex-col space-y-3">
-                            <label class="text-sm font-semibold text-gray-700">操作</label>
+                            <label class="text-sm font-semibold">操作</label>
                             <div class="flex space-x-2">
                                 <div class="relative">
                                     <button 
@@ -604,7 +769,7 @@
                                     <div v-if="showFilterDropdown" class="dropdown absolute top-full left-0 mt-2 w-80 p-6">
                                         <div class="space-y-4">
                                             <div>
-                                                <label class="text-sm font-semibold text-gray-700 block mb-3">按后缀筛选</label>
+                                                <label class="text-sm font-semibold block mb-3">按后缀筛选</label>
                                                 <div class="flex flex-wrap gap-2">
                                                     <button 
                                                         v-for="suffix in availableSuffixes" 
@@ -620,11 +785,11 @@
                                                     </button>
                                                 </div>
                                             </div>
-                                            <div class="border-t border-gray-200 pt-4 flex justify-between">
-                                                <button @click="clearFilters" class="text-sm text-gray-600 hover:text-gray-800 font-medium">
+                                            <div class="border-t pt-4 flex justify-between" style="border-color: var(--border-primary);">
+                                                <button @click="clearFilters" class="text-sm font-medium flat-button px-3 py-1 rounded">
                                                     清除筛选
                                                 </button>
-                                                <button @click="showFilterDropdown = false" class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                                                <button @click="showFilterDropdown = false" class="text-sm font-medium flat-button px-3 py-1 rounded">
                                                     完成
                                                 </button>
                                             </div>
@@ -655,12 +820,12 @@
 
             <!-- Mobile Controls -->
             <div :class="['mobile-advanced-controls md:hidden', showMobileAdvancedControls ? 'show' : '']">
-                <div class="controls-section">
+                <div class="controls-section smooth-slide-down">
                     <div class="mobile-controls">
                         <!-- Mobile Sort -->
                         <div class="mobile-sort-group">
                             <div>
-                                <label class="text-sm font-semibold text-gray-700 block mb-2">排序方式</label>
+                                <label class="text-sm font-semibold block mb-2">排序方式</label>
                                 <div class="mobile-button-group">
                                     <button 
                                         v-for="option in sortOptions" 
@@ -674,7 +839,7 @@
                             </div>
                             
                             <div>
-                                <label class="text-sm font-semibold text-gray-700 block mb-2">排序顺序</label>
+                                <label class="text-sm font-semibold block mb-2">排序顺序</label>
                                 <div class="mobile-button-group">
                                     <button 
                                         @click="sortOrder = 'desc'"
@@ -728,50 +893,19 @@
                             </button>
                         </div>
                     </div>
-                    
-                    <!-- Mobile Filter Dropdown -->
-                    <div v-if="showFilterDropdown" class="dropdown mt-4 p-6">
-                        <div class="space-y-4">
-                            <div>
-                                <label class="text-sm font-semibold text-gray-700 block mb-3">按后缀筛选</label>
-                                <div class="flex flex-wrap gap-2">
-                                    <button 
-                                        v-for="suffix in availableSuffixes" 
-                                        :key="suffix"
-                                        @click="toggleFilter('suffix', suffix)"
-                                        :class="[
-                                            'filter-chip px-3 py-2 rounded-lg text-xs font-medium',
-                                            activeFilters.includes(`suffix:${suffix}`) ? 'selected' : '',
-                                            getSuffixClass(suffix)
-                                        ]"
-                                    >
-                                        {{ suffix || '无后缀' }}
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="border-t border-gray-200 pt-4 flex justify-between">
-                                <button @click="clearFilters" class="text-sm text-gray-600 hover:text-gray-800 font-medium">
-                                    清除筛选
-                                </button>
-                                <button @click="showFilterDropdown = false" class="text-sm text-blue-600 hover:text-blue-800 font-medium">
-                                    完成
-                                </button>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
 
             <!-- Active Filters Display -->
-            <div v-if="activeFilters.length" class="flex flex-wrap gap-2 mb-6">
-                <span class="text-sm font-medium text-gray-600">已筛选:</span>
+            <div v-if="activeFilters.length" class="flex flex-wrap gap-2 mb-6 elegant-fade-in">
+                <span class="text-sm font-medium">已筛选:</span>
                 <span 
                     v-for="filter in activeFilters" 
                     :key="filter"
                     class="filter-chip selected px-3 py-1 rounded-full text-xs flex items-center space-x-2"
                 >
                     <span>{{ formatFilterLabel(filter) }}</span>
-                    <button @click="removeFilter(filter)" class="hover:text-red-200 transition-colors">
+                    <button @click="removeFilter(filter)" class="hover:opacity-70 transition-opacity">
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                         </svg>
@@ -780,15 +914,15 @@
             </div>
 
             <!-- Stats -->
-            <div class="bg-white border border-gray-200 rounded-lg p-4 mb-6 fade-in">
-                <div class="flex items-center justify-between text-sm text-gray-600">
+            <div class="flat-card border rounded-lg p-4 mb-6 elegant-fade-in">
+                <div class="flex items-center justify-between text-sm">
                     <div class="flex items-center space-x-4">
                         <span class="font-medium">共 {{ filteredPages.length }} 个页面</span>
                         <span v-if="searchQuery || activeFilters.length" class="text-blue-600">
                             (从 {{ pages.length }} 个中筛选)
                         </span>
                     </div>
-                    <div class="text-xs text-gray-500">
+                    <div class="text-xs">
                         最后更新: {{ lastUpdateTime }}
                     </div>
                 </div>
@@ -796,44 +930,45 @@
 
             <!-- Loading State -->
             <div v-if="isLoading && !pages.length" class="flex justify-center py-16">
-                <div class="text-center">
+                <div class="text-center gentle-slide-up">
                     <div class="loading-dots mb-4">
                         <div></div>
                         <div></div>
                         <div></div>
                     </div>
-                    <p class="text-gray-600">正在加载页面...</p>
+                    <p>正在加载页面...</p>
                 </div>
             </div>
 
             <!-- Error State -->
-            <div v-else-if="error" class="bg-red-50 border border-red-200 rounded-lg p-6 slide-up">
-                <div class="flex items-center text-red-700 mb-2">
-                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <div v-else-if="error" class="flat-card border-red-200 rounded-lg p-6 gentle-slide-up">
+                <div class="flex items-center mb-2">
+                    <svg class="w-5 h-5 mr-2 text-red-500" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
                     </svg>
                     <span class="font-medium">加载失败</span>
                 </div>
-                <p class="text-red-600 text-sm mb-3">{{ error }}</p>
+                <p class="text-sm mb-3">{{ error }}</p>
                 <button 
                     @click="refreshPages" 
-                    class="bg-red-100 text-red-700 px-4 py-2 rounded-lg text-sm hover:bg-red-200 transition-colors"
+                    class="flat-button px-4 py-2 rounded-lg text-sm"
                 >
                     重新加载
                 </button>
             </div>
 
             <!-- Pages Grid -->
-            <div v-else-if="filteredPages.length" class="grid grid-cols-responsive gap-4 fade-in">
+            <div v-else-if="filteredPages.length" class="grid grid-cols-responsive elegant-fade-in">
                 <div 
-                    v-for="page in filteredPages" 
+                    v-for="(page, index) in filteredPages" 
                     :key="page.id"
-                    class="grid-item flat-card rounded-lg overflow-hidden cursor-pointer"
+                    :style="{ animationDelay: `${index * 0.05}s` }"
+                    class="grid-item flat-card rounded-lg overflow-hidden cursor-pointer stagger-item"
                     @click="goToPage(page.id)"
                 >
                     <div class="p-4">
                         <div class="flex items-start justify-between mb-3">
-                            <h3 class="font-medium text-gray-900 line-clamp-2 text-sm leading-relaxed">
+                            <h3 class="font-medium line-clamp-2 text-sm leading-relaxed">
                                 {{ page.title }}
                             </h3>
                             <div v-if="page.suffix" :class="['ml-2 px-2 py-1 rounded text-xs whitespace-nowrap font-medium', getSuffixClass(page.suffix)]">
@@ -841,14 +976,14 @@
                             </div>
                         </div>
                         
-                        <div class="flex items-center justify-between text-xs text-gray-500">
+                        <div class="flex items-center justify-between text-xs">
                             <div class="flex items-center space-x-1">
                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
                                 <span>{{ formatDate(page.last_edited_time) }}</span>
                             </div>
-                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-4 h-4 text-gray-400 transition-transform hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                             </svg>
                         </div>
@@ -857,7 +992,7 @@
             </div>
 
             <!-- Empty State -->
-            <div v-else class="text-center py-16 slide-up">
+            <div v-else class="text-center py-16 gentle-slide-up">
                 <!-- 404 not found state -->
                 <div v-if="isPageNotFound" class="not-found-state rounded-2xl p-12 max-w-lg mx-auto">
                     <div class="not-found-icon mb-6">
@@ -865,19 +1000,19 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 16.5c-.77.833.192 2.5 1.732 2.5z"/>
                         </svg>
                     </div>
-                    <h3 class="text-xl font-semibold text-red-700 mb-3">页面未找到</h3>
-                    <p class="text-red-600 text-sm mb-6 leading-relaxed">
+                    <h3 class="text-xl font-semibold mb-3">页面未找到</h3>
+                    <p class="text-sm mb-6 leading-relaxed">
                         抱歉，您访问的页面不存在或已被删除。<br>
                         请检查URL是否正确，或返回首页查看所有可用页面。
                     </p>
                     <div class="space-y-3">
                         <button 
                             @click="goToHome"
-                            class="flat-button px-6 py-3 rounded-lg text-sm font-medium bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
+                            class="flat-button px-6 py-3 rounded-lg text-sm font-medium"
                         >
                             返回首页
                         </button>
-                        <div class="text-xs text-red-500">
+                        <div class="text-xs">
                             提示: 也可以尝试搜索相关页面
                         </div>
                     </div>
@@ -891,10 +1026,10 @@
                             <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                         </svg>
                     </div>
-                    <h3 class="text-xl font-semibold text-gray-900 mb-3">
+                    <h3 class="text-xl font-semibold mb-3">
                         {{ searchQuery || activeFilters.length ? '没有匹配的页面' : '暂无页面' }}
                     </h3>
-                    <p class="text-gray-600 text-sm mb-6 leading-relaxed">
+                    <p class="text-sm mb-6 leading-relaxed">
                         {{ searchQuery || activeFilters.length ? '请尝试调整搜索条件或筛选器，或者创建一个新页面' : '开始创建你的第一个页面，让这里变得生动起来吧' }}
                     </p>
                     <div class="space-y-3">
@@ -905,7 +1040,7 @@
                         >
                             清除所有筛选
                         </button>
-                        <div class="text-xs text-gray-500">
+                        <div class="text-xs">
                             小提示: 可以使用搜索框快速查找页面
                         </div>
                     </div>
@@ -931,6 +1066,28 @@
             const showMobileAdvancedControls = ref(false)
             const lastUpdateTime = ref('')
             const isPageNotFound = ref(false)
+            const isDarkMode = ref(false)
+
+            // 主题切换
+            const toggleTheme = () => {
+                isDarkMode.value = !isDarkMode.value
+                document.documentElement.setAttribute('data-theme', isDarkMode.value ? 'dark' : 'light')
+                localStorage.setItem('theme', isDarkMode.value ? 'dark' : 'light')
+            }
+
+            // 初始化主题
+            const initTheme = () => {
+                const savedTheme = localStorage.getItem('theme')
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+                
+                if (savedTheme) {
+                    isDarkMode.value = savedTheme === 'dark'
+                } else {
+                    isDarkMode.value = prefersDark
+                }
+                
+                document.documentElement.setAttribute('data-theme', isDarkMode.value ? 'dark' : 'light')
+            }
 
             const sortOptions = [
                 { value: 'last_edited_time', label: '修改时间' },
@@ -1088,13 +1245,26 @@
                 }
             }
 
+            // 监听系统主题变化
+            const handleSystemThemeChange = (e) => {
+                if (!localStorage.getItem('theme')) {
+                    isDarkMode.value = e.matches
+                    document.documentElement.setAttribute('data-theme', isDarkMode.value ? 'dark' : 'light')
+                }
+            }
+
             onMounted(() => {
                 document.addEventListener('click', handleClickOutside)
+                initTheme()
                 refreshPages()
+                
+                // 监听系统主题变化
+                window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', handleSystemThemeChange)
             })
 
             onUnmounted(() => {
                 document.removeEventListener('click', handleClickOutside)
+                window.matchMedia('(prefers-color-scheme: dark)').removeEventListener('change', handleSystemThemeChange)
             })
 
             return {
@@ -1110,6 +1280,7 @@
                 showMobileAdvancedControls,
                 lastUpdateTime,
                 isPageNotFound,
+                isDarkMode,
                 sortOptions,
                 availableSuffixes,
                 filteredPages,
@@ -1122,7 +1293,8 @@
                 clearAllFilters,
                 refreshPages,
                 goToPage,
-                goToHome
+                goToHome,
+                toggleTheme
             }
         }
     }).mount('#app')
