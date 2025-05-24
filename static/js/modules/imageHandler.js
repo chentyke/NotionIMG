@@ -16,6 +16,106 @@ const imageObserver = new IntersectionObserver((entries, observer) => {
     threshold: 0.1
 });
 
+// HEIC conversion library loading state
+let heicLibraryLoaded = false;
+let heicLibraryLoading = false;
+
+/**
+ * Load HEIC conversion library dynamically
+ * @returns {Promise<boolean>} - Whether the library loaded successfully
+ */
+async function loadHeicLibrary() {
+    if (heicLibraryLoaded) {
+        return true;
+    }
+    
+    if (heicLibraryLoading) {
+        // Wait for existing load to complete
+        return new Promise((resolve) => {
+            const checkInterval = setInterval(() => {
+                if (!heicLibraryLoading) {
+                    clearInterval(checkInterval);
+                    resolve(heicLibraryLoaded);
+                }
+            }, 100);
+        });
+    }
+    
+    heicLibraryLoading = true;
+    
+    try {
+        // Load heic2any library from CDN
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';
+        
+        await new Promise((resolve, reject) => {
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+        });
+        
+        heicLibraryLoaded = true;
+        console.log('HEIC conversion library loaded successfully');
+        return true;
+    } catch (error) {
+        console.error('Failed to load HEIC conversion library:', error);
+        return false;
+    } finally {
+        heicLibraryLoading = false;
+    }
+}
+
+/**
+ * Convert HEIC image to JPEG
+ * @param {string} heicUrl - URL of the HEIC image
+ * @returns {Promise<string>} - Data URL of converted JPEG
+ */
+async function convertHeicToJpeg(heicUrl) {
+    try {
+        // Load HEIC library if not already loaded
+        const libraryLoaded = await loadHeicLibrary();
+        if (!libraryLoaded) {
+            throw new Error('HEIC conversion library failed to load');
+        }
+        
+        // Fetch the HEIC file
+        console.log('Downloading HEIC file for conversion...');
+        const response = await fetch(heicUrl);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch HEIC file: ${response.status}`);
+        }
+        
+        const heicBlob = await response.blob();
+        console.log(`HEIC file size: ${(heicBlob.size / 1024 / 1024).toFixed(2)} MB`);
+        
+        // Convert HEIC to JPEG using heic2any
+        console.log('Converting HEIC to JPEG...');
+        const convertedBlob = await heic2any({
+            blob: heicBlob,
+            toType: "image/jpeg",
+            quality: 0.8 // High quality output
+        });
+        
+        // Create object URL for the converted image
+        const convertedUrl = URL.createObjectURL(convertedBlob);
+        console.log('HEIC conversion completed successfully');
+        
+        return convertedUrl;
+    } catch (error) {
+        console.error('HEIC conversion failed:', error);
+        throw error;
+    }
+}
+
+/**
+ * Check if URL is a HEIC image
+ * @param {string} url - Image URL to check
+ * @returns {boolean} - Whether the URL points to a HEIC image
+ */
+function isHeicFormat(url) {
+    return url.toLowerCase().includes('.heic') || url.toLowerCase().includes('.heif');
+}
+
 /**
  * Loads an image with elegant animation
  * @param {HTMLImageElement} img - The image element to load
@@ -28,7 +128,16 @@ async function loadImageWithAnimation(img) {
             wrapper.classList.add('loading');
         }
 
-        // Create a new image to preload
+        const originalSrc = img.dataset.src;
+        
+        // Check if it's a HEIC format
+        if (isHeicFormat(originalSrc)) {
+            console.log('HEIC format detected, attempting conversion...');
+            await loadHeicImage(img, wrapper, originalSrc);
+            return;
+        }
+
+        // Regular image loading
         const preloadImg = new Image();
         preloadImg.crossOrigin = "anonymous";
         
@@ -43,12 +152,125 @@ async function loadImageWithAnimation(img) {
         };
 
         // Start loading
-        preloadImg.src = img.dataset.src;
+        preloadImg.src = originalSrc;
 
     } catch (error) {
         console.error('Error loading image:', error);
         handleImageError(img, img.closest('.image-wrapper'), img.dataset.src);
     }
+}
+
+/**
+ * Load and convert HEIC image
+ * @param {HTMLImageElement} img - The image element
+ * @param {HTMLElement} wrapper - The wrapper element
+ * @param {string} heicUrl - The HEIC image URL
+ */
+async function loadHeicImage(img, wrapper, heicUrl) {
+    try {
+        // Show HEIC conversion progress
+        if (wrapper) {
+            wrapper.innerHTML = `
+                <div class="heic-conversion-progress text-center p-8 bg-blue-50 border-2 border-dashed border-blue-300 rounded-lg">
+                    <div class="text-4xl mb-3">🔄</div>
+                    <div class="text-blue-700 mb-2 font-medium">Converting HEIC image...</div>
+                    <div class="text-sm text-blue-600 mb-3">
+                        This may take a few seconds for large images
+                    </div>
+                    <div class="loading-spinner">
+                        <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Convert HEIC to JPEG
+        const convertedUrl = await convertHeicToJpeg(heicUrl);
+        
+        // Create new image element for converted image
+        const convertedImg = new Image();
+        convertedImg.crossOrigin = "anonymous";
+        
+        convertedImg.onload = () => {
+            // Success - display converted image
+            img.src = convertedUrl;
+            
+            if (wrapper) {
+                wrapper.classList.remove('loading');
+                wrapper.classList.add('loaded');
+                wrapper.innerHTML = `
+                    <img src="${convertedUrl}" alt="${img.alt}" 
+                         class="rounded-lg shadow-md transition-all duration-300 ease-out"
+                         onclick="openImageModal('${convertedUrl}')" loading="lazy">
+                    <div class="text-xs text-green-600 mt-2 text-center">
+                        ✓ Converted from HEIC format
+                    </div>
+                `;
+            }
+            
+            console.log('HEIC image successfully converted and displayed');
+        };
+        
+        convertedImg.onerror = () => {
+            throw new Error('Failed to load converted image');
+        };
+        
+        convertedImg.src = convertedUrl;
+        
+    } catch (error) {
+        console.error('HEIC conversion failed:', error);
+        
+        // Show conversion error with fallback options
+        if (wrapper) {
+            wrapper.classList.remove('loading');
+            wrapper.innerHTML = `
+                <div class="image-error text-center p-8 bg-red-50 border-2 border-dashed border-red-300 rounded-lg">
+                    <div class="text-4xl mb-3">📷</div>
+                    <div class="text-red-700 mb-2 font-medium">HEIC conversion failed</div>
+                    <div class="text-sm text-red-600 mb-3">
+                        ${error.message.includes('Failed to fetch') 
+                            ? 'Image link may be expired or inaccessible'
+                            : 'Unable to convert HEIC format to viewable format'
+                        }
+                    </div>
+                    <div class="space-y-2">
+                        <button onclick="retryHeicConversion(this, '${heicUrl}')" 
+                                class="mr-2 px-4 py-2 bg-blue-500 text-white rounded-md text-sm hover:bg-blue-600 transition-colors">
+                            🔄 Retry Conversion
+                        </button>
+                        ${error.message.includes('Failed to fetch') 
+                            ? `<button onclick="window.location.reload()" 
+                                      class="px-4 py-2 bg-green-500 text-white rounded-md text-sm hover:bg-green-600 transition-colors">
+                                  🔄 Refresh Page
+                              </button>`
+                            : ''
+                        }
+                    </div>
+                    <div class="text-xs text-gray-400 mt-3 break-all">${heicUrl}</div>
+                </div>
+            `;
+        }
+    }
+}
+
+/**
+ * Retry HEIC conversion
+ * @param {HTMLElement} button - The retry button
+ * @param {string} heicUrl - The HEIC image URL
+ */
+function retryHeicConversion(button, heicUrl) {
+    const wrapper = button.closest('.image-wrapper') || button.closest('.image-container');
+    if (!wrapper) return;
+    
+    // Reset wrapper and retry
+    wrapper.classList.add('loading');
+    wrapper.innerHTML = '<img src="" alt="" class="opacity-0 transition-all duration-300">';
+    
+    const newImg = wrapper.querySelector('img');
+    newImg.dataset.src = heicUrl;
+    newImg.alt = 'Converted HEIC image';
+    
+    loadHeicImage(newImg, wrapper, heicUrl);
 }
 
 /**
@@ -124,8 +346,8 @@ function handleImageError(img, wrapper, failedSrc = '') {
         let showRetry = true;
         
         if (isHeicFormat) {
-            errorMessage = 'HEIC format not supported by browser';
-            showRetry = false; // HEIC won't work with retry
+            errorMessage = 'HEIC format detected';
+            showRetry = false; // Will show HEIC-specific retry
         } else if (isNotionImage && originalSrc.includes('X-Amz-Expires')) {
             errorMessage = 'Image link expired - please refresh the page';
             showRetry = false; // Expired AWS links need page refresh
@@ -136,12 +358,15 @@ function handleImageError(img, wrapper, failedSrc = '') {
                 <div class="text-4xl mb-3">📷</div>
                 <div class="text-gray-600 mb-2">${errorMessage}</div>
                 ${isHeicFormat ? `
-                    <div class="text-sm text-gray-500 mb-3">
-                        HEIC images are not supported in web browsers.<br>
-                        Please convert to JPG, PNG, or WebP format.
+                    <div class="text-sm text-blue-600 mb-3">
+                        Browser doesn't natively support HEIC format.<br>
+                        We can try to convert it for you!
                     </div>
-                ` : ''}
-                ${showRetry ? `
+                    <button onclick="retryHeicConversion(this, '${originalSrc}')" 
+                            class="px-4 py-2 bg-blue-500 text-white rounded-md text-sm hover:bg-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                        🔄 Convert HEIC to JPEG
+                    </button>
+                ` : showRetry ? `
                     <button onclick="retryImageLoad(this)" 
                             class="mt-2 px-4 py-2 bg-blue-500 text-white rounded-md text-sm hover:bg-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                         <i class="fa fa-refresh mr-1"></i> Retry
@@ -252,8 +477,9 @@ function preloadCriticalImages(imageSources) {
     });
 }
 
-// Make retry function globally accessible
+// Make retry functions globally accessible
 window.retryImageLoad = retryImageLoad;
+window.retryHeicConversion = retryHeicConversion;
 
 // Export functions and objects
 export {
@@ -261,5 +487,7 @@ export {
     loadImageWithAnimation as loadImage,
     compressImage,
     preloadCriticalImages,
-    supportsWebP
+    supportsWebP,
+    convertHeicToJpeg,
+    isHeicFormat
 }; 
