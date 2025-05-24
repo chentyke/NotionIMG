@@ -160,49 +160,66 @@ function buildBreadcrumbPath(currentHeading) {
             // 按级别排序确保顺序正确
             pathHeadings.sort((a, b) => a.level - b.level);
             
-            // 优先保证靠后的显示 - 如果路径过长，从后往前截取
+            // 优先保证最深层级（当前）标题的显示
             let displayHeadings = pathHeadings;
-            const maxLength = 60; // 最大字符长度
+            const maxTotalLength = 100; // 增加最大总字符长度
+            const maxHeadingLength = 35; // 增加单个标题最大长度
             
-            // 计算总长度
-            let totalLength = displayHeadings.reduce((sum, heading) => sum + heading.text.length, 0);
-            
-            // 如果总长度超过限制，优先保留靠后的标题
-            if (totalLength > maxLength && displayHeadings.length > 1) {
-                // 从后往前保留标题，直到长度合适
-                let currentLength = 0;
-                const reversedHeadings = [...displayHeadings].reverse();
-                displayHeadings = [];
+            // 计算显示策略：优先保证当前标题（最深层级）完整显示
+            if (displayHeadings.length > 1) {
+                const currentHeadingIndex = displayHeadings.length - 1;
+                const currentHeadingText = displayHeadings[currentHeadingIndex].text;
                 
-                for (const heading of reversedHeadings) {
-                    const headingLength = heading.text.length;
-                    if (currentLength + headingLength <= maxLength) {
-                        displayHeadings.unshift(heading);
-                        currentLength += headingLength;
+                // 为当前标题预留足够空间
+                const reservedLength = Math.min(currentHeadingText.length, maxHeadingLength);
+                const availableLength = maxTotalLength - reservedLength - 6; // 预留省略号和分隔符空间
+                
+                // 从后往前（从当前标题开始）选择要显示的标题
+                let selectedHeadings = [displayHeadings[currentHeadingIndex]];
+                let usedLength = reservedLength;
+                
+                // 从倒数第二个标题开始向前选择
+                for (let i = currentHeadingIndex - 1; i >= 0; i--) {
+                    const heading = displayHeadings[i];
+                    const headingLength = Math.min(heading.text.length, maxHeadingLength);
+                    const separatorLength = 3; // " / " 分隔符的长度
+                    
+                    if (usedLength + headingLength + separatorLength <= maxTotalLength) {
+                        selectedHeadings.unshift(heading);
+                        usedLength += headingLength + separatorLength;
                     } else {
-                        // 如果还有空间且没有任何标题，至少显示当前标题的截断版本
-                        if (displayHeadings.length === 0) {
-                            const truncatedText = heading.text.substring(0, maxLength - 3) + '...';
-                            displayHeadings.unshift({ ...heading, text: truncatedText });
+                        // 空间不够，如果还有更多上级标题，添加省略号
+                        if (i > 0) {
+                            selectedHeadings.unshift({ text: '...', level: 0, id: 'ellipsis' });
                         }
                         break;
                     }
                 }
                 
-                // 如果截取了标题，在前面加上省略号
-                if (displayHeadings.length < pathHeadings.length) {
-                    displayHeadings.unshift({ text: '...', level: 0, id: 'ellipsis' });
-                }
+                displayHeadings = selectedHeadings;
             }
             
-            // 构建最终路径
+            // 构建最终路径，对每个标题应用长度限制
             let breadcrumbPath = '';
             displayHeadings.forEach((heading, index) => {
                 if (index > 0) breadcrumbPath += separator;
                 
-                const headingText = heading.text.length > 20 ? heading.text.substring(0, 20) + '...' : heading.text;
-                const colorClass = heading.id === 'ellipsis' ? 'var(--text-tertiary)' : 'var(--primary-color)';
-                breadcrumbPath += `<span style="color: ${colorClass};">${headingText}</span>`;
+                let headingText = heading.text;
+                
+                // 为当前标题（最后一个）提供更大的显示空间
+                const isCurrentHeading = index === displayHeadings.length - 1;
+                const maxLength = isCurrentHeading ? maxHeadingLength : Math.min(maxHeadingLength, 25);
+                
+                // 应用长度限制
+                if (headingText.length > maxLength) {
+                    headingText = headingText.substring(0, maxLength - 1) + '…';
+                }
+                
+                const colorClass = heading.id === 'ellipsis' ? 'var(--text-tertiary)' : 
+                                 isCurrentHeading ? 'var(--primary-color)' : 'var(--text-secondary)';
+                const fontWeight = isCurrentHeading ? 'font-weight: 600;' : 'font-weight: 400;';
+                
+                breadcrumbPath += `<span style="color: ${colorClass}; ${fontWeight}">${headingText}</span>`;
             });
             
             return breadcrumbPath;
