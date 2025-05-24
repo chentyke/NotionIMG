@@ -79,6 +79,10 @@
             animation: slideUp 0.3s ease-out;
         }
 
+        .slide-down {
+            animation: slideDown 0.3s ease-out;
+        }
+
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
@@ -88,6 +92,17 @@
             from { 
                 opacity: 0;
                 transform: translateY(20px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideDown {
+            from { 
+                opacity: 0;
+                transform: translateY(-10px);
             }
             to { 
                 opacity: 1;
@@ -134,6 +149,12 @@
             border: 1px solid #bae6fd;
             font-weight: 500;
             text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+            transition: all 0.3s ease;
+        }
+
+        .suffix-tag:hover {
+            background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+            transform: scale(1.05);
         }
 
         /* 空状态美化 */
@@ -158,6 +179,103 @@
             transform: scale(1.05);
         }
 
+        /* 404 页面特殊样式 */
+        .not-found-state {
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+            border: 2px dashed #fca5a5;
+            transition: all 0.3s ease;
+        }
+
+        .not-found-state:hover {
+            border-color: #f87171;
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+        }
+
+        .not-found-icon {
+            color: #f87171;
+            transition: all 0.3s ease;
+        }
+
+        .not-found-state:hover .not-found-icon {
+            color: #ef4444;
+            transform: scale(1.05);
+        }
+
+        /* 可折叠控件样式 */
+        .controls-section {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .advanced-controls {
+            opacity: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-bottom: 0;
+        }
+        
+        .advanced-controls.show {
+            opacity: 1;
+            max-height: 300px;
+            margin-bottom: 1.5rem;
+        }
+
+        .mobile-advanced-controls {
+            opacity: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-bottom: 0;
+        }
+        
+        .mobile-advanced-controls.show {
+            opacity: 1;
+            max-height: 600px;
+            margin-bottom: 1.5rem;
+        }
+
+        /* 按钮组样式 */
+        .button-group {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .mobile-button-group {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .mobile-sort-group {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .mobile-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        /* 统计信息样式 */
+        .stats-badge {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            color: #1d4ed8;
+            border: 1px solid #bfdbfe;
+            transition: all 0.3s ease;
+        }
+
+        .stats-badge:hover {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            transform: translateY(-1px);
+        }
+
         /* 移动端优化 */
         @media (max-width: 768px) {
             .container {
@@ -172,6 +290,7 @@
             
             .grid-cols-responsive {
                 grid-template-columns: 1fr;
+                gap: 1rem;
             }
             
             header .container {
@@ -180,16 +299,110 @@
             }
             
             header h1 {
-                font-size: 1.5rem;
+                font-size: 1.25rem;
                 text-align: center;
                 margin-bottom: 1rem;
+            }
+
+            .mobile-advanced-controls {
+                margin-top: 1rem;
+            }
+
+            .controls-section {
+                padding: 1rem;
+            }
+
+            .mobile-button-group {
+                flex-direction: column;
+            }
+            
+            .mobile-actions {
+                flex-direction: column;
+            }
+
+            .flat-card {
+                padding: 1rem;
+            }
+
+            .stats-info {
+                flex-direction: column;
+                text-align: center;
+                gap: 0.5rem;
             }
         }
 
         @media (min-width: 769px) {
             .grid-cols-responsive {
                 grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+                gap: 1.5rem;
             }
+
+            .advanced-controls {
+                margin-top: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .grid-cols-responsive {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+            }
+            
+            .empty-state, .not-found-state {
+                padding: 2rem 1rem;
+            }
+        }
+
+        /* 浮动效果 */
+        .float-animation {
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* 脉冲效果 */
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* 弹性效果 */
+        .bounce-in {
+            animation: bounceIn 0.6s ease-out;
+        }
+
+        @keyframes bounceIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.3);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.05);
+            }
+            70% {
+                transform: scale(0.9);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* 旋转箭头动画 */
+        .rotate-arrow {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .rotate-arrow.open {
+            transform: rotate(180deg);
         }
     </style>
 </head>
@@ -209,11 +422,13 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                             </svg>
                         </button>
-                        <div>
+                        <div class="stats-info flex items-center space-x-3">
                             <h1 class="text-2xl font-semibold text-gray-900">
                                 标签: <span class="suffix-tag px-3 py-1 rounded-lg text-sm">{{ suffix }}</span>
                             </h1>
-                            <p class="text-sm text-gray-600 mt-1">共 {{ filteredPages.length }} 个页面</p>
+                            <span class="stats-badge px-3 py-1 rounded-full text-sm">
+                                {{ filteredPages.length }} 个页面
+                            </span>
                         </div>
                     </div>
                     
@@ -234,51 +449,169 @@
         </header>
 
         <main class="container mx-auto px-4 py-6 max-w-7xl">
-            <!-- Sort Controls -->
-            <div class="bg-white border border-gray-200 rounded-lg p-4 mb-6 fade-in">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div class="flex items-center space-x-4">
-                        <label class="text-sm font-medium text-gray-700">排序方式:</label>
-                        <div class="flex space-x-2">
-                            <button 
-                                @click="sortBy = 'last_edited_time'"
-                                :class="['flat-button px-3 py-2 rounded-lg text-sm', sortBy === 'last_edited_time' ? 'active' : '']"
-                            >
-                                修改时间
-                            </button>
-                            <button 
-                                @click="sortBy = 'title'"
-                                :class="['flat-button px-3 py-2 rounded-lg text-sm', sortBy === 'title' ? 'active' : '']"
-                            >
-                                标题
-                            </button>
+            <!-- Desktop Controls Toggle -->
+            <div class="controls-toggle hidden md:block">
+                <button 
+                    @click="showAdvancedControls = !showAdvancedControls"
+                    class="flat-button px-4 py-2 rounded-lg text-sm flex items-center space-x-2"
+                >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"/>
+                    </svg>
+                    <span>{{ showAdvancedControls ? '隐藏' : '显示' }}排序选项</span>
+                    <svg 
+                        :class="['w-4 h-4 rotate-arrow', showAdvancedControls ? 'open' : '']" 
+                        fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                    >
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Mobile Controls Toggle -->
+            <div class="controls-toggle md:hidden">
+                <button 
+                    @click="showMobileAdvancedControls = !showMobileAdvancedControls"
+                    class="flat-button px-4 py-2 rounded-lg text-sm flex items-center space-x-2 w-full justify-center"
+                >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"/>
+                    </svg>
+                    <span>{{ showMobileAdvancedControls ? '隐藏' : '显示' }}排序选项</span>
+                    <svg 
+                        :class="['w-4 h-4 rotate-arrow', showMobileAdvancedControls ? 'open' : '']" 
+                        fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                    >
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Desktop Advanced Controls -->
+            <div :class="['advanced-controls hidden md:block', showAdvancedControls ? 'show' : '']">
+                <div class="controls-section slide-down">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Sort Options -->
+                        <div class="flex flex-col space-y-3">
+                            <label class="text-sm font-semibold text-gray-700">排序方式</label>
+                            <div class="button-group">
+                                <button 
+                                    @click="sortBy = 'last_edited_time'"
+                                    :class="['flat-button px-3 py-2 rounded-lg text-sm', sortBy === 'last_edited_time' ? 'active' : '']"
+                                >
+                                    修改时间
+                                </button>
+                                <button 
+                                    @click="sortBy = 'title'"
+                                    :class="['flat-button px-3 py-2 rounded-lg text-sm', sortBy === 'title' ? 'active' : '']"
+                                >
+                                    标题
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Sort Order -->
+                        <div class="flex flex-col space-y-3">
+                            <label class="text-sm font-semibold text-gray-700">排序顺序</label>
+                            <div class="button-group">
+                                <button 
+                                    @click="sortOrder = 'desc'"
+                                    :class="['flat-button px-3 py-2 rounded-lg text-sm flex items-center space-x-1', sortOrder === 'desc' ? 'active' : '']"
+                                >
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
+                                    </svg>
+                                    <span>降序</span>
+                                </button>
+                                <button 
+                                    @click="sortOrder = 'asc'"
+                                    :class="['flat-button px-3 py-2 rounded-lg text-sm flex items-center space-x-1', sortOrder === 'asc' ? 'active' : '']"
+                                >
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
+                                    </svg>
+                                    <span>升序</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="flex flex-col space-y-3">
+                            <label class="text-sm font-semibold text-gray-700">操作</label>
+                            <div class="button-group">
+                                <button 
+                                    @click="refreshPages" 
+                                    :disabled="isLoading"
+                                    class="flat-button px-3 py-2 rounded-lg text-sm flex items-center space-x-1"
+                                >
+                                    <svg v-if="!isLoading" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                    </svg>
+                                    <div v-else class="loading-dots">
+                                        <div></div>
+                                        <div></div>
+                                        <div></div>
+                                    </div>
+                                    <span>{{ isLoading ? '刷新中' : '刷新' }}</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mobile Controls -->
+            <div :class="['mobile-advanced-controls md:hidden', showMobileAdvancedControls ? 'show' : '']">
+                <div class="controls-section slide-down">
+                    <div class="mobile-sort-group">
+                        <div>
+                            <label class="text-sm font-semibold text-gray-700 block mb-2">排序方式</label>
+                            <div class="mobile-button-group">
+                                <button 
+                                    @click="sortBy = 'last_edited_time'"
+                                    :class="['flat-button px-3 py-2 rounded-lg text-sm w-full', sortBy === 'last_edited_time' ? 'active' : '']"
+                                >
+                                    修改时间
+                                </button>
+                                <button 
+                                    @click="sortBy = 'title'"
+                                    :class="['flat-button px-3 py-2 rounded-lg text-sm w-full', sortBy === 'title' ? 'active' : '']"
+                                >
+                                    标题
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="text-sm font-semibold text-gray-700 block mb-2">排序顺序</label>
+                            <div class="mobile-button-group">
+                                <button 
+                                    @click="sortOrder = 'desc'"
+                                    :class="['flat-button px-3 py-2 rounded-lg text-sm flex items-center justify-center space-x-1 w-full', sortOrder === 'desc' ? 'active' : '']"
+                                >
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
+                                    </svg>
+                                    <span>降序</span>
+                                </button>
+                                <button 
+                                    @click="sortOrder = 'asc'"
+                                    :class="['flat-button px-3 py-2 rounded-lg text-sm flex items-center justify-center space-x-1 w-full', sortOrder === 'asc' ? 'active' : '']"
+                                >
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
+                                    </svg>
+                                    <span>升序</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                     
-                    <div class="flex items-center space-x-2">
-                        <button 
-                            @click="sortOrder = 'desc'"
-                            :class="['flat-button px-3 py-2 rounded-lg text-sm flex items-center space-x-1', sortOrder === 'desc' ? 'active' : '']"
-                        >
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
-                            </svg>
-                            <span>降序</span>
-                        </button>
-                        <button 
-                            @click="sortOrder = 'asc'"
-                            :class="['flat-button px-3 py-2 rounded-lg text-sm flex items-center space-x-1', sortOrder === 'asc' ? 'active' : '']"
-                        >
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
-                            </svg>
-                            <span>升序</span>
-                        </button>
-                        
+                    <div class="mobile-actions">
                         <button 
                             @click="refreshPages" 
                             :disabled="isLoading"
-                            class="flat-button px-3 py-2 rounded-lg text-sm flex items-center space-x-1 ml-4"
+                            class="flat-button px-3 py-2 rounded-lg text-sm flex items-center justify-center space-x-1 w-full"
                         >
                             <svg v-if="!isLoading" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
@@ -296,7 +629,7 @@
 
             <!-- Loading State -->
             <div v-if="isLoading && !pages.length" class="flex justify-center py-16">
-                <div class="text-center">
+                <div class="text-center bounce-in">
                     <div class="loading-dots mb-4">
                         <div></div>
                         <div></div>
@@ -307,28 +640,31 @@
             </div>
 
             <!-- Error State -->
-            <div v-else-if="error" class="bg-red-50 border border-red-200 rounded-lg p-6 slide-up">
-                <div class="flex items-center text-red-700 mb-2">
-                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
-                    </svg>
-                    <span class="font-medium">加载失败</span>
+            <div v-else-if="error" class="not-found-state rounded-2xl p-8 max-w-lg mx-auto slide-up">
+                <div class="text-center">
+                    <div class="not-found-icon mb-6 float-animation">
+                        <svg class="mx-auto h-16 w-16" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-red-700 mb-3">加载失败</h3>
+                    <p class="text-red-600 text-sm mb-6 leading-relaxed">{{ error }}</p>
+                    <button 
+                        @click="refreshPages" 
+                        class="bg-red-100 text-red-700 px-6 py-3 rounded-lg text-sm hover:bg-red-200 transition-all duration-200 font-medium pulse-animation"
+                    >
+                        重新加载
+                    </button>
                 </div>
-                <p class="text-red-600 text-sm mb-3">{{ error }}</p>
-                <button 
-                    @click="refreshPages" 
-                    class="bg-red-100 text-red-700 px-4 py-2 rounded-lg text-sm hover:bg-red-200 transition-colors"
-                >
-                    重新加载
-                </button>
             </div>
 
             <!-- Pages Grid -->
-            <div v-else-if="filteredPages.length" class="grid grid-cols-responsive gap-4 fade-in">
+            <div v-else-if="filteredPages.length" class="grid grid-cols-responsive fade-in">
                 <div 
-                    v-for="page in filteredPages" 
+                    v-for="(page, index) in filteredPages" 
                     :key="page.id"
-                    class="grid-item flat-card rounded-lg overflow-hidden cursor-pointer"
+                    :style="{ animationDelay: `${index * 0.1}s` }"
+                    class="grid-item flat-card rounded-lg overflow-hidden cursor-pointer bounce-in"
                     @click="goToPage(page.id)"
                 >
                     <div class="p-6">
@@ -343,7 +679,7 @@
                                 </svg>
                                 <span>{{ formatDate(page.last_edited_time) }}</span>
                             </div>
-                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-5 h-5 text-gray-400 transition-transform hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                             </svg>
                         </div>
@@ -353,29 +689,45 @@
 
             <!-- Empty State -->
             <div v-else class="text-center py-16 slide-up">
-                <div class="empty-state rounded-2xl p-12 max-w-lg mx-auto">
-                    <div class="empty-icon mb-6">
-                        <svg class="mx-auto h-16 w-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path v-if="searchQuery" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                            <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                <div :class="[suffix === '404' ? 'not-found-state' : 'empty-state', 'rounded-2xl p-12 max-w-lg mx-auto']">
+                    <div :class="[suffix === '404' ? 'not-found-icon' : 'empty-icon', 'mb-6 float-animation']">
+                        <svg v-if="suffix === '404'" class="mx-auto h-20 w-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                        </svg>
+                        <svg v-else-if="searchQuery" class="mx-auto h-16 w-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                        <svg v-else class="mx-auto h-16 w-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                         </svg>
                     </div>
-                    <h3 class="text-xl font-semibold text-gray-900 mb-3">
-                        {{ searchQuery ? '没有匹配的页面' : `暂无 ${suffix} 标签的页面` }}
+                    <h3 class="text-xl font-semibold mb-3" :class="suffix === '404' ? 'text-red-700' : 'text-gray-900'">
+                        <span v-if="suffix === '404'">页面未找到</span>
+                        <span v-else-if="searchQuery">没有匹配的页面</span>
+                        <span v-else>暂无 {{ suffix }} 标签的页面</span>
                     </h3>
-                    <p class="text-gray-600 text-sm mb-6 leading-relaxed">
-                        {{ searchQuery ? '请尝试调整搜索关键词' : `还没有创建带有 ${suffix} 标签的页面` }}
+                    <p class="text-sm mb-6 leading-relaxed" :class="suffix === '404' ? 'text-red-600' : 'text-gray-600'">
+                        <span v-if="suffix === '404'">请检查URL是否正确，或返回主页重新浏览</span>
+                        <span v-else-if="searchQuery">请尝试调整搜索关键词或清除搜索条件</span>
+                        <span v-else>还没有创建带有 {{ suffix }} 标签的页面</span>
                     </p>
                     <div class="space-y-3">
                         <button 
                             v-if="searchQuery"
                             @click="searchQuery = ''" 
-                            class="flat-button px-6 py-3 rounded-lg text-sm font-medium"
+                            class="flat-button px-6 py-3 rounded-lg text-sm font-medium pulse-animation"
                         >
                             清除搜索
                         </button>
-                        <div class="text-xs text-gray-500">
-                            可以在Notion中创建新页面并设置相应标签
+                        <button 
+                            v-if="suffix === '404'"
+                            @click="goBack" 
+                            class="bg-red-100 text-red-700 px-6 py-3 rounded-lg text-sm font-medium hover:bg-red-200 transition-all duration-200 pulse-animation"
+                        >
+                            返回主页
+                        </button>
+                        <div class="text-xs" :class="suffix === '404' ? 'text-red-500' : 'text-gray-500'">
+                            <span v-if="suffix !== '404'">可以在Notion中创建新页面并设置相应标签</span>
                         </div>
                     </div>
                 </div>
@@ -394,6 +746,8 @@
             const searchQuery = ref('')
             const sortBy = ref('last_edited_time')
             const sortOrder = ref('desc')
+            const showAdvancedControls = ref(false)
+            const showMobileAdvancedControls = ref(false)
             
             // 获取当前 suffix
             const suffix = window.location.pathname.substring(1)
@@ -485,6 +839,8 @@
                 searchQuery,
                 sortBy,
                 sortOrder,
+                showAdvancedControls,
+                showMobileAdvancedControls,
                 suffix,
                 filteredPages,
                 formatDate,
