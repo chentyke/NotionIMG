@@ -777,8 +777,10 @@
         padding: 16px 24px;
     }
     
+    /* 平板大标题字体 - 覆盖桌面版设置 */
+    .dynamic-header.large .main-title,
     .floating-breadcrumb .main-title {
-        font-size: 1.75rem; /* 平板大标题 28px */
+        font-size: 1.75rem !important; /* 平板大标题 28px */
     }
     
     .dynamic-header.small .floating-breadcrumb .main-title {
@@ -875,8 +877,10 @@
         align-items: center;
     }
     
+    /* 移动端大标题字体 - 覆盖桌面版设置 */
+    .dynamic-header.large .main-title,
     .floating-breadcrumb .main-title {
-        font-size: 1.375rem; /* 移动端大标题适中 22px */
+        font-size: 1.375rem !important; /* 移动端大标题适中 22px */
         font-weight: 700;
         line-height: 1.3; /* 优化行高 */
     }
@@ -998,8 +1002,10 @@
         border-radius: 12px;
     }
     
+    /* 超小屏幕大标题字体 - 覆盖桌面版设置 */
+    .dynamic-header.large .main-title,
     .floating-breadcrumb .main-title {
-        font-size: 1.25rem; /* 超小屏幕大标题 20px */
+        font-size: 1.25rem !important; /* 超小屏幕大标题 20px */
         line-height: 1.25;
     }
     
