@@ -1861,6 +1861,5 @@ export {
     copyCode,
     copyPageLink,
     transitionToPage,
-    TableOfContents,
     PageTransition
 }; 
