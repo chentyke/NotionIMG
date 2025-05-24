@@ -100,7 +100,7 @@
     </div>
     
     <!-- Dynamic title header with glass effect -->
-    <div id="dynamicHeader" class="dynamic-header large" onclick="toggleFloatingToc()" title="点击查看目录" aria-label="点击查看目录">
+    <div id="dynamicHeader" class="dynamic-header large">
         <div class="content-wrapper">
             <div class="floating-breadcrumb">
                 <span id="floatingTitle" class="main-title"></span>
@@ -125,8 +125,8 @@
         </div>
     </div>
     
-    <!-- Main container -->
-    <div class="container mx-auto px-4 py-8 max-w-4xl">
+    <!-- Main container with top spacing for dynamic header -->
+    <div class="container mx-auto px-4 max-w-4xl" style="margin-top: 120px; padding-top: 2rem; padding-bottom: 2rem;">
         <div class="bg-white rounded-xl shadow-sm overflow-hidden">
             <div class="p-6">
                 <!-- Cover image -->
@@ -135,7 +135,7 @@
                 </div>
                 
                 <!-- Page date info (minimal) -->
-                <div id="editDate" class="edit-date-minimal"></div>
+                <div id="editDate" class="edit-date-minimal-no-border"></div>
                 
                 <!-- Page content -->
                 <div id="pageContent" class="prose">

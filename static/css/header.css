@@ -163,7 +163,13 @@
     font-size: 0.875rem;
     margin-top: 0;
     margin-left: 8px;
+    opacity: 0;
+    transform: translateY(10px);
+}
+
+.dynamic-header.small .breadcrumb-trail.visible {
     opacity: 1;
+    transform: translateY(0);
 }
 
 /* 动态头部响应式交互效果 */
@@ -235,8 +241,15 @@
     flex-shrink: 0; /* 保证面包屑优先显示 */
     max-width: none;
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    opacity: 0.8;
+    opacity: 0;
     text-align: center;
+    transform: translateY(10px);
+}
+
+/* 面包屑显示动画 */
+.floating-breadcrumb .breadcrumb-trail.visible {
+    opacity: 0.8;
+    transform: translateY(0);
 }
 
 .floating-breadcrumb .breadcrumb-separator {
@@ -258,6 +271,16 @@
     text-align: center;
     padding: 0.5rem 0;
     border-bottom: 1px solid var(--border-color);
+}
+
+/* 无边框的日期样式 */
+.edit-date-minimal-no-border {
+    font-size: 0.875rem;
+    color: var(--text-tertiary);
+    margin-bottom: 1rem;
+    text-align: center;
+    padding: 0.5rem 0;
+    /* 删除边框 */
 }
 
 /* 全屏浮动目录样式 - 优化毛玻璃动画 */
@@ -736,6 +759,10 @@
 
 /* Mobile optimizations */
 @media (max-width: 640px) {
+    /* 移动端页面容器顶部间距调整 */
+    .container[style*="margin-top: 120px"] {
+        margin-top: 100px !important;
+    }
     .page-header {
         flex-direction: column;
         align-items: flex-start;
@@ -774,7 +801,8 @@
     }
     
     /* 移动端日期样式优化 */
-    .edit-date-minimal {
+    .edit-date-minimal,
+    .edit-date-minimal-no-border {
         font-size: 0.75rem;
         margin-bottom: 0.75rem;
         padding: 0.25rem 0;

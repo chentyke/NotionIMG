@@ -40,11 +40,12 @@ function initFloatingHeader() {
         if (!floatingBreadcrumb) return;
         
         if (floatingTocHeadings.length === 0) {
-            // 没有标题时，隐藏面包屑
+            // 没有标题时，隐藏面包屑并禁用点击
             floatingBreadcrumb.style.display = 'none';
             dynamicHeader.style.cursor = 'default';
             dynamicHeader.removeAttribute('title');
             dynamicHeader.removeAttribute('aria-label');
+            // 移除内联onclick，因为我们会用事件监听器
             dynamicHeader.removeAttribute('onclick');
         } else {
             // 有标题时，显示面包屑和启用点击
@@ -52,7 +53,14 @@ function initFloatingHeader() {
             dynamicHeader.style.cursor = 'pointer';
             dynamicHeader.setAttribute('title', '点击查看目录');
             dynamicHeader.setAttribute('aria-label', '点击查看目录');
-            dynamicHeader.setAttribute('onclick', 'toggleFloatingToc()');
+            // 确保点击事件正常工作，使用事件监听器而不是内联onclick
+            dynamicHeader.onclick = function() {
+                if (typeof toggleFloatingToc === 'function') {
+                    toggleFloatingToc();
+                } else if (typeof window.toggleFloatingToc === 'function') {
+                    window.toggleFloatingToc();
+                }
+            };
             
             if (currentActiveHeading) {
                 const heading = floatingTocHeadings.find(h => h.id === currentActiveHeading);
@@ -60,9 +68,21 @@ function initFloatingHeader() {
                     // 构建面包屑路径
                     const breadcrumbPath = buildBreadcrumbPath(heading);
                     floatingBreadcrumb.innerHTML = breadcrumbPath;
+                    // 添加显示动画
+                    setTimeout(() => {
+                        floatingBreadcrumb.classList.add('visible');
+                    }, 100);
+                } else {
+                    floatingBreadcrumb.classList.remove('visible');
+                    setTimeout(() => {
+                        floatingBreadcrumb.innerHTML = '';
+                    }, 300);
                 }
             } else {
-                floatingBreadcrumb.innerHTML = '';
+                floatingBreadcrumb.classList.remove('visible');
+                setTimeout(() => {
+                    floatingBreadcrumb.innerHTML = '';
+                }, 300);
             }
         }
     };
@@ -367,9 +387,16 @@ function updateFloatingTocScrollSpy() {
                         if (heading) {
                             const breadcrumbPath = buildBreadcrumbPath(heading);
                             floatingBreadcrumb.innerHTML = breadcrumbPath;
+                            // 添加显示动画
+                            setTimeout(() => {
+                                floatingBreadcrumb.classList.add('visible');
+                            }, 100);
                         }
                     } else {
-                        floatingBreadcrumb.innerHTML = '';
+                        floatingBreadcrumb.classList.remove('visible');
+                        setTimeout(() => {
+                            floatingBreadcrumb.innerHTML = '';
+                        }, 300);
                     }
                 }
             }
@@ -758,6 +785,10 @@ function completeScrollAnimation(headingId) {
                 if (heading) {
                     const breadcrumbPath = buildBreadcrumbPath(heading);
                     floatingBreadcrumb.innerHTML = breadcrumbPath;
+                    // 添加显示动画
+                    setTimeout(() => {
+                        floatingBreadcrumb.classList.add('visible');
+                    }, 100);
                 }
             }
         }
