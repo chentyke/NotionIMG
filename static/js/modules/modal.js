@@ -3,54 +3,87 @@
 /**
  * Opens an image modal with the specified image URL
  * @param {string} originalUrl - The URL of the image to display
+ * @param {string} previewUrl - Optional preview URL for immediate display
  */
-function openImageModal(originalUrl) {
+function openImageModal(originalUrl, previewUrl = null) {
     const modal = document.getElementById('imageModal');
     const modalImg = document.getElementById('modalImage');
     
     // Reset any existing transforms/state
     resetImageModalState();
     
-    // Show the modal first
+    // Show the modal immediately
     modal.style.display = "block";
     
-    // Set loading state
+    // Clear previous image and set initial state
     modalImg.classList.add('loading');
-    modalImg.src = ''; // Clear previous image
+    modalImg.src = '';
     
-    // Preload the image
-    const img = new Image();
-    img.onload = () => {
-        modalImg.src = originalUrl;
-        modalImg.style.maxWidth = `${Math.min(window.innerWidth * 0.9, img.width)}px`;
+    // Try to get preview from the clicked image if not provided
+    if (!previewUrl) {
+        const clickedImg = event?.target;
+        if (clickedImg && clickedImg.tagName === 'IMG') {
+            previewUrl = clickedImg.src;
+        }
+    }
+    
+    // If we have a preview, show it immediately
+    if (previewUrl && previewUrl !== originalUrl) {
+        modalImg.src = previewUrl;
+        modalImg.classList.remove('loading');
+        modal.classList.add('visible');
         
-        // Calculate optimal height constraint (90% of viewport height)
+        // Add a subtle loading indicator for the high-res version
+        addImageLoadingIndicator(modal);
+    }
+    
+    // Preload the original high-resolution image
+    const originalImg = new Image();
+    originalImg.onload = () => {
+        // Calculate optimal dimensions
+        modalImg.style.maxWidth = `${Math.min(window.innerWidth * 0.9, originalImg.width)}px`;
         modalImg.style.maxHeight = `${window.innerHeight * 0.9}px`;
         
-        // Once image is set, show it with animation
-        setTimeout(() => {
+        // Smooth transition to high-res image
+        if (previewUrl && previewUrl !== originalUrl) {
+            // Create a smooth transition effect
+            modalImg.style.transition = 'opacity 0.3s ease-in-out';
+            modalImg.style.opacity = '0.7';
+            
+            setTimeout(() => {
+                modalImg.src = originalUrl;
+                modalImg.style.opacity = '1';
+                removeImageLoadingIndicator(modal);
+            }, 100);
+        } else {
+            // No preview, just show the original
+            modalImg.src = originalUrl;
             modalImg.classList.remove('loading');
-            // Force reflow
-            modal.offsetHeight;
             modal.classList.add('visible');
-        }, 50);
+        }
     };
     
-    img.onerror = () => {
-        modalImg.src = originalUrl;
+    originalImg.onerror = () => {
         modalImg.classList.add('error');
+        modalImg.classList.remove('loading');
+        removeImageLoadingIndicator(modal);
         
-        // Show error state
-        setTimeout(() => {
-            modalImg.classList.remove('loading');
-            // Force reflow
-            modal.offsetHeight;
+        // If we don't have a preview, set the original URL anyway
+        if (!previewUrl) {
+            modalImg.src = originalUrl;
             modal.classList.add('visible');
-        }, 50);
+        }
     };
     
-    // Start loading
-    img.src = originalUrl;
+    // Start loading original image
+    originalImg.src = originalUrl;
+    
+    // If no preview available, show modal anyway with loading state
+    if (!previewUrl) {
+        setTimeout(() => {
+            modal.classList.add('visible');
+        }, 50);
+    }
     
     // Prevent scrolling on the body
     document.body.style.overflow = 'hidden';
@@ -63,7 +96,43 @@ function openImageModal(originalUrl) {
 }
 
 /**
- * Closes the image modal
+ * Adds a loading indicator for high-res image loading
+ * @param {HTMLElement} modal - The modal element
+ */
+function addImageLoadingIndicator(modal) {
+    // Remove existing indicator if any
+    removeImageLoadingIndicator(modal);
+    
+    const indicator = document.createElement('div');
+    indicator.className = 'hires-loading-indicator';
+    indicator.innerHTML = `
+        <div class="hires-loading-content">
+            <div class="hires-loading-spinner"></div>
+            <span class="hires-loading-text">加载高清图片中...</span>
+        </div>
+    `;
+    
+    modal.appendChild(indicator);
+}
+
+/**
+ * Removes the loading indicator
+ * @param {HTMLElement} modal - The modal element
+ */
+function removeImageLoadingIndicator(modal) {
+    const indicator = modal.querySelector('.hires-loading-indicator');
+    if (indicator) {
+        indicator.style.opacity = '0';
+        setTimeout(() => {
+            if (indicator.parentNode) {
+                indicator.parentNode.removeChild(indicator);
+            }
+        }, 200);
+    }
+}
+
+/**
+ * Closes the image modal with reverse animation
  * @param {Event} event - Optional event that triggered the close
  */
 function closeImageModal(event) {
@@ -78,29 +147,55 @@ function closeImageModal(event) {
     const closeButton = modal.querySelector('.close-button');
     const downloadButton = document.getElementById('modalDownloadButton');
     
-    // Immediately hide the buttons to sync with image fading
+    // Immediately hide the buttons to sync with image animation
     if (closeButton) closeButton.style.opacity = '0';
     if (downloadButton) downloadButton.style.opacity = '0';
     
-    modal.classList.remove('visible');
-    
-    // Reset any transforms
-    resetImageModalState();
+    // If we have a source position, animate back to it
+    if (modalSourceRect) {
+        animateToSourcePosition(modalImg, modalSourceRect);
+        
+        // Start fading the backdrop
+        modal.classList.remove('visible');
+        
+        setTimeout(() => {
+            completeModalClose(modal, modalImg, closeButton, downloadButton);
+        }, 400); // Wait for animation to complete
+    } else {
+        // No source position, use default close animation
+        modal.classList.remove('visible');
+        
+        setTimeout(() => {
+            completeModalClose(modal, modalImg, closeButton, downloadButton);
+        }, 300);
+    }
     
     // Remove ESC key listener
     document.removeEventListener('keydown', handleModalKeyDown);
     
     // Re-enable scrolling on the body
     document.body.style.overflow = '';
+}
+
+/**
+ * Completes the modal close process
+ */
+function completeModalClose(modal, modalImg, closeButton, downloadButton) {
+    modal.style.display = "none";
+    modalImg.classList.remove('loading', 'error');
+    modalImg.src = '';
     
-    setTimeout(() => {
-        modal.style.display = "none";
-        modalImg.classList.remove('loading', 'error');
-        modalImg.src = '';
-        // Reset opacity for next opening
-        if (closeButton) closeButton.style.opacity = '';
-        if (downloadButton) downloadButton.style.opacity = '';
-    }, 300);
+    // Reset transforms and transitions
+    modalImg.style.transform = '';
+    modalImg.style.transition = '';
+    modalImg.style.opacity = '';
+    
+    // Reset opacity for next opening
+    if (closeButton) closeButton.style.opacity = '';
+    if (downloadButton) downloadButton.style.opacity = '';
+    
+    // Clear source rect
+    modalSourceRect = null;
 }
 
 /**
@@ -465,6 +560,204 @@ function initModalEventListeners() {
             downloadModalImage(event);
         };
     }
+}
+
+/**
+ * Opens image modal with automatic preview detection from the clicked element
+ * @param {HTMLElement} clickedElement - The image element that was clicked
+ * @param {string} originalUrl - The original high-resolution image URL
+ */
+function openImageModalWithPreview(clickedElement, originalUrl) {
+    let previewUrl = null;
+    
+    // Try to get preview URL from the clicked element
+    if (clickedElement && clickedElement.tagName === 'IMG') {
+        // If the image has a src (already loaded), use it as preview
+        if (clickedElement.src && clickedElement.src !== window.location.href) {
+            previewUrl = clickedElement.src;
+        }
+        // If it has data-src and no src, it's still loading, no preview available
+    }
+    
+    // Get the clicked element's position for animation
+    let sourceRect = null;
+    if (clickedElement) {
+        sourceRect = clickedElement.getBoundingClientRect();
+    }
+    
+    // Open modal with the detected preview and source position
+    openImageModalWithAnimation(originalUrl, previewUrl, sourceRect);
+}
+
+// Global variable to store source position for close animation
+let modalSourceRect = null;
+
+/**
+ * Opens an image modal with animation from source position
+ * @param {string} originalUrl - The URL of the image to display
+ * @param {string} previewUrl - Optional preview URL for immediate display
+ * @param {DOMRect} sourceRect - The source element's position for animation
+ */
+function openImageModalWithAnimation(originalUrl, previewUrl = null, sourceRect = null) {
+    const modal = document.getElementById('imageModal');
+    const modalImg = document.getElementById('modalImage');
+    
+    // Store source rect for close animation
+    modalSourceRect = sourceRect;
+    
+    // Reset any existing transforms/state
+    resetImageModalState();
+    
+    // Show the modal immediately
+    modal.style.display = "block";
+    
+    // Clear previous image and set initial state
+    modalImg.classList.add('loading');
+    modalImg.src = '';
+    
+    // If we have a preview, show it immediately with animation
+    if (previewUrl && previewUrl !== originalUrl) {
+        modalImg.src = previewUrl;
+        modalImg.classList.remove('loading');
+        
+        // Set up the initial animation state if we have source position
+        if (sourceRect) {
+            setupInitialAnimationState(modalImg, sourceRect);
+        }
+        
+        modal.classList.add('visible');
+        
+        // Animate to final position
+        requestAnimationFrame(() => {
+            if (sourceRect) {
+                animateToFinalPosition(modalImg);
+            }
+        });
+        
+        // Add a subtle loading indicator for the high-res version
+        addImageLoadingIndicator(modal);
+    }
+    
+    // Preload the original high-resolution image
+    const originalImg = new Image();
+    originalImg.onload = () => {
+        // Calculate optimal dimensions
+        modalImg.style.maxWidth = `${Math.min(window.innerWidth * 0.9, originalImg.width)}px`;
+        modalImg.style.maxHeight = `${window.innerHeight * 0.9}px`;
+        
+        // Smooth transition to high-res image
+        if (previewUrl && previewUrl !== originalUrl) {
+            // Create a smooth transition effect
+            modalImg.style.transition = 'opacity 0.3s ease-in-out';
+            modalImg.style.opacity = '0.7';
+            
+            setTimeout(() => {
+                modalImg.src = originalUrl;
+                modalImg.style.opacity = '1';
+                removeImageLoadingIndicator(modal);
+            }, 100);
+        } else {
+            // No preview, show the original with animation
+            modalImg.src = originalUrl;
+            modalImg.classList.remove('loading');
+            
+            if (sourceRect) {
+                setupInitialAnimationState(modalImg, sourceRect);
+            }
+            
+            modal.classList.add('visible');
+            
+            // Animate to final position
+            requestAnimationFrame(() => {
+                if (sourceRect) {
+                    animateToFinalPosition(modalImg);
+                }
+            });
+        }
+    };
+    
+    originalImg.onerror = () => {
+        modalImg.classList.add('error');
+        modalImg.classList.remove('loading');
+        removeImageLoadingIndicator(modal);
+        
+        // If we don't have a preview, set the original URL anyway
+        if (!previewUrl) {
+            modalImg.src = originalUrl;
+            modal.classList.add('visible');
+        }
+    };
+    
+    // Start loading original image
+    originalImg.src = originalUrl;
+    
+    // If no preview available, show modal anyway with loading state
+    if (!previewUrl) {
+        setTimeout(() => {
+            modal.classList.add('visible');
+        }, 50);
+    }
+    
+    // Prevent scrolling on the body
+    document.body.style.overflow = 'hidden';
+    
+    // Initialize zoom and pan variables
+    initImageModalControls();
+    
+    // Add ESC key listener
+    document.addEventListener('keydown', handleModalKeyDown);
+}
+
+/**
+ * Sets up the initial animation state for the modal image
+ * @param {HTMLElement} modalImg - The modal image element
+ * @param {DOMRect} sourceRect - The source element's position
+ */
+function setupInitialAnimationState(modalImg, sourceRect) {
+    const modal = document.getElementById('imageModal');
+    const modalRect = modal.getBoundingClientRect();
+    
+    // Calculate the scale and position to start from source
+    const scaleX = sourceRect.width / (window.innerWidth * 0.8);
+    const scaleY = sourceRect.height / (window.innerHeight * 0.8);
+    const scale = Math.min(scaleX, scaleY);
+    
+    const translateX = sourceRect.left + sourceRect.width / 2 - window.innerWidth / 2;
+    const translateY = sourceRect.top + sourceRect.height / 2 - window.innerHeight / 2;
+    
+    // Apply initial transform
+    modalImg.style.transition = 'none';
+    modalImg.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+    modalImg.style.opacity = '1';
+}
+
+/**
+ * Animates the modal image to its final position
+ * @param {HTMLElement} modalImg - The modal image element
+ */
+function animateToFinalPosition(modalImg) {
+    modalImg.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease';
+    modalImg.style.transform = 'translate(0, 0) scale(1)';
+}
+
+/**
+ * Animates the modal image back to its source position
+ * @param {HTMLElement} modalImg - The modal image element
+ * @param {DOMRect} sourceRect - The source element's position
+ */
+function animateToSourcePosition(modalImg, sourceRect) {
+    // Calculate the scale and position to animate back to source
+    const scaleX = sourceRect.width / (window.innerWidth * 0.8);
+    const scaleY = sourceRect.height / (window.innerHeight * 0.8);
+    const scale = Math.min(scaleX, scaleY);
+    
+    const translateX = sourceRect.left + sourceRect.width / 2 - window.innerWidth / 2;
+    const translateY = sourceRect.top + sourceRect.height / 2 - window.innerHeight / 2;
+    
+    // Apply reverse animation
+    modalImg.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease';
+    modalImg.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+    modalImg.style.opacity = '0';
 }
 
 // Export functions

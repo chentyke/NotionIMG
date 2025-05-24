@@ -253,7 +253,7 @@ async function renderImage(block) {
                         <div class="image-wrapper loading">
                             <img src="" data-src="${imgSrc}" alt="${caption}" 
                                 class="rounded-lg shadow-md opacity-0 transition-all duration-300 ease-out"
-                                onclick="openImageModal('${imgSrc}')" loading="lazy">
+                                onclick="openImageModalWithPreview(this, '${imgSrc}')" loading="lazy">
                         </div>
                         ${caption ? `<figcaption class="text-center text-sm text-gray-500 mt-2">${caption}</figcaption>` : ''}
                     </figure>`;
