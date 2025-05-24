@@ -405,9 +405,11 @@ function showFloatingToc() {
     
     // 保存当前滚动位置
     scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
-    
     // 暂停scroll spy逻辑
     scrollSpyPaused = true;
+    
+    // 在DOM状态改变前先计算当前活跃章节
+    updateCurrentActiveHeadingBeforeFixedPosition();
     
     // 禁用页面滚动 - 多重机制确保在所有设备上生效
     document.body.style.overflow = 'hidden';
@@ -432,9 +434,6 @@ function showFloatingToc() {
     
     // 将阻止函数存储到floatingToc元素上，以便后续移除
     floatingToc._preventScroll = preventScroll;
-    
-    // 先更新当前活跃章节（基于保存的滚动位置）
-    updateCurrentActiveHeading();
     
     // 高亮当前活跃章节
     highlightCurrentActiveHeading();
@@ -487,6 +486,46 @@ function showFloatingToc() {
     
     // 将键盘监听器存储到floatingToc元素上，以便后续移除
     floatingToc._handleKeyDown = handleKeyDown;
+}
+
+/**
+ * Update current active heading before DOM position changes (for TOC centering)
+ */
+function updateCurrentActiveHeadingBeforeFixedPosition() {
+    if (floatingTocHeadings.length === 0) {
+        return;
+    }
+    
+    let newActiveHeading = null;
+    const scrollTop = scrollPosition; // 使用保存的滚动位置
+    const offset = 150;
+    
+    // 遍历所有标题，找到当前位置对应的标题
+    for (let i = 0; i < floatingTocHeadings.length; i++) {
+        const heading = document.getElementById(floatingTocHeadings[i].id);
+        if (heading) {
+            const headingTop = heading.offsetTop;
+            
+            if (scrollTop + offset >= headingTop) {
+                newActiveHeading = floatingTocHeadings[i].id;
+                
+                // 检查是否有下一个标题
+                if (i < floatingTocHeadings.length - 1) {
+                    const nextHeading = document.getElementById(floatingTocHeadings[i + 1].id);
+                    if (nextHeading) {
+                        const nextHeadingTop = nextHeading.offsetTop;
+                        if (scrollTop + offset < nextHeadingTop) {
+                            break;
+                        }
+                    }
+                } else {
+                    break;
+                }
+            }
+        }
+    }
+    
+    currentActiveHeading = newActiveHeading;
 }
 
 /**

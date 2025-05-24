@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TOC 居中调试测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f9fafb;
+        }
+        
+        .debug-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            max-width: 300px;
+            z-index: 2000;
+        }
+        
+        .debug-info {
+            margin: 5px 0;
+        }
+        
+        .test-button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        .test-button:hover {
+            background: #2563eb;
+        }
+        
+        .section {
+            background: white;
+            padding: 30px;
+            margin: 20px 0;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+            min-height: 400px;
+        }
+        
+        h1, h2, h3 {
+            color: #1f2937;
+            margin-top: 0;
+        }
+        
+        h1 { font-size: 2rem; }
+        h2 { font-size: 1.5rem; }
+        h3 { font-size: 1.2rem; }
+        
+        .highlight {
+            background: yellow;
+            padding: 2px 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="debug-panel" id="debugPanel">
+        <div class="debug-info">滚动位置: <span id="scrollPos">0</span>px</div>
+        <div class="debug-info">当前章节: <span id="activeHeading">无</span></div>
+        <div class="debug-info">总章节数: <span id="totalHeadings">0</span></div>
+        <button class="test-button" onclick="scrollToMiddle()">滚动到中间</button>
+        <button class="test-button" onclick="simulateOpenTOC()">模拟打开TOC</button>
+        <button class="test-button" onclick="showDebugInfo()">显示调试信息</button>
+    </div>
+    
+    <div class="section">
+        <h1 id="heading1">第一章：TOC居中测试</h1>
+        <p>这是测试TOC居中功能的页面。我们会模拟实际的Notion页面结构来测试居中逻辑。</p>
+        <p>当你滚动到不同位置然后模拟打开TOC时，应该能够看到TOC自动滚动到当前章节。</p>
+        <h3 id="heading1-1">1.1 测试说明</h3>
+        <p>这个测试页面包含了多个章节，用于验证TOC的居中功能是否正常工作。</p>
+    </div>
+    
+    <div class="section">
+        <h2 id="heading2">第二章：问题分析</h2>
+        <p>之前的问题是TOC总是从顶部开始显示，没有居中显示当前正在阅读的章节。</p>
+        <h3 id="heading2-1">2.1 原因调查</h3>
+        <p>主要原因是在DOM状态改变（设置position:fixed）后，offsetTop的计算变得不准确。</p>
+        <h3 id="heading2-2">2.2 解决方案</h3>
+        <p>我们需要在DOM状态改变前计算当前活跃章节，然后在TOC展开后使用这个信息来设置滚动位置。</p>
+    </div>
+    
+    <div class="section">
+        <h2 id="heading3">第三章：修复验证</h2>
+        <p>这一章用于验证修复是否有效。滚动到这里，然后点击"模拟打开TOC"按钮。</p>
+        <h3 id="heading3-1">3.1 验证步骤</h3>
+        <p>1. 滚动到这个位置</p>
+        <p>2. 点击"模拟打开TOC"按钮</p>
+        <p>3. 观察控制台日志，看是否正确识别了当前章节</p>
+        <h3 id="heading3-2">3.2 预期结果</h3>
+        <p>TOC应该自动滚动到"第三章"这一项，并且该项应该被高亮显示。</p>
+    </div>
+    
+    <div class="section">
+        <h2 id="heading4">第四章：边界测试</h2>
+        <p>这一章用于测试各种边界情况。</p>
+        <h3 id="heading4-1">4.1 顶部边界</h3>
+        <p>当页面滚动到最顶部时，应该没有活跃章节或者活跃第一章。</p>
+        <h3 id="heading4-2">4.2 底部边界</h3>
+        <p>当页面滚动到最底部时，应该活跃最后一章。</p>
+        <h3 id="heading4-3">4.3 中间位置</h3>
+        <p>当页面滚动到中间任意位置时，应该正确识别当前章节。</p>
+    </div>
+    
+    <div class="section">
+        <h2 id="heading5">第五章：总结</h2>
+        <p>最后一章用于测试TOC在文档末尾的行为。</p>
+        <h3 id="heading5-1">5.1 修复要点</h3>
+        <p>关键是要在DOM布局改变前计算当前活跃章节。</p>
+        <h3 id="heading5-2">5.2 测试结果</h3>
+        <p>如果这个修复成功，TOC应该能够准确定位并居中显示当前正在阅读的章节。</p>
+    </div>
+    
+    <script>
+        // 模拟浮动TOC的相关变量和函数
+        let floatingTocHeadings = [];
+        let currentActiveHeading = null;
+        let scrollPosition = 0;
+        
+        // 初始化时收集所有标题
+        function initMockTOC() {
+            const headings = document.querySelectorAll('h1, h2, h3');
+            floatingTocHeadings = [];
+            
+            headings.forEach((heading, index) => {
+                const level = parseInt(heading.tagName.charAt(1));
+                const text = heading.textContent.trim();
+                const id = heading.id;
+                
+                floatingTocHeadings.push({ level, text, id });
+            });
+            
+            updateDebugInfo();
+        }
+        
+        // 更新调试信息显示
+        function updateDebugInfo() {
+            document.getElementById('totalHeadings').textContent = floatingTocHeadings.length;
+            const scrollPos = window.pageYOffset || document.documentElement.scrollTop;
+            document.getElementById('scrollPos').textContent = scrollPos;
+            
+            // 计算当前活跃章节
+            updateCurrentActiveHeading();
+            document.getElementById('activeHeading').textContent = currentActiveHeading || '无';
+        }
+        
+        // 计算当前活跃章节（模拟修复后的逻辑）
+        function updateCurrentActiveHeading() {
+            if (floatingTocHeadings.length === 0) return;
+            
+            let newActiveHeading = null;
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const offset = 150;
+            
+            // 遍历所有标题，找到当前位置对应的标题
+            for (let i = 0; i < floatingTocHeadings.length; i++) {
+                const heading = document.getElementById(floatingTocHeadings[i].id);
+                if (heading) {
+                    const headingTop = heading.offsetTop;
+                    
+                    if (scrollTop + offset >= headingTop) {
+                        newActiveHeading = floatingTocHeadings[i].id;
+                        
+                        // 检查是否有下一个标题
+                        if (i < floatingTocHeadings.length - 1) {
+                            const nextHeading = document.getElementById(floatingTocHeadings[i + 1].id);
+                            if (nextHeading) {
+                                const nextHeadingTop = nextHeading.offsetTop;
+                                if (scrollTop + offset < nextHeadingTop) {
+                                    break;
+                                }
+                            }
+                        } else {
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            currentActiveHeading = newActiveHeading;
+        }
+        
+        // 滚动到页面中间
+        function scrollToMiddle() {
+            const targetPosition = document.body.scrollHeight * 0.5;
+            window.scrollTo({
+                top: targetPosition,
+                behavior: 'smooth'
+            });
+        }
+        
+        // 模拟打开TOC的逻辑
+        function simulateOpenTOC() {
+            // 保存当前滚动位置
+            scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+            console.log('模拟TOC打开 - 当前滚动位置:', scrollPosition);
+            
+            // 计算当前活跃章节
+            updateCurrentActiveHeading();
+            console.log('模拟TOC打开 - 当前活跃章节:', currentActiveHeading);
+            
+            if (currentActiveHeading) {
+                const activeHeading = floatingTocHeadings.find(h => h.id === currentActiveHeading);
+                if (activeHeading) {
+                    console.log('模拟TOC打开 - 应该居中显示:', activeHeading.text);
+                    alert(`TOC应该居中显示: "${activeHeading.text}"\n\n请查看控制台了解详细信息。`);
+                }
+            } else {
+                console.log('模拟TOC打开 - 没有活跃章节，从顶部显示');
+                alert('没有活跃章节，TOC将从顶部显示');
+            }
+        }
+        
+        // 显示详细的调试信息
+        function showDebugInfo() {
+            let debugInfo = '=== TOC 调试信息 ===\n';
+            debugInfo += `当前滚动位置: ${scrollPosition}px\n`;
+            debugInfo += `当前活跃章节: ${currentActiveHeading || '无'}\n`;
+            debugInfo += `总章节数: ${floatingTocHeadings.length}\n\n`;
+            
+            debugInfo += '所有章节位置:\n';
+            floatingTocHeadings.forEach((heading, index) => {
+                const element = document.getElementById(heading.id);
+                if (element) {
+                    const offsetTop = element.offsetTop;
+                    const isActive = heading.id === currentActiveHeading;
+                    debugInfo += `${index + 1}. ${heading.text} (${heading.id})\n`;
+                    debugInfo += `   位置: ${offsetTop}px ${isActive ? '← 当前活跃' : ''}\n`;
+                }
+            });
+            
+            console.log(debugInfo);
+            alert('调试信息已输出到控制台，请按F12查看。');
+        }
+        
+        // 监听滚动事件
+        let scrollTimeout;
+        window.addEventListener('scroll', () => {
+            if (scrollTimeout) {
+                clearTimeout(scrollTimeout);
+            }
+            scrollTimeout = setTimeout(updateDebugInfo, 100);
+        }, { passive: true });
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initMockTOC();
+            updateDebugInfo();
+        });
+    </script>
+</body>
+</html> 
