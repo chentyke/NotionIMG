@@ -1585,8 +1585,14 @@ async function renderFinalBatch(allNewBlocks, pageContent, loadingIndicator) {
                             processedContent += `</${currentList.tag}>`;
                         }
                         
-                        // 开始新列表
-                        processedContent += `<${listTag} class="my-4 ${listTag === 'ul' ? 'list-disc' : 'list-decimal'} ml-6">`;
+                        // 开始新列表，对于有序列表设置起始编号
+                        if (listTag === 'ol') {
+                            const orderedListStart = calculateOrderedListStart(pageContent, loadingIndicator);
+                            processedContent += `<${listTag} class="my-4 list-decimal ml-6" start="${orderedListStart}">`;
+                            console.log(`Starting new ordered list from ${orderedListStart}`);
+                        } else {
+                            processedContent += `<${listTag} class="my-4 list-disc ml-6">`;
+                        }
                         currentList = { tag: listTag, type: block.type, element: null };
                     }
                     
@@ -1670,6 +1676,7 @@ async function renderBlocks(blocks) {
     
     let content = '';
     let currentList = null;
+    let orderedListStart = 1; // 追踪当前有序列表的起始编号
     
     for (let i = 0; i < blocks.length; i++) {
         const block = blocks[i];
@@ -1690,18 +1697,31 @@ async function renderBlocks(blocks) {
                         content += `</${currentList.tag}>`;
                     }
                     
-                    // Start new list
-                    content += `<${listTag} class="my-4 ${listTag === 'ul' ? 'list-disc' : 'list-decimal'} ml-6">`;
-                    currentList = { tag: listTag, type: block.type };
+                    // For ordered lists, reset numbering when starting a new list
+                    if (listTag === 'ol') {
+                        orderedListStart = 1;
+                        content += `<${listTag} class="my-4 list-decimal ml-6" start="${orderedListStart}">`;
+                        console.log(`Starting new ordered list from ${orderedListStart}`);
+                    } else {
+                        content += `<${listTag} class="my-4 list-disc ml-6">`;
+                    }
+                    
+                    currentList = { tag: listTag, type: block.type, startNumber: orderedListStart };
                 }
                 
                 // Add the list item
                 content += await renderBlock(block);
+                
+                // Increment counter for ordered lists
+                if (listTag === 'ol') {
+                    orderedListStart++;
+                }
             } else {
-                // For non-list items, close any open list
+                // For non-list items, close any open list and reset numbering
                 if (currentList) {
                     content += `</${currentList.tag}>`;
                     currentList = null;
+                    orderedListStart = 1; // Reset numbering for next ordered list
                 }
                 
                 // Add the block content
