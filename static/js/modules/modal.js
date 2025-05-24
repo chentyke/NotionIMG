@@ -760,13 +760,4 @@ function animateToSourcePosition(modalImg, sourceRect) {
     modalImg.style.opacity = '0';
 }
 
-// Export functions
-export {
-    openImageModal,
-    closeImageModal,
-    handleModalKeyDown,
-    resetImageModalState,
-    initImageModalControls,
-    downloadModalImage,
-    initModalEventListeners
-}; 
+// Functions are globally available 

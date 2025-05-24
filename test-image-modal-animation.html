@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片模态框动画测试</title>
+    <link rel="stylesheet" href="static/css/base.css">
+    <link rel="stylesheet" href="static/css/typography.css">
+    <link rel="stylesheet" href="static/css/components.css">
+    <link rel="stylesheet" href="static/css/loading.css">
+    <link rel="stylesheet" href="static/css/toc.css">
+    <link rel="stylesheet" href="static/css/header.css">
+    <link rel="stylesheet" href="static/css/code.css">
+    <link rel="stylesheet" href="static/css/images.css">
+    <link rel="stylesheet" href="static/css/styles.css">
+    <link rel="stylesheet" href="static/css/mobile.css">
+    <style>
+        .test-section {
+            margin: 2rem 0;
+            padding: 1.5rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.75rem;
+            background: white;
+        }
+        .test-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 0.75rem;
+        }
+        .test-description {
+            color: #6b7280;
+            margin-bottom: 1rem;
+            line-height: 1.6;
+        }
+        .image-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        .gallery-item {
+            aspect-ratio: 4/3;
+            overflow: hidden;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        .gallery-item:hover {
+            transform: scale(1.05);
+        }
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mx-auto max-w-4xl px-4 py-8">
+        <h1 class="text-3xl font-bold text-center mb-8">图片模态框动画测试</h1>
+
+        <div class="test-section">
+            <div class="test-title">测试1：预览图 → 高清图切换动画</div>
+            <div class="test-description">
+                点击下面的图片，应该会立即显示预览版本并放大进入详情页，然后在后台加载高清版本并平滑切换。
+            </div>
+            <figure class="image-container my-4">
+                <div class="image-wrapper">
+                    <img src="https://picsum.photos/400/300?random=1" 
+                         data-src="https://picsum.photos/1200/900?random=1" 
+                         alt="动画测试图片1" 
+                         class="rounded-lg shadow-md"
+                         onclick="openImageModalWithPreview(this, 'https://picsum.photos/1920/1440?random=1')" 
+                         loading="lazy">
+                </div>
+                <figcaption class="text-center text-sm text-gray-500 mt-2">点击查看放大动画效果</figcaption>
+            </figure>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">测试2：图片画廊 - 多张图片测试</div>
+            <div class="test-description">
+                测试多张图片的动画效果，每张图片点击都应该有平滑的放大动画。
+            </div>
+            <div class="image-gallery">
+                <div class="gallery-item">
+                    <img src="https://picsum.photos/300/225?random=2" 
+                         onclick="openImageModalWithPreview(this, 'https://picsum.photos/1920/1440?random=2')" 
+                         alt="画廊图片1">
+                </div>
+                <div class="gallery-item">
+                    <img src="https://picsum.photos/300/225?random=3" 
+                         onclick="openImageModalWithPreview(this, 'https://picsum.photos/1920/1440?random=3')" 
+                         alt="画廊图片2">
+                </div>
+                <div class="gallery-item">
+                    <img src="https://picsum.photos/300/225?random=4" 
+                         onclick="openImageModalWithPreview(this, 'https://picsum.photos/1920/1440?random=4')" 
+                         alt="画廊图片3">
+                </div>
+                <div class="gallery-item">
+                    <img src="https://picsum.photos/300/225?random=5" 
+                         onclick="openImageModalWithPreview(this, 'https://picsum.photos/1920/1440?random=5')" 
+                         alt="画廊图片4">
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">测试3：不同尺寸图片</div>
+            <div class="test-description">
+                测试不同尺寸和比例图片的动画效果。
+            </div>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-start;">
+                <figure class="image-container" style="width: 150px;">
+                    <div class="image-wrapper">
+                        <img src="https://picsum.photos/150/200?random=6" 
+                             onclick="openImageModalWithPreview(this, 'https://picsum.photos/1200/1600?random=6')" 
+                             alt="竖图" 
+                             class="rounded-lg shadow-md">
+                    </div>
+                    <figcaption class="text-center text-sm text-gray-500 mt-1">竖图</figcaption>
+                </figure>
+                
+                <figure class="image-container" style="width: 250px;">
+                    <div class="image-wrapper">
+                        <img src="https://picsum.photos/250/125?random=7" 
+                             onclick="openImageModalWithPreview(this, 'https://picsum.photos/2000/1000?random=7')" 
+                             alt="横图" 
+                             class="rounded-lg shadow-md">
+                    </div>
+                    <figcaption class="text-center text-sm text-gray-500 mt-1">横图</figcaption>
+                </figure>
+                
+                <figure class="image-container" style="width: 120px;">
+                    <div class="image-wrapper">
+                        <img src="https://picsum.photos/120/120?random=8" 
+                             onclick="openImageModalWithPreview(this, 'https://picsum.photos/1200/1200?random=8')" 
+                             alt="方图" 
+                             class="rounded-lg shadow-md">
+                    </div>
+                    <figcaption class="text-center text-sm text-gray-500 mt-1">方图</figcaption>
+                </figure>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">测试4：模拟慢速网络 - 高清图加载</div>
+            <div class="test-description">
+                这个测试使用一个大文件URL来模拟慢速网络，观察预览图立即显示，高清图后续加载的效果。
+            </div>
+            <figure class="image-container my-4">
+                <div class="image-wrapper">
+                    <img src="https://picsum.photos/400/300?random=9" 
+                         onclick="openImageModalWithPreview(this, 'https://picsum.photos/4000/3000?random=9&slow')" 
+                         alt="慢速加载测试" 
+                         class="rounded-lg shadow-md">
+                </div>
+                <figcaption class="text-center text-sm text-gray-500 mt-2">模拟慢速网络加载</figcaption>
+            </figure>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">测试说明</div>
+            <div class="test-description">
+                <strong>预期行为：</strong>
+                <ul style="margin-top: 0.5rem; padding-left: 1.5rem;">
+                    <li>点击图片时应该立即显示模态框，并使用预览图</li>
+                    <li>图片应该从原位置放大到模态框中心，有平滑的动画效果</li>
+                    <li>如果有高清版本加载，应该在顶部显示"加载高清图片中..."指示器</li>
+                    <li>高清图加载完成后，应该平滑替换预览图</li>
+                    <li>关闭模态框时，图片应该缩小回到原来的位置</li>
+                    <li>整个过程应该感觉流畅，没有明显的等待时间</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div id="imageModal" class="image-modal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <button class="close-button" onclick="closeImageModal()" aria-label="关闭图片预览">×</button>
+            <img id="modalImage" class="loading" src="" alt="Full size image">
+            <button id="modalDownloadButton" class="modal-download-button" onclick="downloadModalImage(event)" aria-label="下载原图">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                </svg>
+                <span>下载原图</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 引入JavaScript模块 -->
+    <script src="static/js/modules/modal.js"></script>
+    <script>
+        // 初始化模态框事件监听器
+        if (typeof initModalEventListeners === 'function') {
+            initModalEventListeners();
+        }
+        
+        // 简化的下载函数用于测试
+        async function downloadModalImage(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            const modalImg = document.getElementById('modalImage');
+            if (modalImg && modalImg.src) {
+                try {
+                    const link = document.createElement('a');
+                    link.href = modalImg.src;
+                    link.download = 'image.jpg';
+                    link.target = '_blank';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } catch (error) {
+                    console.error('Download failed:', error);
+                    window.open(modalImg.src, '_blank');
+                }
+            }
+        }
+    </script>
+</body>
+</html> 
