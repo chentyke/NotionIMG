@@ -1030,16 +1030,28 @@ async function loadMoreContentInBackground(pageId, cursor, pageContent) {
     try {
         console.log('Loading more content in background...');
         
-        // Add a loading indicator at the bottom
+        // Add a minimal loading indicator at the bottom without extra spacing
         const loadingIndicator = document.createElement('div');
         loadingIndicator.id = 'background-loading';
-        loadingIndicator.className = 'loading-indicator-container';
+        loadingIndicator.className = 'loading-indicator-minimal';
         loadingIndicator.innerHTML = `
             <div class="loading-spinner">
                 <div class="spinner-dot"></div>
                 <div class="spinner-dot"></div>
                 <div class="spinner-dot"></div>
             </div>
+        `;
+        loadingIndicator.style.cssText = `
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            padding: 0.5rem 0 !important;
+            margin: 0 !important;
+            transition: opacity 0.3s ease !important;
+            min-height: auto !important;
+            max-height: none !important;
+            border: none !important;
+            background: none !important;
         `;
         pageContent.appendChild(loadingIndicator);
         
@@ -1367,18 +1379,21 @@ async function renderIncrementalBlocks(blocks, pageContent, loadingIndicator) {
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = content;
             
-            // 为新内容添加动画类
+            // 为新内容添加简单的渐入动画，避免影响布局间距
             const fragment = document.createDocumentFragment();
             while (tempDiv.firstChild) {
                 const element = tempDiv.firstChild;
                 
-                // 添加新内容动画类
+                // 添加简单的透明度动画，不影响布局
                 if (element.nodeType === Node.ELEMENT_NODE) {
-                    element.classList.add('new-content-block');
+                    element.style.cssText = `
+                        opacity: 0;
+                        transition: opacity 0.3s ease;
+                    `;
                     
-                    // 延迟添加显示动画，创建交错效果
+                    // 延迟添加显示动画
                     setTimeout(() => {
-                        element.classList.add('new-content-show');
+                        element.style.opacity = '1';
                     }, 50);
                 }
                 
@@ -1423,7 +1438,22 @@ async function renderIntermediateBatch(blocks, pageContent, loadingIndicator) {
             
             const fragment = document.createDocumentFragment();
             while (tempDiv.firstChild) {
-                fragment.appendChild(tempDiv.firstChild);
+                const element = tempDiv.firstChild;
+                
+                // 添加简单的透明度动画，避免影响布局间距
+                if (element.nodeType === Node.ELEMENT_NODE) {
+                    element.style.cssText = `
+                        opacity: 0;
+                        transition: opacity 0.3s ease;
+                    `;
+                    
+                    // 延迟添加显示动画
+                    setTimeout(() => {
+                        element.style.opacity = '1';
+                    }, 50);
+                }
+                
+                fragment.appendChild(element);
             }
             pageContent.insertBefore(fragment, loadingIndicator);
             
@@ -1465,10 +1495,25 @@ async function renderFinalBatch(allNewBlocks, pageContent, loadingIndicator) {
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = content;
             
-            // 按顺序插入新内容到加载指示器之前
+            // 按顺序插入新内容到加载指示器之前，添加简单的渐入动画
             const fragment = document.createDocumentFragment();
             while (tempDiv.firstChild) {
-                fragment.appendChild(tempDiv.firstChild);
+                const element = tempDiv.firstChild;
+                
+                // 添加简单的透明度动画，避免影响布局间距
+                if (element.nodeType === Node.ELEMENT_NODE) {
+                    element.style.cssText = `
+                        opacity: 0;
+                        transition: opacity 0.3s ease;
+                    `;
+                    
+                    // 延迟添加显示动画
+                    setTimeout(() => {
+                        element.style.opacity = '1';
+                    }, 50);
+                }
+                
+                fragment.appendChild(element);
             }
             pageContent.insertBefore(fragment, loadingIndicator);
             
@@ -1478,10 +1523,15 @@ async function renderFinalBatch(allNewBlocks, pageContent, loadingIndicator) {
         // 后处理新内容（这也会刷新目录）
         postProcessContent(pageContent);
         
-        // Remove loading indicator
+        // Remove loading indicator with smooth transition
         const indicator = document.getElementById('background-loading');
         if (indicator) {
-            indicator.remove();
+            indicator.style.opacity = '0';
+            setTimeout(() => {
+                if (indicator && indicator.parentNode) {
+                    indicator.remove();
+                }
+            }, 300);
         }
         
     } catch (error) {

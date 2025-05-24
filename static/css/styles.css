@@ -433,4 +433,98 @@ body {
     .new-content-block {
         transform: translateY(15px);
     }
+}
+
+/* 修复：最小化的loading indicator样式，避免异常行距 */
+.loading-indicator-minimal {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    padding: 0.5rem 0 !important;
+    margin: 0 !important;
+    min-height: auto !important;
+    transition: opacity 0.3s ease !important;
+}
+
+.loading-indicator-minimal .loading-spinner {
+    display: flex !important;
+    gap: 0.8rem !important;
+    align-items: flex-end !important;
+    height: 30px !important;
+    
+    /* 清除任何继承的样式 */
+    border: none !important;
+    border-radius: 0 !important;
+    background: none !important;
+    animation: none !important;
+    width: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+}
+
+.loading-indicator-minimal .loading-spinner::before,
+.loading-indicator-minimal .loading-spinner::after {
+    display: none !important;
+}
+
+.loading-indicator-minimal .spinner-dot {
+    width: 12px !important;
+    height: 12px !important;
+    background: linear-gradient(135deg, var(--primary-color), #60a5fa) !important;
+    border-radius: 50% !important;
+    box-shadow: 
+        0 0 15px rgba(59, 130, 246, 0.3),
+        0 2px 4px rgba(59, 130, 246, 0.15) !important;
+    animation: minimizedBounce 1.5s ease-in-out infinite both !important;
+    position: relative;
+}
+
+.loading-indicator-minimal .spinner-dot:nth-child(1) { 
+    animation-delay: -0.4s !important;
+}
+.loading-indicator-minimal .spinner-dot:nth-child(2) { 
+    animation-delay: -0.2s !important;
+}
+.loading-indicator-minimal .spinner-dot:nth-child(3) { 
+    animation-delay: 0s !important;
+}
+
+/* 最小化的跳跃动画 */
+@keyframes minimizedBounce {
+    0%, 70%, 100% {
+        transform: translateY(0) scale(0.8);
+        opacity: 0.7;
+    }
+    35% {
+        transform: translateY(-8px) scale(1);
+        opacity: 1;
+    }
+}
+
+/* 深色模式优化 */
+@media (prefers-color-scheme: dark) {
+    .loading-indicator-minimal .spinner-dot {
+        background: linear-gradient(135deg, #60a5fa, #93c5fd) !important;
+        box-shadow: 
+            0 0 15px rgba(96, 165, 250, 0.4),
+            0 2px 4px rgba(96, 165, 250, 0.2) !important;
+    }
+}
+
+/* 移动端优化 */
+@media (max-width: 640px) {
+    .loading-indicator-minimal {
+        padding: 0.25rem 0 !important;
+    }
+    
+    .loading-indicator-minimal .loading-spinner {
+        gap: 0.6rem !important;
+        height: 25px !important;
+    }
+    
+    .loading-indicator-minimal .spinner-dot {
+        width: 10px !important;
+        height: 10px !important;
+    }
 } 

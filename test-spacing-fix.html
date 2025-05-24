@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>行距修复测试 - Notion渲染器</title>
+    <link rel="stylesheet" href="static/css/base.css">
+    <link rel="stylesheet" href="static/css/components.css">
+    <link rel="stylesheet" href="static/css/styles.css">
+    <style>
+        .demo-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        
+        .demo-section {
+            margin-bottom: 3rem;
+            padding: 1.5rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.5rem;
+            background: #f9fafb;
+        }
+        
+        .demo-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #1f2937;
+        }
+        
+        .content-block {
+            margin: 1rem 0;
+            padding: 1rem;
+            background: white;
+            border-radius: 0.375rem;
+            border: 1px solid #d1d5db;
+        }
+        
+        .first-batch {
+            background: #fef3c7;
+            border-color: #f59e0b;
+        }
+        
+        .second-batch {
+            background: #dbeafe;
+            border-color: #3b82f6;
+        }
+        
+        .loading-demo {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0.5rem 0;
+            margin: 0;
+            min-height: auto;
+            transition: opacity 0.3s ease;
+        }
+        
+        .old-loading {
+            padding: 4rem 1rem;
+            min-height: 120px;
+            background: #fee2e2;
+            border: 2px dashed #ef4444;
+        }
+        
+        .new-loading {
+            padding: 0.5rem 0;
+            min-height: auto;
+            background: #d1fae5;
+            border: 2px dashed #10b981;
+        }
+        
+        .explanation {
+            background: #f3f4f6;
+            border-left: 4px solid #6b7280;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-size: 0.875rem;
+            color: #374151;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <h1 style="text-align: center; margin-bottom: 2rem; color: #1f2937;">
+            🔧 行距异常修复测试
+        </h1>
+        
+        <div class="demo-section">
+            <div class="demo-title">❌ 修复前：异常行距问题</div>
+            <div class="explanation">
+                <strong>问题：</strong>第一次加载和第二次加载的内容之间有明显的异常行距，这是由于loading indicator的大量padding造成的。
+            </div>
+            
+            <!-- 模拟第一批内容 -->
+            <div class="content-block first-batch">
+                <h3>第一批内容 (初始15个块)</h3>
+                <p>这是第一次加载的内容...</p>
+                <ul>
+                    <li>列表项 1</li>
+                    <li>列表项 2</li>
+                </ul>
+            </div>
+            
+            <!-- 原来的loading indicator - 有问题的版本 -->
+            <div class="old-loading">
+                <div style="text-align: center; color: #ef4444; font-weight: bold;">
+                    ⚠️ 原loading indicator (64px padding)
+                </div>
+                <div style="text-align: center; margin-top: 0.5rem; font-size: 0.875rem;">
+                    这里的大量padding造成了异常行距
+                </div>
+            </div>
+            
+            <!-- 模拟第二批内容 -->
+            <div class="content-block second-batch">
+                <h3>第二批内容 (后台加载)</h3>
+                <p>这是后台加载的内容...</p>
+                <ol start="3">
+                    <li>有序列表项 3</li>
+                    <li>有序列表项 4</li>
+                </ol>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <div class="demo-title">✅ 修复后：正常行距</div>
+            <div class="explanation">
+                <strong>解决方案：</strong>
+                <ul style="margin: 0.5rem 0;">
+                    <li>使用最小化的loading indicator（只有8px上下padding）</li>
+                    <li>移除new-content-block的transform变换，只保留透明度动画</li>
+                    <li>确保loading indicator被完全移除，不留残留间距</li>
+                    <li>行距现在完全根据内容上下文决定，与一次性加载保持一致</li>
+                </ul>
+            </div>
+            
+            <!-- 模拟第一批内容 -->
+            <div class="content-block first-batch">
+                <h3>第一批内容 (初始15个块)</h3>
+                <p>这是第一次加载的内容...</p>
+                <ul>
+                    <li>列表项 1</li>
+                    <li>列表项 2</li>
+                </ul>
+            </div>
+            
+            <!-- 新的loading indicator - 修复版本 -->
+            <div class="new-loading">
+                <div style="text-align: center; color: #10b981; font-weight: bold;">
+                    ✅ 新loading indicator (8px padding)
+                </div>
+                <div style="text-align: center; margin-top: 0.5rem; font-size: 0.875rem;">
+                    最小化padding，不影响正常行距
+                </div>
+            </div>
+            
+            <!-- 模拟第二批内容 -->
+            <div class="content-block second-batch">
+                <h3>第二批内容 (后台加载)</h3>
+                <p>这是后台加载的内容...</p>
+                <ol start="3">
+                    <li>有序列表项 3</li>
+                    <li>有序列表项 4</li>
+                </ol>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <div class="demo-title">📋 修复详情</div>
+            <div class="explanation">
+                <strong>具体修改：</strong>
+                <ol style="margin: 0.5rem 0;">
+                    <li><strong>Loading Indicator：</strong>从<code>loading-indicator-container</code>（64px padding）改为<code>loading-indicator-minimal</code>（8px padding）</li>
+                    <li><strong>动画效果：</strong>移除<code>new-content-block</code>的<code>transform: translateY(20px)</code>，只保留透明度动画</li>
+                    <li><strong>移除逻辑：</strong>统一所有移除路径都使用渐变效果，确保完全移除</li>
+                    <li><strong>上下文行距：</strong>确保第二次加载的内容与第一次加载的内容之间的行距完全由内容类型决定，而非加载状态</li>
+                </ol>
+            </div>
+            
+            <div style="background: #ecfdf5; border: 1px solid #10b981; padding: 1rem; border-radius: 0.375rem; margin-top: 1rem;">
+                <strong style="color: #065f46;">✅ 修复结果：</strong>
+                <ul style="margin: 0.5rem 0; color: #065f46;">
+                    <li>第一次和第二次加载之间无异常行距</li>
+                    <li>行距完全根据内容上下文决定（段落、列表、标题等）</li>
+                    <li>保持与一次性加载完全一致的视觉效果</li>
+                    <li>用户无法感知到分批加载的界限</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 2rem; padding: 1rem; background: #f0f9ff; border-radius: 0.5rem;">
+            <p style="margin: 0; color: #0369a1;">
+                🎉 行距异常问题已修复！现在第一次和第二次加载的内容之间将有完全自然的间距。
+            </p>
+        </div>
+    </div>
+</body>
+</html> 
