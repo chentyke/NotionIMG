@@ -2,7 +2,7 @@
 import * as Core from './core.js';
 import * as Loader from './loader.js';
 import * as ImageHandler from './imageHandler.js';
-import * as Modal from './modal.js';
+// Modal functions are loaded globally via script tag
 import * as Utils from './utils.js';
 import * as NotionRenderer from './notionRenderer.js';
 
@@ -801,7 +801,9 @@ function handleUrlFragment() {
 // Initialize the page when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize modal controls
-    Modal.initModalEventListeners();
+    if (typeof initModalEventListeners === 'function') {
+        initModalEventListeners();
+    }
     
     // Initialize floating header
     initFloatingHeader();
@@ -846,8 +848,8 @@ document.addEventListener('DOMContentLoaded', function() {
     window.toggleBlock = NotionRenderer.toggleBlock;
     window.copyCode = NotionRenderer.copyCode;
     window.copyPageLink = NotionRenderer.copyPageLink;
-    window.openImageModal = Modal.openImageModal;
-    window.closeImageModal = Modal.closeImageModal;
+    window.openImageModal = typeof openImageModal !== 'undefined' ? openImageModal : null;
+    window.closeImageModal = typeof closeImageModal !== 'undefined' ? closeImageModal : null;
     window.toggleFloatingToc = toggleFloatingToc;
     window.hideFloatingToc = hideFloatingToc;
     window.scrollToHeading = scrollToHeading;
