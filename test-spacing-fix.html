@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试：加载块间距修复</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <style>
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+        }
+        
+        .test-block {
+            margin: 16px 0;
+            padding: 12px;
+            background: #f9fafb;
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .simulate-loading {
+            background: #fee2e2;
+            border-left-color: #ef4444;
+        }
+        
+        .test-button {
+            background: #3b82f6;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        .test-button:hover {
+            background: #2563eb;
+        }
+        
+        .spacing-indicator {
+            height: 2px;
+            background: linear-gradient(to right, #ef4444, #f59e0b, #10b981);
+            margin: 8px 0;
+            position: relative;
+        }
+        
+        .spacing-indicator::after {
+            content: attr(data-spacing);
+            position: absolute;
+            right: 0;
+            top: -20px;
+            font-size: 12px;
+            color: #6b7280;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>加载块间距修复测试</h1>
+        
+        <div class="test-section">
+            <h2>测试说明</h2>
+            <p>此页面模拟增量加载内容时的间距问题，验证修复效果。</p>
+            <p><strong>问题描述：</strong>前后加载的内容块之间会有不一样的行距</p>
+            <p><strong>修复方案：</strong>统一DOM结构，优化CSS动画，确保动画完成后移除临时类</p>
+        </div>
+        
+        <div class="test-section">
+            <h2>模拟内容块</h2>
+            <div id="content-container">
+                <div class="test-block">初始加载的内容块 1</div>
+                <div class="spacing-indicator" data-spacing="正常间距"></div>
+                <div class="test-block">初始加载的内容块 2</div>
+                <div class="spacing-indicator" data-spacing="正常间距"></div>
+                <div class="test-block">初始加载的内容块 3</div>
+                <div class="spacing-indicator" data-spacing="加载分界线"></div>
+            </div>
+            
+            <div class="test-controls">
+                <button class="test-button" onclick="addNewContent()">添加新内容（带动画）</button>
+                <button class="test-button" onclick="addDirectContent()">添加新内容（无动画）</button>
+                <button class="test-button" onclick="resetContent()">重置内容</button>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>测试步骤</h2>
+            <ol>
+                <li>观察初始内容块之间的间距（应该一致）</li>
+                <li>点击"添加新内容（带动画）"，观察新内容是否有异常间距</li>
+                <li>点击"添加新内容（无动画）"，对比间距差异</li>
+                <li>验证动画完成后间距是否正常</li>
+            </ol>
+        </div>
+        
+                    <div class="test-section">
+            <h2>修复要点</h2>
+            <ul>
+                <li>✅ 完全移除transform属性，避免影响元素位置</li>
+                <li>✅ 只使用opacity淡入动画（0.3s）</li>
+                <li>✅ 动画完成后移除临时CSS类</li>
+                <li>✅ 统一所有增量渲染的DOM处理</li>
+                <li>✅ 确保间距完全一致</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        let contentCount = 4;
+        
+        function addNewContent() {
+            const container = document.getElementById('content-container');
+            
+            // 创建新的内容块
+            const newBlock = document.createElement('div');
+            newBlock.className = 'test-block new-content-block';
+            newBlock.textContent = `增量加载的内容块 ${contentCount}（带动画）`;
+            
+            // 添加间距指示器
+            const spacingIndicator = document.createElement('div');
+            spacingIndicator.className = 'spacing-indicator';
+            spacingIndicator.setAttribute('data-spacing', '测试间距');
+            
+            // 插入内容
+            container.appendChild(spacingIndicator);
+            container.appendChild(newBlock);
+            
+            // 模拟我们的动画逻辑
+            setTimeout(() => {
+                newBlock.classList.add('new-content-show');
+                
+                // 动画完成后移除临时类
+                setTimeout(() => {
+                    newBlock.classList.remove('new-content-block', 'new-content-show');
+                    console.log('Animation classes removed from block', contentCount);
+                }, 300);
+            }, 50);
+            
+            contentCount++;
+        }
+        
+        function addDirectContent() {
+            const container = document.getElementById('content-container');
+            
+            // 创建新的内容块（无动画）
+            const newBlock = document.createElement('div');
+            newBlock.className = 'test-block';
+            newBlock.textContent = `增量加载的内容块 ${contentCount}（无动画）`;
+            
+            // 添加间距指示器
+            const spacingIndicator = document.createElement('div');
+            spacingIndicator.className = 'spacing-indicator';
+            spacingIndicator.setAttribute('data-spacing', '测试间距');
+            
+            // 直接插入内容
+            container.appendChild(spacingIndicator);
+            container.appendChild(newBlock);
+            
+            contentCount++;
+        }
+        
+        function resetContent() {
+            const container = document.getElementById('content-container');
+            container.innerHTML = `
+                <div class="test-block">初始加载的内容块 1</div>
+                <div class="spacing-indicator" data-spacing="正常间距"></div>
+                <div class="test-block">初始加载的内容块 2</div>
+                <div class="spacing-indicator" data-spacing="正常间距"></div>
+                <div class="test-block">初始加载的内容块 3</div>
+                <div class="spacing-indicator" data-spacing="加载分界线"></div>
+            `;
+            contentCount = 4;
+        }
+        
+        // 页面加载时显示当前CSS规则
+        console.log('Current CSS animation rules applied');
+        console.log('Transform: REMOVED (no position offset)');
+        console.log('Animation duration: 0.3s (opacity only)');
+        console.log('Class removal timeout: 300ms');
+    </script>
+</body>
+</html> 

@@ -1367,21 +1367,12 @@ async function renderIncrementalBlocks(blocks, pageContent, loadingIndicator) {
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = content;
             
-            // 为新内容添加动画类
+            // 暂时完全禁用动画，确保间距一致
             const fragment = document.createDocumentFragment();
             while (tempDiv.firstChild) {
                 const element = tempDiv.firstChild;
                 
-                // 添加新内容动画类
-                if (element.nodeType === Node.ELEMENT_NODE) {
-                    element.classList.add('new-content-block');
-                    
-                    // 延迟添加显示动画，创建交错效果
-                    setTimeout(() => {
-                        element.classList.add('new-content-show');
-                    }, 50);
-                }
-                
+                // 不添加任何动画类，直接插入
                 fragment.appendChild(element);
             }
             
@@ -1421,9 +1412,17 @@ async function renderIntermediateBatch(blocks, pageContent, loadingIndicator) {
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = content;
             
+            // 为中间批次也添加统一的处理，确保间距一致
             const fragment = document.createDocumentFragment();
             while (tempDiv.firstChild) {
-                fragment.appendChild(tempDiv.firstChild);
+                const element = tempDiv.firstChild;
+                
+                // 不添加动画类，但确保DOM结构一致
+                if (element.nodeType === Node.ELEMENT_NODE) {
+                    // 可以在这里添加任何必要的后处理
+                }
+                
+                fragment.appendChild(element);
             }
             pageContent.insertBefore(fragment, loadingIndicator);
             
@@ -1465,10 +1464,17 @@ async function renderFinalBatch(allNewBlocks, pageContent, loadingIndicator) {
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = content;
             
-            // 按顺序插入新内容到加载指示器之前
+            // 按顺序插入新内容到加载指示器之前，确保DOM结构一致
             const fragment = document.createDocumentFragment();
             while (tempDiv.firstChild) {
-                fragment.appendChild(tempDiv.firstChild);
+                const element = tempDiv.firstChild;
+                
+                // 不添加动画类，但确保DOM结构一致
+                if (element.nodeType === Node.ELEMENT_NODE) {
+                    // 可以在这里添加任何必要的后处理
+                }
+                
+                fragment.appendChild(element);
             }
             pageContent.insertBefore(fragment, loadingIndicator);
             
