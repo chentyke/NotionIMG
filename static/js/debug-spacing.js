@@ -110,6 +110,9 @@
                         elements: [prevElement, element]
                     });
                     
+                    // 在页面上直接显示间距信息
+                    addSpacingIndicator(prevElement, element, spacing, prevElement.dataset.debugBlockNumber, blockCounter);
+                    
                     // 特别标记第15-16块或16-17块之间的间距
                     if ((prevElement.dataset.debugBlockNumber === '15' && blockCounter === 16) ||
                         (prevElement.dataset.debugBlockNumber === '16' && blockCounter === 17)) {
@@ -146,8 +149,10 @@
         // 输出测量结果
         console.group('📏 块间距测量结果');
         spacingMeasurements.forEach(measurement => {
-            console.log(`块${measurement.from} -> 块${measurement.to}: ${measurement.spacing.toFixed(2)}px`);
+            const status = measurement.spacing > 30 ? '⚠️异常大' : measurement.spacing < 10 ? '⚠️异常小' : '✓正常';
+            console.log(`块${measurement.from} -> 块${measurement.to}: ${measurement.spacing.toFixed(2)}px ${status}`);
         });
+        console.log(`\n总共测量了 ${spacingMeasurements.length} 个间距`);
         console.groupEnd();
         
         // 查找异常间距
@@ -165,6 +170,9 @@
             });
             console.groupEnd();
         }
+        
+        // 在页面顶部显示总结信息
+        addSummaryInfo(spacingMeasurements, abnormalSpacings, averageSpacing);
     }
     
     // 测量两个元素之间的间距
@@ -172,6 +180,68 @@
         const rect1 = element1.getBoundingClientRect();
         const rect2 = element2.getBoundingClientRect();
         return rect2.top - rect1.bottom;
+    }
+    
+    // 在页面上添加间距指示器
+    function addSpacingIndicator(element1, element2, spacing, fromBlock, toBlock) {
+        const rect1 = element1.getBoundingClientRect();
+        const rect2 = element2.getBoundingClientRect();
+        
+        // 创建间距指示器
+        const spacingDiv = document.createElement('div');
+        spacingDiv.className = 'debug-spacing-indicator';
+        spacingDiv.style.cssText = `
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            top: ${rect1.bottom + window.scrollY}px;
+            z-index: 1001;
+            background: ${spacing > 30 ? '#ef4444' : spacing < 10 ? '#f59e0b' : '#10b981'};
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: bold;
+            font-family: monospace;
+            pointer-events: none;
+            white-space: nowrap;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        `;
+        
+        // 间距信息
+        let spacingText = `${fromBlock}→${toBlock}: ${spacing.toFixed(1)}px`;
+        
+        // 如果间距异常，添加警告
+        if (spacing > 30) {
+            spacingText += ' ⚠️大';
+        } else if (spacing < 10) {
+            spacingText += ' ⚠️小';
+        } else {
+            spacingText += ' ✓';
+        }
+        
+        spacingDiv.textContent = spacingText;
+        
+        // 添加到页面
+        document.body.appendChild(spacingDiv);
+        
+        // 如果间距特别大，还要添加一个填充区域来显示
+        if (Math.abs(spacing) > 20) {
+            const spacingArea = document.createElement('div');
+            spacingArea.className = 'debug-spacing-area';
+            spacingArea.style.cssText = `
+                position: absolute;
+                left: 0;
+                right: 0;
+                height: ${Math.abs(spacing)}px;
+                background: ${spacing > 30 ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)'};
+                border: 1px dashed ${spacing > 30 ? '#ef4444' : '#f59e0b'};
+                top: ${rect1.bottom + window.scrollY}px;
+                z-index: 1000;
+                pointer-events: none;
+            `;
+            document.body.appendChild(spacingArea);
+        }
     }
     
     // 高亮显示间距
@@ -213,12 +283,61 @@
         document.body.appendChild(highlight);
     }
     
+    // 添加总结信息到页面顶部
+    function addSummaryInfo(measurements, abnormalSpacings, averageSpacing) {
+        const summary = document.createElement('div');
+        summary.className = 'debug-summary-info';
+        summary.style.cssText = `
+            position: fixed;
+            top: 50px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-family: monospace;
+            z-index: 10001;
+            max-width: 300px;
+            line-height: 1.4;
+        `;
+        
+        const abnormalCount = abnormalSpacings.length;
+        const totalCount = measurements.length;
+        
+        summary.innerHTML = `
+            <div style="font-weight: bold; margin-bottom: 0.5rem; color: #60a5fa;">📊 间距调试总结</div>
+            <div>总块数: ${totalCount + 1}</div>
+            <div>测量间距: ${totalCount} 个</div>
+            <div>平均间距: ${averageSpacing.toFixed(1)}px</div>
+            <div style="color: ${abnormalCount > 0 ? '#f87171' : '#4ade80'};">
+                异常间距: ${abnormalCount} 个 ${abnormalCount > 0 ? '⚠️' : '✓'}
+            </div>
+            ${abnormalCount > 0 ? `
+                <div style="margin-top: 0.5rem; font-size: 0.75rem; color: #fbbf24;">
+                    异常块: ${abnormalSpacings.map(a => `${a.from}-${a.to}`).join(', ')}
+                </div>
+            ` : ''}
+            <div style="margin-top: 0.5rem; font-size: 0.75rem; color: #9ca3af;">
+                颜色说明:<br>
+                🟢 正常 (10-30px)<br>
+                🟡 偏小 (&lt;10px)<br>
+                🔴 偏大 (&gt;30px)
+            </div>
+        `;
+        
+        document.body.appendChild(summary);
+    }
+    
     // 停止调试
     function stopDebugging() {
         // 移除所有调试元素
         document.querySelectorAll('.debug-block-indicator').forEach(el => el.remove());
         document.querySelectorAll('.debug-class-indicator').forEach(el => el.remove());
         document.querySelectorAll('.debug-spacing-highlight').forEach(el => el.remove());
+        document.querySelectorAll('.debug-spacing-indicator').forEach(el => el.remove());
+        document.querySelectorAll('.debug-spacing-area').forEach(el => el.remove());
+        document.querySelectorAll('.debug-summary-info').forEach(el => el.remove());
         
         // 恢复原始position样式
         document.querySelectorAll('[data-debug-original-position]').forEach(el => {
