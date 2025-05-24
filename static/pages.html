@@ -7,175 +7,417 @@
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/@heroicons/vue@2.0.18/dist/index.min.css" rel="stylesheet">
     <style>
-        .fade-enter-active,
-        .fade-leave-active {
-            transition: opacity 0.3s ease;
+        /* 现代扁平化设计风格 */
+        .flat-card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .fade-enter-from,
-        .fade-leave-to {
-            opacity: 0;
-        }
-        .page-card {
-            transition: all 0.3s ease;
-        }
-        .page-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-        }
-        .loading-spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #3b82f6;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .search-input {
-            transition: all 0.3s ease;
-        }
-        .search-input:focus {
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        
+        .flat-card:hover {
+            border-color: #3b82f6;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.08);
         }
 
-        /* 移动端适配 */
-        @media (max-width: 640px) {
+        .flat-button {
+            background: transparent;
+            border: 1px solid #e5e7eb;
+            transition: all 0.2s ease;
+        }
+
+        .flat-button:hover {
+            background: #f9fafb;
+            border-color: #d1d5db;
+        }
+
+        .flat-button.active {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: white;
+        }
+
+        .search-container {
+            position: relative;
+            max-width: 400px;
+        }
+
+        .search-input {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            transition: all 0.2s ease;
+            padding: 10px 16px;
+            padding-left: 44px;
+        }
+
+        .search-input:focus {
+            background: white;
+            border-color: #3b82f6;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6b7280;
+            transition: color 0.2s ease;
+        }
+
+        .search-input:focus + .search-icon {
+            color: #3b82f6;
+        }
+
+        .dropdown {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            z-index: 50;
+        }
+
+        .filter-chip {
+            background: #eff6ff;
+            color: #1d4ed8;
+            border: 1px solid #bfdbfe;
+            transition: all 0.2s ease;
+        }
+
+        .filter-chip:hover {
+            background: #dbeafe;
+            border-color: #93c5fd;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .slide-up {
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { 
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .grid-item {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .grid-item:hover {
+            transform: scale(1.02);
+        }
+
+        .loading-dots {
+            display: inline-flex;
+            gap: 4px;
+        }
+
+        .loading-dots div {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #3b82f6;
+            animation: bounce 1.4s ease-in-out infinite both;
+        }
+
+        .loading-dots div:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dots div:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { 
+                transform: scale(0);
+            } 40% { 
+                transform: scale(1);
+            }
+        }
+
+        /* 移动端优化 */
+        @media (max-width: 768px) {
             .container {
                 padding-left: 1rem;
                 padding-right: 1rem;
             }
             
-            header .flex {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 1rem;
-            }
-            
-            h1.text-3xl {
-                font-size: 1.5rem;
-                text-align: center;
-            }
-            
-            .search-input {
-                width: 100% !important;
-            }
-            
-            header .flex .flex {
-                flex-direction: row;
-            }
-            
-            header .space-x-4 {
+            .search-container {
+                max-width: none;
                 width: 100%;
             }
             
-            header .flex .flex {
-                justify-content: space-between;
+            .controls-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
             }
             
-            button {
-                white-space: nowrap;
+            .filter-controls {
+                flex-wrap: wrap;
+                gap: 0.5rem;
             }
         }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
     <div id="app" class="min-h-screen">
-        <header class="bg-white shadow-sm">
-            <div class="container mx-auto px-4 py-6 max-w-6xl">
-                <div class="flex justify-between items-center">
-                    <h1 class="text-3xl font-bold text-gray-900 whitespace-nowrap">页面列表</h1>
-                    <div class="flex items-center space-x-4">
-                        <div class="relative">
-                            <input 
-                                type="text" 
-                                v-model="searchQuery" 
-                                placeholder="搜索页面..." 
-                                class="search-input w-64 px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:border-blue-500"
-                            >
-                            <span v-if="searchQuery" 
-                                  @click="searchQuery = ''" 
-                                  class="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 cursor-pointer">
-                                ✕
-                            </span>
-                        </div>
-                        <button 
-                            @click="refreshPages" 
-                            class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition duration-200 flex items-center space-x-2 whitespace-nowrap"
-                            :disabled="isLoading"
+        <!-- Header -->
+        <header class="bg-white border-b border-gray-200">
+            <div class="container mx-auto px-4 py-6 max-w-7xl">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <h1 class="text-2xl font-semibold text-gray-900">页面管理</h1>
+                    
+                    <!-- Search -->
+                    <div class="search-container">
+                        <input 
+                            type="text" 
+                            v-model="searchQuery" 
+                            placeholder="搜索页面标题或后缀..." 
+                            class="search-input w-full rounded-lg"
                         >
-                            <span v-if="isLoading" class="loading-spinner mr-2"></span>
-                            <span>{{ isLoading ? '加载中...' : '刷新' }}</span>
-                        </button>
+                        <svg class="search-icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
                     </div>
                 </div>
             </div>
         </header>
 
-        <main class="container mx-auto px-4 py-8 max-w-6xl">
-            <!-- 加载状态 -->
-            <div v-if="isLoading" class="flex justify-center py-12">
-                <div class="loading-spinner"></div>
-            </div>
-
-            <!-- 错误提示 -->
-            <div v-else-if="error" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-                <div class="flex items-center text-red-700">
-                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
-                    </svg>
-                    <span>{{ error }}</span>
+        <main class="container mx-auto px-4 py-6 max-w-7xl">
+            <!-- Controls -->
+            <div class="controls-grid grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+                <!-- Sort Options -->
+                <div class="flex flex-col space-y-2">
+                    <label class="text-sm font-medium text-gray-700">排序方式</label>
+                    <div class="flex space-x-2">
+                        <button 
+                            v-for="option in sortOptions" 
+                            :key="option.value"
+                            @click="sortBy = option.value"
+                            :class="['flat-button px-3 py-2 rounded-lg text-sm', sortBy === option.value ? 'active' : '']"
+                        >
+                            {{ option.label }}
+                        </button>
+                    </div>
                 </div>
-                <button 
-                    @click="refreshPages" 
-                    class="mt-2 text-red-600 hover:text-red-800 text-sm font-medium"
-                >
-                    重试
-                </button>
-            </div>
 
-            <!-- 页面列表 -->
-            <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <template v-if="filteredPages.length">
-                    <div v-for="page in filteredPages" 
-                         :key="page.id" 
-                         class="page-card bg-white rounded-xl border border-gray-200 overflow-hidden hover:border-blue-300 cursor-pointer"
-                         @click="goToPage(page.id)">
-                        <div class="p-4">
-                            <h2 class="text-xl font-semibold text-gray-900 mb-2 line-clamp-2">{{ page.title }}</h2>
-                            <div class="flex items-center justify-between text-sm text-gray-500">
-                                <div class="flex items-center space-x-2">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                    </svg>
-                                    <span>{{ formatDate(page.last_edited_time) }}</span>
-                                </div>
-                                <div v-if="page.suffix" class="px-2 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-medium">
-                                    {{ page.suffix }}
+                <!-- Sort Order -->
+                <div class="flex flex-col space-y-2">
+                    <label class="text-sm font-medium text-gray-700">排序顺序</label>
+                    <div class="flex space-x-2">
+                        <button 
+                            @click="sortOrder = 'desc'"
+                            :class="['flat-button px-3 py-2 rounded-lg text-sm flex items-center space-x-1', sortOrder === 'desc' ? 'active' : '']"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
+                            </svg>
+                            <span>降序</span>
+                        </button>
+                        <button 
+                            @click="sortOrder = 'asc'"
+                            :class="['flat-button px-3 py-2 rounded-lg text-sm flex items-center space-x-1', sortOrder === 'asc' ? 'active' : '']"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
+                            </svg>
+                            <span>升序</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filter and Refresh -->
+                <div class="flex flex-col space-y-2">
+                    <label class="text-sm font-medium text-gray-700">操作</label>
+                    <div class="flex space-x-2">
+                        <div class="relative">
+                            <button 
+                                @click="showFilterDropdown = !showFilterDropdown"
+                                class="flat-button px-3 py-2 rounded-lg text-sm flex items-center space-x-1"
+                            >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z"/>
+                                </svg>
+                                <span>筛选</span>
+                                <span v-if="activeFilters.length" class="bg-blue-500 text-white text-xs rounded-full px-1">{{ activeFilters.length }}</span>
+                            </button>
+                            
+                            <!-- Filter Dropdown -->
+                            <div v-if="showFilterDropdown" class="dropdown absolute top-full left-0 mt-2 w-64 p-4">
+                                <div class="space-y-3">
+                                    <div>
+                                        <label class="text-sm font-medium text-gray-700 block mb-2">按后缀筛选</label>
+                                        <div class="flex flex-wrap gap-2">
+                                            <button 
+                                                v-for="suffix in availableSuffixes" 
+                                                :key="suffix"
+                                                @click="toggleFilter('suffix', suffix)"
+                                                :class="['filter-chip px-2 py-1 rounded-full text-xs', activeFilters.includes(`suffix:${suffix}`) ? 'bg-blue-100 border-blue-300' : '']"
+                                            >
+                                                {{ suffix || '无后缀' }}
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="border-t pt-3">
+                                        <button @click="clearFilters" class="text-sm text-gray-600 hover:text-gray-800">
+                                            清除所有筛选
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
+                        
+                        <button 
+                            @click="refreshPages" 
+                            :disabled="isLoading"
+                            class="flat-button px-3 py-2 rounded-lg text-sm flex items-center space-x-1"
+                        >
+                            <svg v-if="!isLoading" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                            </svg>
+                            <div v-else class="loading-dots">
+                                <div></div>
+                                <div></div>
+                                <div></div>
+                            </div>
+                            <span>{{ isLoading ? '刷新中' : '刷新' }}</span>
+                        </button>
                     </div>
-                </template>
-                <div v-else class="col-span-full">
-                    <div class="text-center py-12 bg-white rounded-xl border border-gray-200">
-                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </div>
+            </div>
+
+            <!-- Active Filters Display -->
+            <div v-if="activeFilters.length" class="flex flex-wrap gap-2 mb-4">
+                <span class="text-sm text-gray-600">已筛选:</span>
+                <span 
+                    v-for="filter in activeFilters" 
+                    :key="filter"
+                    class="filter-chip px-2 py-1 rounded-full text-xs flex items-center space-x-1"
+                >
+                    <span>{{ formatFilterLabel(filter) }}</span>
+                    <button @click="removeFilter(filter)" class="hover:text-red-600">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                         </svg>
-                        <h3 class="mt-2 text-sm font-medium text-gray-900">{{ searchQuery ? '没有找到匹配的页面' : '暂无页面' }}</h3>
-                        <p class="mt-1 text-sm text-gray-500">{{ searchQuery ? '请尝试其他搜索关键词' : '开始创建你的第一个页面吧' }}</p>
+                    </button>
+                </span>
+            </div>
+
+            <!-- Stats -->
+            <div class="bg-white border border-gray-200 rounded-lg p-4 mb-6 fade-in">
+                <div class="flex items-center justify-between text-sm text-gray-600">
+                    <div class="flex items-center space-x-4">
+                        <span>共 {{ filteredPages.length }} 个页面</span>
+                        <span v-if="searchQuery || activeFilters.length">
+                            (从 {{ pages.length }} 个中筛选)
+                        </span>
                     </div>
+                    <div class="text-xs">
+                        最后更新: {{ lastUpdateTime }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div v-if="isLoading && !pages.length" class="flex justify-center py-16">
+                <div class="text-center">
+                    <div class="loading-dots mb-4">
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                    </div>
+                    <p class="text-gray-600">正在加载页面...</p>
+                </div>
+            </div>
+
+            <!-- Error State -->
+            <div v-else-if="error" class="bg-red-50 border border-red-200 rounded-lg p-6 slide-up">
+                <div class="flex items-center text-red-700 mb-2">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                    </svg>
+                    <span class="font-medium">加载失败</span>
+                </div>
+                <p class="text-red-600 text-sm mb-3">{{ error }}</p>
+                <button 
+                    @click="refreshPages" 
+                    class="bg-red-100 text-red-700 px-4 py-2 rounded-lg text-sm hover:bg-red-200 transition-colors"
+                >
+                    重新加载
+                </button>
+            </div>
+
+            <!-- Pages Grid -->
+            <div v-else-if="filteredPages.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 fade-in">
+                <div 
+                    v-for="page in filteredPages" 
+                    :key="page.id"
+                    class="grid-item flat-card rounded-lg overflow-hidden cursor-pointer"
+                    @click="goToPage(page.id)"
+                >
+                    <div class="p-4">
+                        <div class="flex items-start justify-between mb-3">
+                            <h3 class="font-medium text-gray-900 line-clamp-2 text-sm leading-relaxed">
+                                {{ page.title }}
+                            </h3>
+                            <div v-if="page.suffix" class="ml-2 px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs whitespace-nowrap">
+                                {{ page.suffix }}
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center justify-between text-xs text-gray-500">
+                            <div class="flex items-center space-x-1">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span>{{ formatDate(page.last_edited_time) }}</span>
+                            </div>
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div v-else class="text-center py-16 slide-up">
+                <div class="bg-white rounded-lg border border-gray-200 p-8 max-w-md mx-auto">
+                    <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">
+                        {{ searchQuery || activeFilters.length ? '没有匹配的页面' : '暂无页面' }}
+                    </h3>
+                    <p class="text-gray-500 text-sm mb-4">
+                        {{ searchQuery || activeFilters.length ? '请尝试调整搜索条件或筛选器' : '开始创建你的第一个页面吧' }}
+                    </p>
+                    <button 
+                        v-if="searchQuery || activeFilters.length"
+                        @click="clearAllFilters" 
+                        class="flat-button px-4 py-2 rounded-lg text-sm"
+                    >
+                        清除所有筛选
+                    </button>
                 </div>
             </div>
         </main>
     </div>
 
     <script>
-    const { createApp, ref, computed } = Vue
+    const { createApp, ref, computed, watch, onMounted, onUnmounted } = Vue
 
     createApp({
         setup() {
@@ -183,25 +425,122 @@
             const isLoading = ref(true)
             const error = ref(null)
             const searchQuery = ref('')
+            const sortBy = ref('last_edited_time')
+            const sortOrder = ref('desc')
+            const activeFilters = ref([])
+            const showFilterDropdown = ref(false)
+            const lastUpdateTime = ref('')
+
+            const sortOptions = [
+                { value: 'last_edited_time', label: '修改时间' },
+                { value: 'title', label: '标题' },
+                { value: 'suffix', label: '后缀' }
+            ]
+
+            const availableSuffixes = computed(() => {
+                const suffixes = [...new Set(pages.value.map(page => page.suffix || ''))]
+                return suffixes.sort()
+            })
 
             const filteredPages = computed(() => {
-                if (!searchQuery.value) return pages.value
-                const query = searchQuery.value.toLowerCase()
-                return pages.value.filter(page => 
-                    page.title.toLowerCase().includes(query) ||
-                    (page.suffix && page.suffix.toLowerCase().includes(query))
-                )
+                let result = [...pages.value]
+
+                // 搜索筛选
+                if (searchQuery.value) {
+                    const query = searchQuery.value.toLowerCase()
+                    result = result.filter(page => 
+                        page.title.toLowerCase().includes(query) ||
+                        (page.suffix && page.suffix.toLowerCase().includes(query))
+                    )
+                }
+
+                // 筛选器
+                activeFilters.value.forEach(filter => {
+                    const [type, value] = filter.split(':')
+                    if (type === 'suffix') {
+                        result = result.filter(page => (page.suffix || '') === value)
+                    }
+                })
+
+                // 排序
+                result.sort((a, b) => {
+                    let aVal, bVal
+                    
+                    switch (sortBy.value) {
+                        case 'title':
+                            aVal = a.title.toLowerCase()
+                            bVal = b.title.toLowerCase()
+                            break
+                        case 'suffix':
+                            aVal = a.suffix || ''
+                            bVal = b.suffix || ''
+                            break
+                        case 'last_edited_time':
+                        default:
+                            aVal = new Date(a.last_edited_time)
+                            bVal = new Date(b.last_edited_time)
+                            break
+                    }
+
+                    if (aVal < bVal) return sortOrder.value === 'asc' ? -1 : 1
+                    if (aVal > bVal) return sortOrder.value === 'asc' ? 1 : -1
+                    return 0
+                })
+
+                return result
             })
 
             const formatDate = (dateString) => {
                 const date = new Date(dateString)
-                return new Intl.DateTimeFormat('zh-CN', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                }).format(date)
+                const now = new Date()
+                const diff = now - date
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+
+                if (days === 0) {
+                    return '今天 ' + date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+                } else if (days === 1) {
+                    return '昨天'
+                } else if (days < 7) {
+                    return `${days}天前`
+                } else {
+                    return date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })
+                }
+            }
+
+            const formatFilterLabel = (filter) => {
+                const [type, value] = filter.split(':')
+                if (type === 'suffix') {
+                    return value || '无后缀'
+                }
+                return filter
+            }
+
+            const toggleFilter = (type, value) => {
+                const filter = `${type}:${value}`
+                const index = activeFilters.value.indexOf(filter)
+                if (index > -1) {
+                    activeFilters.value.splice(index, 1)
+                } else {
+                    activeFilters.value.push(filter)
+                }
+            }
+
+            const removeFilter = (filter) => {
+                const index = activeFilters.value.indexOf(filter)
+                if (index > -1) {
+                    activeFilters.value.splice(index, 1)
+                }
+            }
+
+            const clearFilters = () => {
+                activeFilters.value = []
+                showFilterDropdown.value = false
+            }
+
+            const clearAllFilters = () => {
+                searchQuery.value = ''
+                activeFilters.value = []
+                showFilterDropdown.value = false
             }
 
             const refreshPages = async () => {
@@ -212,6 +551,7 @@
                     if (!response.ok) throw new Error('获取页面列表失败')
                     const data = await response.json()
                     pages.value = data.pages
+                    lastUpdateTime.value = new Date().toLocaleTimeString('zh-CN')
                 } catch (e) {
                     error.value = e.message
                     console.error('Error fetching pages:', e)
@@ -224,16 +564,41 @@
                 window.location.href = `/static/page.html?id=${pageId}`
             }
 
-            // 初始加载
-            refreshPages()
+            // 点击外部关闭下拉菜单
+            const handleClickOutside = (event) => {
+                if (!event.target.closest('.relative')) {
+                    showFilterDropdown.value = false
+                }
+            }
+
+            onMounted(() => {
+                document.addEventListener('click', handleClickOutside)
+                refreshPages()
+            })
+
+            onUnmounted(() => {
+                document.removeEventListener('click', handleClickOutside)
+            })
 
             return {
                 pages,
                 isLoading,
                 error,
                 searchQuery,
+                sortBy,
+                sortOrder,
+                activeFilters,
+                showFilterDropdown,
+                lastUpdateTime,
+                sortOptions,
+                availableSuffixes,
                 filteredPages,
                 formatDate,
+                formatFilterLabel,
+                toggleFilter,
+                removeFilter,
+                clearFilters,
+                clearAllFilters,
                 refreshPages,
                 goToPage
             }
