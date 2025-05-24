@@ -604,9 +604,8 @@ async function loadChildPage(pageId, title) {
         // Update browser history
         window.history.pushState({}, "", `/static/page.html?id=${pageId}`);
         
-        // Update page title immediately
-        document.title = title;
-        document.getElementById('pageTitle').textContent = title;
+        // Update page title immediately using the utility function
+        updatePageTitle(title);
         
         // Load the new page content
         await loadPage(pageId);
@@ -796,11 +795,9 @@ async function loadPage(pageId = null) {
                 updateLoadingProgress(40);
             }
             
-            // Update page header
-            const pageTitle = document.getElementById('pageTitle');
+            // Update page header using the utility function
+            updatePageTitle(data.page.title);
             const editDate = document.getElementById('editDate');
-            
-            if (pageTitle) pageTitle.textContent = data.page.title;
             
             if (editDate && data.page.edit_date) {
                 const date = new Date(data.page.edit_date);

@@ -18,20 +18,20 @@ let scrollPosition = 0; // 保存滚动位置
 let scrollSpyPaused = false; // 标记是否暂停scroll spy
 
 /**
- * Initialize floating header scroll behavior
+ * Initialize dynamic header scroll behavior
  */
 function initFloatingHeader() {
-    const floatingHeader = document.getElementById('floatingHeader');
+    const dynamicHeader = document.getElementById('dynamicHeader');
     const floatingTitle = document.getElementById('floatingTitle');
     const floatingBreadcrumb = document.getElementById('floatingBreadcrumb');
-    const pageTitle = document.getElementById('pageTitle');
+    // 页面标题现在从动态头部获取，而不是页面内容中
     
-    if (!floatingHeader || !floatingTitle) return;
+    if (!dynamicHeader || !floatingTitle) return;
     
     // Update floating title when page title changes
-    const updateFloatingTitle = () => {
-        if (pageTitle && pageTitle.textContent) {
-            floatingTitle.textContent = pageTitle.textContent;
+    const updateFloatingTitle = (title) => {
+        if (title) {
+            floatingTitle.textContent = title;
         }
     };
     
@@ -42,17 +42,17 @@ function initFloatingHeader() {
         if (floatingTocHeadings.length === 0) {
             // 没有标题时，隐藏面包屑
             floatingBreadcrumb.style.display = 'none';
-            floatingHeader.style.cursor = 'default';
-            floatingHeader.removeAttribute('title');
-            floatingHeader.removeAttribute('aria-label');
-            floatingHeader.removeAttribute('onclick');
+            dynamicHeader.style.cursor = 'default';
+            dynamicHeader.removeAttribute('title');
+            dynamicHeader.removeAttribute('aria-label');
+            dynamicHeader.removeAttribute('onclick');
         } else {
             // 有标题时，显示面包屑和启用点击
             floatingBreadcrumb.style.display = 'block';
-            floatingHeader.style.cursor = 'pointer';
-            floatingHeader.setAttribute('title', '点击查看目录');
-            floatingHeader.setAttribute('aria-label', '点击查看目录');
-            floatingHeader.setAttribute('onclick', 'toggleFloatingToc()');
+            dynamicHeader.style.cursor = 'pointer';
+            dynamicHeader.setAttribute('title', '点击查看目录');
+            dynamicHeader.setAttribute('aria-label', '点击查看目录');
+            dynamicHeader.setAttribute('onclick', 'toggleFloatingToc()');
             
             if (currentActiveHeading) {
                 const heading = floatingTocHeadings.find(h => h.id === currentActiveHeading);
@@ -67,36 +67,30 @@ function initFloatingHeader() {
         }
     };
     
-    // Initial update
-    updateFloatingTitle();
-    
-    // Watch for page title changes
-    const observer = new MutationObserver(() => {
-        updateFloatingTitle();
-        // 延迟更新面包屑，确保TOC已初始化
-        setTimeout(updateBreadcrumb, 200);
-    });
-    if (pageTitle) {
-        observer.observe(pageTitle, { childList: true, characterData: true, subtree: true });
-    }
+    // 页面标题将通过API获取后直接设置
+    // 不再需要监听页面内的标题变化
     
     // Scroll event handler
     const handleScroll = () => {
         const currentScrollTop = window.pageYOffset || document.documentElement.scrollTop;
-        const pageHeader = document.querySelector('.page-header');
+        const scrollThreshold = 150; // 滚动150px后开始缩小
         
-        if (pageHeader) {
-            const headerRect = pageHeader.getBoundingClientRect();
-            const shouldShow = headerRect.bottom < 0; // Header is completely scrolled out of view
-            
-            if (shouldShow && !floatingHeaderVisible) {
-                floatingHeader.classList.add('visible');
+        // 根据滚动距离动态调整头部样式
+        if (currentScrollTop > scrollThreshold) {
+            // 滚动超过阈值，显示小标题样式
+            if (!floatingHeaderVisible) {
+                dynamicHeader.classList.remove('large');
+                dynamicHeader.classList.add('small');
                 floatingHeaderVisible = true;
-                updateBreadcrumb(); // 显示时更新面包屑
-            } else if (!shouldShow && floatingHeaderVisible) {
-                floatingHeader.classList.remove('visible');
+                updateBreadcrumb(); // 切换时更新面包屑
+            }
+        } else {
+            // 滚动在阈值内，显示大标题样式
+            if (floatingHeaderVisible) {
+                dynamicHeader.classList.remove('small');
+                dynamicHeader.classList.add('large');
                 floatingHeaderVisible = false;
-                hideFloatingToc(); // 隐藏时关闭目录
+                hideFloatingToc(); // 切换到大标题时关闭目录
             }
         }
         
@@ -113,7 +107,8 @@ function initFloatingHeader() {
     }, { passive: true });
     
     // Store update function for later use
-    floatingHeader._updateBreadcrumb = updateBreadcrumb;
+    dynamicHeader._updateBreadcrumb = updateBreadcrumb;
+    dynamicHeader._updateTitle = updateFloatingTitle;
     
     // Initial check
     setTimeout(() => {
@@ -263,13 +258,13 @@ function initFloatingToc() {
     // Update scroll spy
     updateFloatingTocScrollSpy();
     
-    // Update floating header breadcrumb
-    const floatingHeader = document.getElementById('floatingHeader');
-    if (floatingHeader && floatingHeader._updateBreadcrumb) {
-        setTimeout(() => {
-            floatingHeader._updateBreadcrumb();
-        }, 100);
-    }
+            // Update floating header breadcrumb
+        const floatingHeader = document.getElementById('dynamicHeader');
+        if (floatingHeader && floatingHeader._updateBreadcrumb) {
+            setTimeout(() => {
+                floatingHeader._updateBreadcrumb();
+            }, 100);
+        }
 }
 
 /**

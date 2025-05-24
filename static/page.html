@@ -99,16 +99,13 @@
         </div>
     </div>
     
-    <!-- Floating header with glass effect -->
-    <div id="floatingHeader" class="floating-header" onclick="toggleFloatingToc()" title="点击查看目录" aria-label="点击查看目录">
+    <!-- Dynamic title header with glass effect -->
+    <div id="dynamicHeader" class="dynamic-header large" onclick="toggleFloatingToc()" title="点击查看目录" aria-label="点击查看目录">
         <div class="content-wrapper">
             <div class="floating-breadcrumb">
                 <span id="floatingTitle" class="main-title"></span>
                 <span id="floatingBreadcrumb" class="breadcrumb-trail"></span>
             </div>
-            <button class="copy-link-button" onclick="event.stopPropagation(); copyPageLink()" title="复制页面链接" aria-label="复制页面链接">
-                <i class="fas fa-link"></i>
-            </button>
         </div>
     </div>
     
@@ -137,17 +134,8 @@
                     <img src="" alt="Page cover" class="opacity-0">
                 </div>
                 
-                <!-- Page header -->
-                <div class="page-header">
-                    <div class="page-title-container">
-                        <h1 id="pageTitle" class="page-title"></h1>
-                        <div id="editDate" class="edit-date"></div>
-                    </div>
-                    <button class="copy-link-button" onclick="copyPageLink()" title="复制页面链接" aria-label="复制页面链接">
-                        <i class="fas fa-link"></i>
-                        <span>复制链接</span>
-                    </button>
-                </div>
+                <!-- Page date info (minimal) -->
+                <div id="editDate" class="edit-date-minimal"></div>
                 
                 <!-- Page content -->
                 <div id="pageContent" class="prose">

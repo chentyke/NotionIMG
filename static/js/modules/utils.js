@@ -133,6 +133,12 @@ function updatePageTitle(title) {
     if (metaDescription && title) {
         metaDescription.setAttribute('content', `${title} - Notion Page`);
     }
+    
+    // Update dynamic header title
+    const dynamicHeader = document.getElementById('dynamicHeader');
+    if (dynamicHeader && dynamicHeader._updateTitle) {
+        dynamicHeader._updateTitle(title);
+    }
 }
 
 /**
