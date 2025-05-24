@@ -9,6 +9,7 @@ import * as NotionRenderer from './notionRenderer.js';
 // Floating header management
 let floatingHeaderVisible = false;
 let lastScrollTop = 0;
+let scrollHandlingPaused = false; // 标记是否暂停scroll处理
 
 // Floating TOC management
 let floatingTocVisible = false;
@@ -54,12 +55,25 @@ function initFloatingHeader() {
             dynamicHeader.setAttribute('title', '点击查看目录');
             dynamicHeader.setAttribute('aria-label', '点击查看目录');
             // 确保点击事件正常工作，使用事件监听器而不是内联onclick
-            dynamicHeader.onclick = function() {
+            dynamicHeader.onclick = function(event) {
+                // 阻止默认行为和事件冒泡
+                event.preventDefault();
+                event.stopPropagation();
+                
+                // 暂停scroll处理，避免点击时触发scroll事件
+                scrollHandlingPaused = true;
+                
+                // 调用目录切换函数
                 if (typeof toggleFloatingToc === 'function') {
                     toggleFloatingToc();
                 } else if (typeof window.toggleFloatingToc === 'function') {
                     window.toggleFloatingToc();
                 }
+                
+                // 延迟恢复scroll处理，确保点击事件完全处理完毕
+                setTimeout(() => {
+                    scrollHandlingPaused = false;
+                }, 500);
             };
             
             if (currentActiveHeading) {
@@ -92,6 +106,11 @@ function initFloatingHeader() {
     
     // Scroll event handler
     const handleScroll = () => {
+        // 如果scroll处理被暂停，直接返回
+        if (scrollHandlingPaused) {
+            return;
+        }
+        
         const currentScrollTop = window.pageYOffset || document.documentElement.scrollTop;
         const scrollThreshold = 150; // 滚动150px后开始缩小
         
@@ -444,8 +463,9 @@ function showFloatingToc() {
     
     // 保存当前滚动位置
     scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
-    // 暂停scroll spy逻辑
+    // 暂停scroll spy逻辑和scroll处理逻辑
     scrollSpyPaused = true;
+    scrollHandlingPaused = true;
     
     // 在DOM状态改变前先计算当前活跃章节
     updateCurrentActiveHeadingBeforeFixedPosition();
@@ -670,6 +690,9 @@ function hideFloatingToc() {
         // 恢复scroll spy逻辑
         scrollSpyPaused = false;
         
+        // 恢复scroll处理逻辑
+        scrollHandlingPaused = false;
+        
         // 移除事件监听器
         if (floatingToc._preventScroll) {
             document.removeEventListener('touchmove', floatingToc._preventScroll);
@@ -713,8 +736,9 @@ function scrollToHeading(headingId) {
             
             console.log('Target scroll position:', targetPosition);
             
-            // 暂停scroll spy，避免在滚动动画期间的干扰
+            // 暂停scroll spy和scroll处理，避免在滚动动画期间的干扰
             scrollSpyPaused = true;
+            scrollHandlingPaused = true;
             
             // 使用更平滑的缓动函数进行滚动
             const startPosition = window.pageYOffset;
@@ -739,6 +763,7 @@ function scrollToHeading(headingId) {
                 } else {
                     // 动画完成后的处理
                     scrollSpyPaused = false; // 恢复scroll spy
+                    scrollHandlingPaused = false; // 恢复scroll处理
                     completeScrollAnimation(headingId);
                 }
             }
