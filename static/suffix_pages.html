@@ -8,33 +8,82 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <style>
+        /* CSS变量用于主题切换 */
+        :root {
+            --bg-primary: #f9fafb;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f3f4f6;
+            --text-primary: #111827;
+            --text-secondary: #6b7280;
+            --text-tertiary: #9ca3af;
+            --border-primary: #e5e7eb;
+            --border-secondary: #d1d5db;
+            --accent-primary: #3b82f6;
+            --accent-secondary: #dbeafe;
+            --success-primary: #10b981;
+            --error-primary: #ef4444;
+            --error-secondary: #fecaca;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 深夜模式 */
+        [data-theme="dark"] {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --text-primary: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --text-tertiary: #94a3b8;
+            --border-primary: #334155;
+            --border-secondary: #475569;
+            --accent-primary: #60a5fa;
+            --accent-secondary: #1e3a8a;
+            --success-primary: #34d399;
+            --error-primary: #f87171;
+            --error-secondary: #7f1d1d;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+        }
+
+        /* 基础样式 */
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
         /* 现代扁平化设计风格 */
         .flat-card {
-            background: #ffffff;
-            border: 1px solid #e5e7eb;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: var(--shadow-sm);
         }
         
         .flat-card:hover {
-            border-color: #3b82f6;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.08);
+            border-color: var(--accent-primary);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
         }
 
         .flat-button {
-            background: transparent;
-            border: 1px solid #e5e7eb;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+            color: var(--text-primary);
             transition: all 0.2s ease;
         }
 
         .flat-button:hover {
-            background: #f9fafb;
-            border-color: #d1d5db;
+            background: var(--bg-tertiary);
+            border-color: var(--border-secondary);
         }
 
         .flat-button.active {
-            background: #3b82f6;
-            border-color: #3b82f6;
+            background: var(--accent-primary);
+            border-color: var(--accent-primary);
             color: white;
         }
 
@@ -44,16 +93,21 @@
         }
 
         .search-input {
-            background: #f9fafb;
-            border: 1px solid #e5e7eb;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-primary);
+            color: var(--text-primary);
             transition: all 0.2s ease;
             padding: 10px 16px;
             padding-left: 44px;
         }
 
+        .search-input::placeholder {
+            color: var(--text-tertiary);
+        }
+
         .search-input:focus {
-            background: white;
-            border-color: #3b82f6;
+            background: var(--bg-secondary);
+            border-color: var(--accent-primary);
             outline: none;
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
@@ -63,35 +117,31 @@
             left: 14px;
             top: 50%;
             transform: translateY(-50%);
-            color: #6b7280;
+            color: var(--text-tertiary);
             transition: color 0.2s ease;
         }
 
         .search-input:focus + .search-icon {
-            color: #3b82f6;
+            color: var(--accent-primary);
         }
 
-        .fade-in {
-            animation: fadeIn 0.3s ease-out;
+        /* 优雅的动画效果 */
+        .elegant-fade-in {
+            animation: elegantFadeIn 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
 
-        .slide-up {
-            animation: slideUp 0.3s ease-out;
+        .gentle-slide-up {
+            animation: gentleSlideUp 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
 
-        .slide-down {
-            animation: slideDown 0.3s ease-out;
+        .smooth-slide-down {
+            animation: smoothSlideDown 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        @keyframes slideUp {
+        @keyframes elegantFadeIn {
             from { 
                 opacity: 0;
-                transform: translateY(20px);
+                transform: translateY(8px);
             }
             to { 
                 opacity: 1;
@@ -99,10 +149,21 @@
             }
         }
 
-        @keyframes slideDown {
+        @keyframes gentleSlideUp {
             from { 
                 opacity: 0;
-                transform: translateY(-10px);
+                transform: translateY(16px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes smoothSlideDown {
+            from { 
+                opacity: 0;
+                transform: translateY(-8px);
             }
             to { 
                 opacity: 1;
@@ -115,7 +176,7 @@
         }
 
         .grid-item:hover {
-            transform: scale(1.02);
+            transform: translateY(-2px);
         }
 
         .loading-dots {
@@ -127,87 +188,72 @@
             width: 6px;
             height: 6px;
             border-radius: 50%;
-            background: #3b82f6;
-            animation: bounce 1.4s ease-in-out infinite both;
+            background: var(--accent-primary);
+            animation: gentleBounce 1.4s ease-in-out infinite both;
         }
 
         .loading-dots div:nth-child(1) { animation-delay: -0.32s; }
         .loading-dots div:nth-child(2) { animation-delay: -0.16s; }
 
-        @keyframes bounce {
+        @keyframes gentleBounce {
             0%, 80%, 100% { 
-                transform: scale(0);
+                transform: scale(0.8);
+                opacity: 0.5;
             } 40% { 
                 transform: scale(1);
+                opacity: 1;
             }
         }
 
         /* 后缀标签样式 */
         .suffix-tag {
-            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-            color: #0369a1;
-            border: 1px solid #bae6fd;
+            background: linear-gradient(135deg, var(--accent-secondary) 0%, var(--accent-secondary) 100%);
+            color: var(--accent-primary);
+            border: 1px solid var(--accent-primary);
             font-weight: 500;
-            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
             transition: all 0.3s ease;
         }
 
         .suffix-tag:hover {
-            background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
-            transform: scale(1.05);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
         }
 
-        /* 空状态美化 */
+        /* 状态样式 */
         .empty-state {
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-            border: 2px dashed #cbd5e1;
+            background: var(--bg-secondary);
+            border: 2px dashed var(--border-secondary);
             transition: all 0.3s ease;
         }
 
         .empty-state:hover {
-            border-color: #94a3b8;
-            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+            border-color: var(--border-primary);
         }
 
         .empty-icon {
-            color: #94a3b8;
+            color: var(--text-tertiary);
             transition: all 0.3s ease;
         }
 
-        .empty-state:hover .empty-icon {
-            color: #64748b;
-            transform: scale(1.05);
-        }
-
-        /* 404 页面特殊样式 */
         .not-found-state {
-            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-            border: 2px dashed #fca5a5;
+            background: var(--bg-secondary);
+            border: 2px dashed var(--error-primary);
             transition: all 0.3s ease;
-        }
-
-        .not-found-state:hover {
-            border-color: #f87171;
-            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
         }
 
         .not-found-icon {
-            color: #f87171;
+            color: var(--error-primary);
             transition: all 0.3s ease;
-        }
-
-        .not-found-state:hover .not-found-icon {
-            color: #ef4444;
-            transform: scale(1.05);
         }
 
         /* 可折叠控件样式 */
         .controls-section {
-            background: white;
-            border: 1px solid #e5e7eb;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
             border-radius: 12px;
             padding: 1.5rem;
             margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-sm);
         }
 
         .advanced-controls {
@@ -265,15 +311,38 @@
 
         /* 统计信息样式 */
         .stats-badge {
-            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-            color: #1d4ed8;
-            border: 1px solid #bfdbfe;
+            background: var(--accent-secondary);
+            color: var(--accent-primary);
+            border: 1px solid var(--accent-primary);
             transition: all 0.3s ease;
         }
 
         .stats-badge:hover {
-            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
             transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* 主题切换按钮 */
+        .theme-toggle {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+            color: var(--text-primary);
+            border-radius: 8px;
+            padding: 8px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .theme-toggle:hover {
+            background: var(--bg-tertiary);
+            transform: translateY(-1px);
+        }
+
+        /* Header 样式 */
+        .header-bg {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-primary);
+            backdrop-filter: blur(8px);
         }
 
         /* 移动端优化 */
@@ -342,13 +411,12 @@
             }
         }
 
-        /* 大屏幕优化 - 增加宽度和字体大小以提高可读性 */
+        /* 大屏幕优化 */
         @media (min-width: 1200px) {
             .container {
                 max-width: 1400px;
             }
             
-            /* 增加主要字体大小 */
             header h1 {
                 font-size: 2rem;
             }
@@ -363,7 +431,6 @@
                 padding: 0.75rem 1rem;
             }
             
-            /* 增加卡片内容字体 */
             .flat-card h2 {
                 font-size: 1.5rem;
             }
@@ -373,7 +440,6 @@
                 line-height: 1.7;
             }
             
-            /* 增加搜索框大小 */
             .search-input {
                 font-size: 1.1rem;
                 padding: 14px 20px;
@@ -386,19 +452,16 @@
                 height: 1.25rem;
             }
             
-            /* 增加按钮字体 */
             .flat-button {
                 font-size: 1rem;
                 padding: 0.75rem 1.25rem;
             }
             
-            /* 增加网格间距 */
             .grid-cols-responsive {
                 grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
                 gap: 2rem;
             }
             
-            /* 增加控件区域字体 */
             .controls-section label {
                 font-size: 1rem;
             }
@@ -413,7 +476,6 @@
                 max-width: 1600px;
             }
             
-            /* 超大屏幕进一步优化 */
             header h1 {
                 font-size: 2.25rem;
             }
@@ -437,7 +499,6 @@
                 gap: 2.5rem;
             }
             
-            /* 增加内边距 */
             .flat-card {
                 padding: 2rem;
             }
@@ -458,47 +519,11 @@
             }
         }
 
-        /* 浮动效果 */
-        .float-animation {
-            animation: float 6s ease-in-out infinite;
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-        }
-
-        /* 脉冲效果 */
-        .pulse-animation {
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-
-        /* 弹性效果 */
+        /* 移除原有的花哨动画 */
+        .float-animation,
+        .pulse-animation,
         .bounce-in {
-            animation: bounceIn 0.6s ease-out;
-        }
-
-        @keyframes bounceIn {
-            0% {
-                opacity: 0;
-                transform: scale(0.3);
-            }
-            50% {
-                opacity: 1;
-                transform: scale(1.05);
-            }
-            70% {
-                transform: scale(0.9);
-            }
-            100% {
-                opacity: 1;
-                transform: scale(1);
-            }
+            animation: none;
         }
 
         /* 旋转箭头动画 */
@@ -509,12 +534,29 @@
         .rotate-arrow.open {
             transform: rotate(180deg);
         }
+
+        /* 渐进式加载动画 */
+        .stagger-item {
+            opacity: 0;
+            animation: staggerFadeIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+        }
+
+        @keyframes staggerFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body>
     <div id="app" class="min-h-screen">
         <!-- Header -->
-        <header class="bg-white border-b border-gray-200">
+        <header class="header-bg">
             <div class="container mx-auto px-4 py-6 max-w-7xl">
                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div class="flex items-center space-x-3">
@@ -528,7 +570,7 @@
                             </svg>
                         </button>
                         <div class="stats-info flex items-center space-x-3">
-                            <h1 class="text-2xl font-semibold text-gray-900">
+                            <h1 class="text-2xl font-semibold">
                                 标签: <span class="suffix-tag px-3 py-1 rounded-lg text-sm">{{ suffix }}</span>
                             </h1>
                             <span class="stats-badge px-3 py-1 rounded-full text-sm">
@@ -537,17 +579,33 @@
                         </div>
                     </div>
                     
-                    <!-- Search -->
-                    <div class="search-container">
-                        <input 
-                            type="text" 
-                            v-model="searchQuery" 
-                            placeholder="搜索页面标题..." 
-                            class="search-input w-full rounded-lg"
+                    <div class="flex items-center gap-3">
+                        <!-- Theme Toggle -->
+                        <button 
+                            @click="toggleTheme"
+                            class="theme-toggle"
+                            title="切换主题"
                         >
-                        <svg class="search-icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                        </svg>
+                            <svg v-if="!isDarkMode" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                            </svg>
+                            <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                            </svg>
+                        </button>
+                        
+                        <!-- Search -->
+                        <div class="search-container">
+                            <input 
+                                type="text" 
+                                v-model="searchQuery" 
+                                placeholder="搜索页面标题..." 
+                                class="search-input w-full rounded-lg"
+                            >
+                            <svg class="search-icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -594,11 +652,11 @@
 
             <!-- Desktop Advanced Controls -->
             <div :class="['advanced-controls hidden md:block', showAdvancedControls ? 'show' : '']">
-                <div class="controls-section slide-down">
+                <div class="controls-section smooth-slide-down">
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <!-- Sort Options -->
                         <div class="flex flex-col space-y-3">
-                            <label class="text-sm font-semibold text-gray-700">排序方式</label>
+                            <label class="text-sm font-semibold">排序方式</label>
                             <div class="button-group">
                                 <button 
                                     @click="sortBy = 'last_edited_time'"
@@ -617,7 +675,7 @@
 
                         <!-- Sort Order -->
                         <div class="flex flex-col space-y-3">
-                            <label class="text-sm font-semibold text-gray-700">排序顺序</label>
+                            <label class="text-sm font-semibold">排序顺序</label>
                             <div class="button-group">
                                 <button 
                                     @click="sortOrder = 'desc'"
@@ -642,7 +700,7 @@
 
                         <!-- Actions -->
                         <div class="flex flex-col space-y-3">
-                            <label class="text-sm font-semibold text-gray-700">操作</label>
+                            <label class="text-sm font-semibold">操作</label>
                             <div class="button-group">
                                 <button 
                                     @click="refreshPages" 
@@ -667,10 +725,10 @@
 
             <!-- Mobile Controls -->
             <div :class="['mobile-advanced-controls md:hidden', showMobileAdvancedControls ? 'show' : '']">
-                <div class="controls-section slide-down">
+                <div class="controls-section smooth-slide-down">
                     <div class="mobile-sort-group">
                         <div>
-                            <label class="text-sm font-semibold text-gray-700 block mb-2">排序方式</label>
+                            <label class="text-sm font-semibold block mb-2">排序方式</label>
                             <div class="mobile-button-group">
                                 <button 
                                     @click="sortBy = 'last_edited_time'"
@@ -688,7 +746,7 @@
                         </div>
                         
                         <div>
-                            <label class="text-sm font-semibold text-gray-700 block mb-2">排序顺序</label>
+                            <label class="text-sm font-semibold block mb-2">排序顺序</label>
                             <div class="mobile-button-group">
                                 <button 
                                     @click="sortOrder = 'desc'"
@@ -734,7 +792,7 @@
 
             <!-- Loading State -->
             <div v-if="isLoading && !pages.length" class="flex justify-center py-16">
-                <div class="text-center bounce-in">
+                <div class="text-center gentle-slide-up">
                     <div class="loading-dots mb-4">
                         <div></div>
                         <div></div>
@@ -745,18 +803,18 @@
             </div>
 
             <!-- Error State -->
-            <div v-else-if="error" class="not-found-state rounded-2xl p-8 max-w-lg mx-auto slide-up">
+            <div v-else-if="error" class="not-found-state rounded-2xl p-8 max-w-lg mx-auto gentle-slide-up">
                 <div class="text-center">
-                    <div class="not-found-icon mb-6 float-animation">
+                    <div class="not-found-icon mb-6">
                         <svg class="mx-auto h-16 w-16" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
                         </svg>
                     </div>
-                    <h3 class="text-xl font-semibold text-red-700 mb-3">加载失败</h3>
-                    <p class="text-red-600 text-sm mb-6 leading-relaxed">{{ error }}</p>
+                    <h3 class="text-xl font-semibold mb-3">加载失败</h3>
+                    <p class="text-sm mb-6 leading-relaxed">{{ error }}</p>
                     <button 
                         @click="refreshPages" 
-                        class="bg-red-100 text-red-700 px-6 py-3 rounded-lg text-sm hover:bg-red-200 transition-all duration-200 font-medium pulse-animation"
+                        class="flat-button px-6 py-3 rounded-lg text-sm font-medium"
                     >
                         重新加载
                     </button>
@@ -764,20 +822,20 @@
             </div>
 
             <!-- Pages Grid -->
-            <div v-else-if="filteredPages.length" class="grid grid-cols-responsive fade-in">
+            <div v-else-if="filteredPages.length" class="grid grid-cols-responsive elegant-fade-in">
                 <div 
                     v-for="(page, index) in filteredPages" 
                     :key="page.id"
-                    :style="{ animationDelay: `${index * 0.1}s` }"
-                    class="grid-item flat-card rounded-lg overflow-hidden cursor-pointer bounce-in"
+                    :style="{ animationDelay: `${index * 0.05}s` }"
+                    class="grid-item flat-card rounded-lg overflow-hidden cursor-pointer stagger-item"
                     @click="goToPage(page.id)"
                 >
                     <div class="p-6">
-                        <h3 class="font-semibold text-gray-900 text-lg mb-3 leading-relaxed">
+                        <h3 class="font-semibold text-lg mb-3 leading-relaxed">
                             {{ page.title }}
                         </h3>
                         
-                        <div class="flex items-center justify-between text-sm text-gray-500">
+                        <div class="flex items-center justify-between text-sm">
                             <div class="flex items-center space-x-1">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -793,9 +851,9 @@
             </div>
 
             <!-- Empty State -->
-            <div v-else class="text-center py-16 slide-up">
+            <div v-else class="text-center py-16 gentle-slide-up">
                 <div :class="[suffix === '404' ? 'not-found-state' : 'empty-state', 'rounded-2xl p-12 max-w-lg mx-auto']">
-                    <div :class="[suffix === '404' ? 'not-found-icon' : 'empty-icon', 'mb-6 float-animation']">
+                    <div :class="[suffix === '404' ? 'not-found-icon' : 'empty-icon', 'mb-6']">
                         <svg v-if="suffix === '404'" class="mx-auto h-20 w-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z"/>
                         </svg>
@@ -806,12 +864,12 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                         </svg>
                     </div>
-                    <h3 class="text-xl font-semibold mb-3" :class="suffix === '404' ? 'text-red-700' : 'text-gray-900'">
+                    <h3 class="text-xl font-semibold mb-3">
                         <span v-if="suffix === '404'">页面未找到</span>
                         <span v-else-if="searchQuery">没有匹配的页面</span>
                         <span v-else>暂无 {{ suffix }} 标签的页面</span>
                     </h3>
-                    <p class="text-sm mb-6 leading-relaxed" :class="suffix === '404' ? 'text-red-600' : 'text-gray-600'">
+                    <p class="text-sm mb-6 leading-relaxed">
                         <span v-if="suffix === '404'">请检查URL是否正确，或返回主页重新浏览</span>
                         <span v-else-if="searchQuery">请尝试调整搜索关键词或清除搜索条件</span>
                         <span v-else>还没有创建带有 {{ suffix }} 标签的页面</span>
@@ -820,18 +878,18 @@
                         <button 
                             v-if="searchQuery"
                             @click="searchQuery = ''" 
-                            class="flat-button px-6 py-3 rounded-lg text-sm font-medium pulse-animation"
+                            class="flat-button px-6 py-3 rounded-lg text-sm font-medium"
                         >
                             清除搜索
                         </button>
                         <button 
                             v-if="suffix === '404'"
                             @click="goBack" 
-                            class="bg-red-100 text-red-700 px-6 py-3 rounded-lg text-sm font-medium hover:bg-red-200 transition-all duration-200 pulse-animation"
+                            class="flat-button px-6 py-3 rounded-lg text-sm font-medium"
                         >
                             返回主页
                         </button>
-                        <div class="text-xs" :class="suffix === '404' ? 'text-red-500' : 'text-gray-500'">
+                        <div class="text-xs">
                             <span v-if="suffix !== '404'">可以在Notion中创建新页面并设置相应标签</span>
                         </div>
                     </div>
@@ -853,9 +911,31 @@
             const sortOrder = ref('desc')
             const showAdvancedControls = ref(false)
             const showMobileAdvancedControls = ref(false)
+            const isDarkMode = ref(false)
             
             // 获取当前 suffix
             const suffix = window.location.pathname.substring(1)
+
+            // 主题切换
+            const toggleTheme = () => {
+                isDarkMode.value = !isDarkMode.value
+                document.documentElement.setAttribute('data-theme', isDarkMode.value ? 'dark' : 'light')
+                localStorage.setItem('theme', isDarkMode.value ? 'dark' : 'light')
+            }
+
+            // 初始化主题
+            const initTheme = () => {
+                const savedTheme = localStorage.getItem('theme')
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+                
+                if (savedTheme) {
+                    isDarkMode.value = savedTheme === 'dark'
+                } else {
+                    isDarkMode.value = prefersDark
+                }
+                
+                document.documentElement.setAttribute('data-theme', isDarkMode.value ? 'dark' : 'light')
+            }
 
             const filteredPages = computed(() => {
                 let result = [...pages.value]
@@ -934,6 +1014,7 @@
             }
 
             onMounted(() => {
+                initTheme()
                 refreshPages()
             })
 
@@ -946,12 +1027,14 @@
                 sortOrder,
                 showAdvancedControls,
                 showMobileAdvancedControls,
+                isDarkMode,
                 suffix,
                 filteredPages,
                 formatDate,
                 refreshPages,
                 goToPage,
-                goBack
+                goBack,
+                toggleTheme
             }
         }
     }).mount('#app')

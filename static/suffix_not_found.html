@@ -7,30 +7,282 @@
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <style>
+        /* CSS变量用于主题切换 */
+        :root {
+            --bg-primary: #f9fafb;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f3f4f6;
+            --text-primary: #111827;
+            --text-secondary: #6b7280;
+            --text-tertiary: #9ca3af;
+            --border-primary: #e5e7eb;
+            --border-secondary: #d1d5db;
+            --accent-primary: #3b82f6;
+            --accent-secondary: #dbeafe;
+            --error-primary: #ef4444;
+            --error-secondary: #fecaca;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 深夜模式 */
+        [data-theme="dark"] {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --text-primary: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --text-tertiary: #94a3b8;
+            --border-primary: #334155;
+            --border-secondary: #475569;
+            --accent-primary: #60a5fa;
+            --accent-secondary: #1e3a8a;
+            --error-primary: #f87171;
+            --error-secondary: #7f1d1d;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+        }
+
+        /* 基础样式 */
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
         .error-container {
-            transition: all 0.3s ease-out;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .back-button {
-            transition: all 0.2s ease-out;
-        }
-        .back-button:hover {
+
+        .error-container:hover {
             transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .back-button {
+            background: var(--accent-primary);
+            color: white;
+            border: 1px solid var(--accent-primary);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .back-button:hover {
+            background: transparent;
+            color: var(--accent-primary);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .back-button:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        /* 主题切换按钮 */
+        .theme-toggle {
+            position: fixed;
+            top: 1.5rem;
+            right: 1.5rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+            color: var(--text-primary);
+            border-radius: 8px;
+            padding: 12px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            z-index: 50;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .theme-toggle:hover {
+            background: var(--bg-tertiary);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .theme-toggle:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        /* 错误图标样式 */
+        .error-icon {
+            color: var(--error-primary);
+            transition: all 0.3s ease;
+        }
+
+        /* 优雅的动画效果 */
+        .gentle-fade-in {
+            animation: gentleFadeIn 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .gentle-slide-up {
+            animation: gentleSlideUp 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        @keyframes gentleFadeIn {
+            from { 
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes gentleSlideUp {
+            from { 
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 后缀标签样式 */
+        .suffix-highlight {
+            background: linear-gradient(135deg, var(--error-secondary) 0%, var(--error-secondary) 100%);
+            color: var(--error-primary);
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+            font-weight: 600;
+            border: 1px solid var(--error-primary);
+            transition: all 0.3s ease;
+        }
+
+        .suffix-highlight:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .theme-toggle {
+                top: 1rem;
+                right: 1rem;
+                padding: 10px;
+            }
+
+            .error-container {
+                margin: 1rem;
+            }
+
+            .container {
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .error-container {
+                margin: 0.5rem;
+                padding: 1.5rem;
+            }
+
+            .error-icon svg {
+                width: 3rem;
+                height: 3rem;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            p {
+                font-size: 0.9rem;
+            }
+        }
+
+        /* 大屏幕优化 */
+        @media (min-width: 1200px) {
+            .error-container {
+                max-width: 600px;
+                padding: 3rem;
+            }
+
+            .error-icon svg {
+                width: 5rem;
+                height: 5rem;
+            }
+
+            h1 {
+                font-size: 2.5rem;
+            }
+
+            p {
+                font-size: 1.1rem;
+                line-height: 1.7;
+            }
+
+            .back-button {
+                font-size: 1.1rem;
+                padding: 0.875rem 2rem;
+            }
+        }
+
+        /* 深度优化的悬停效果 */
+        .interactive-element {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .interactive-element:hover {
+            transform: translateY(-1px);
+        }
+
+        /* 无障碍支持 */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
         }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen flex items-center justify-center">
+<body class="min-h-screen flex items-center justify-center">
+    <!-- 主题切换按钮 -->
+    <button 
+        id="themeToggle"
+        class="theme-toggle"
+        title="切换主题"
+        aria-label="切换深夜模式"
+    >
+        <svg id="lightIcon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+        </svg>
+        <svg id="darkIcon" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+        </svg>
+    </button>
+
     <div class="container mx-auto px-4 py-8 max-w-lg">
-        <div class="error-container bg-white rounded-xl shadow-md overflow-hidden">
+        <div class="error-container rounded-xl overflow-hidden gentle-fade-in">
             <div class="p-8 text-center">
-                <div class="text-red-500 mb-4">
+                <div class="error-icon mb-6 gentle-slide-up" style="animation-delay: 0.2s">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
                 </div>
-                <h1 id="errorTitle" class="text-3xl font-bold mb-4 text-gray-800">未找到页面</h1>
-                <p id="errorMessage" class="text-gray-600 mb-6">没有找到与标签 "<span id="suffixName" class="font-semibold"></span>" 相关的页面</p>
-                <div class="flex justify-center">
-                    <button onclick="window.location.href='/'" class="back-button bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-6 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300">
+                <div class="gentle-slide-up" style="animation-delay: 0.4s">
+                    <h1 id="errorTitle" class="text-3xl font-bold mb-4">未找到页面</h1>
+                    <p id="errorMessage" class="mb-6 leading-relaxed">
+                        没有找到与标签 "<span id="suffixName" class="suffix-highlight interactive-element"></span>" 相关的页面
+                    </p>
+                </div>
+                <div class="flex justify-center gentle-slide-up" style="animation-delay: 0.6s">
+                    <button 
+                        onclick="window.location.href='/'" 
+                        class="back-button font-medium py-3 px-8 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 interactive-element"
+                        aria-label="返回首页"
+                    >
                         返回首页
                     </button>
                 </div>
@@ -39,12 +291,94 @@
     </div>
 
     <script>
+        // 主题管理
+        const themeToggle = document.getElementById('themeToggle');
+        const lightIcon = document.getElementById('lightIcon');
+        const darkIcon = document.getElementById('darkIcon');
+        let isDarkMode = false;
+
+        // 初始化主题
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            
+            if (savedTheme) {
+                isDarkMode = savedTheme === 'dark';
+            } else {
+                isDarkMode = prefersDark;
+            }
+            
+            updateTheme();
+        }
+
+        // 更新主题
+        function updateTheme() {
+            document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
+            localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+            
+            if (isDarkMode) {
+                lightIcon.classList.add('hidden');
+                darkIcon.classList.remove('hidden');
+            } else {
+                lightIcon.classList.remove('hidden');
+                darkIcon.classList.add('hidden');
+            }
+        }
+
+        // 切换主题
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            updateTheme();
+        }
+
+        // 事件监听
+        themeToggle.addEventListener('click', toggleTheme);
+
+        // 监听系统主题变化
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+            if (!localStorage.getItem('theme')) {
+                isDarkMode = e.matches;
+                updateTheme();
+            }
+        });
+
         // 获取当前 suffix
         const suffix = window.location.pathname.substring(1);
         
         // 设置错误信息
         document.getElementById('suffixName').textContent = suffix;
         document.title = `未找到标签: ${suffix}`;
+        
+        // 更新错误标题和信息，提供更友好的反馈
+        if (suffix === '404' || suffix === '') {
+            document.getElementById('errorTitle').textContent = '页面未找到';
+            document.getElementById('errorMessage').innerHTML = '请检查URL是否正确，或返回主页重新浏览';
+        } else {
+            document.getElementById('errorMessage').innerHTML = `没有找到与标签 "<span id="suffixName" class="suffix-highlight interactive-element">${suffix}</span>" 相关的页面`;
+        }
+
+        // 添加键盘导航支持
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                if (e.target === themeToggle) {
+                    e.preventDefault();
+                    toggleTheme();
+                }
+            }
+            
+            // ESC键返回首页
+            if (e.key === 'Escape') {
+                window.location.href = '/';
+            }
+        });
+
+        // 初始化
+        initTheme();
+
+        // 添加页面加载完成的微妙动画延迟
+        window.addEventListener('load', function() {
+            document.body.style.opacity = '1';
+        });
     </script>
 </body>
 </html> 
