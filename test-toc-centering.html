@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>目录居中功能测试</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            line-height: 1.6;
+        }
+        .demo-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .feature-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 16px;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        .test-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1.5rem;
+        }
+        .highlight {
+            background: #fef3c7;
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+        .improvement-list {
+            background: #f0f9ff;
+            border: 1px solid #0ea5e9;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+        }
+        .improvement-list h4 {
+            color: #0369a1;
+            margin: 0 0 1rem 0;
+            font-weight: 600;
+        }
+        .improvement-list ul {
+            margin: 0;
+            padding-left: 1.5rem;
+        }
+        .improvement-list li {
+            margin-bottom: 0.5rem;
+            color: #0c4a6e;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="demo-container">
+        <div class="feature-box">
+            <h1 class="text-2xl font-bold mb-4">🎯 目录居中功能已优化</h1>
+            <p class="text-lg opacity-90">现在打开浮动目录时，当前章节将自动居中显示</p>
+        </div>
+
+        <div class="improvement-list">
+            <h4>✨ 新功能特性</h4>
+            <ul>
+                <li><strong>智能居中</strong>：每次打开目录时，当前阅读的章节自动居中显示</li>
+                <li><strong>无跳跃感</strong>：避免了从顶部滚动到目标位置的视觉跳跃</li>
+                <li><strong>保持动画</strong>：目录的弹出动画效果完全保留</li>
+                <li><strong>视觉强调</strong>：当前章节会有轻微的缩放和阴影效果</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <h2 class="text-xl font-semibold mb-4">🔧 技术实现</h2>
+            <p>我们通过以下优化解决了目录跳到顶部的问题：</p>
+            <br>
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h4 class="font-semibold mb-2">1. 预计算滚动位置</h4>
+                <p class="text-sm text-gray-600 mb-3">在显示目录前，先计算当前章节在目录中的位置，确定居中显示的滚动坐标。</p>
+                
+                <h4 class="font-semibold mb-2">2. 使用 requestAnimationFrame</h4>
+                <p class="text-sm text-gray-600 mb-3">确保DOM完全渲染后再设置滚动位置，避免与CSS动画冲突。</p>
+                
+                <h4 class="font-semibold mb-2">3. 立即设置滚动</h4>
+                <p class="text-sm text-gray-600">直接设置scrollTop而不使用平滑滚动，避免用户看到滚动过程。</p>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2 class="text-xl font-semibold mb-4">🚀 如何测试</h2>
+            <ol class="list-decimal list-inside space-y-2">
+                <li>访问你的Notion页面（确保有多个章节）</li>
+                <li>滚动到页面中间的某个章节</li>
+                <li>点击浮动头部打开目录</li>
+                <li><span class="highlight">观察：当前章节现在会自动居中显示！</span></li>
+            </ol>
+        </div>
+
+        <div class="test-section">
+            <h2 class="text-xl font-semibold mb-4">📋 修改内容</h2>
+            <p class="mb-3">主要修改了以下文件：</p>
+            <ul class="list-disc list-inside space-y-1 text-sm text-gray-700">
+                <li><code class="bg-gray-200 px-2 py-1 rounded">static/js/modules/index.js</code> - showFloatingToc()函数</li>
+                <li>优化了滚动位置计算逻辑</li>
+                <li>改进了动画时序，避免视觉跳跃</li>
+                <li>添加了视觉强调效果</li>
+            </ul>
+        </div>
+
+        <div class="feature-box">
+            <h3 class="text-lg font-semibold mb-2">🎉 享受更好的阅读体验</h3>
+            <p>现在目录不会再跳到顶部，而是智能地显示你正在阅读的内容！</p>
+        </div>
+    </div>
+</body>
+</html> 

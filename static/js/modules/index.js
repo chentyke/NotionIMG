@@ -433,20 +433,53 @@ function showFloatingToc() {
     // 将阻止函数存储到floatingToc元素上，以便后续移除
     floatingToc._preventScroll = preventScroll;
     
+    // 先更新当前活跃章节（基于保存的滚动位置）
+    updateCurrentActiveHeading();
+    
+    // 高亮当前活跃章节
+    highlightCurrentActiveHeading();
+    
     floatingToc.classList.add('visible');
     floatingTocVisible = true;
     
-    // 在目录展开后，确保当前活跃章节被正确高亮并滚动到视野中
+    // 使用requestAnimationFrame确保DOM渲染完成后再设置滚动位置
+    requestAnimationFrame(() => {
+        if (currentActiveHeading) {
+            const activeTocLink = document.querySelector(`#floatingTocList a[href="#${currentActiveHeading}"]`);
+            const tocContent = document.querySelector('.floating-toc-content');
+            
+            if (activeTocLink && tocContent) {
+                // 计算目标滚动位置，将当前章节居中显示
+                const activeLinkTop = activeTocLink.offsetTop;
+                const activeLinkHeight = activeTocLink.offsetHeight;
+                const contentHeight = tocContent.clientHeight;
+                
+                const targetScroll = activeLinkTop - (contentHeight / 2) + (activeLinkHeight / 2);
+                
+                // 立即设置滚动位置，不使用动画，避免与入场动画冲突
+                tocContent.scrollTop = Math.max(0, targetScroll);
+            }
+        }
+    });
+    
+    // 在目录完全展开后，添加视觉强调效果
     setTimeout(() => {
-        // 先更新当前活跃章节（基于保存的滚动位置）
-        updateCurrentActiveHeading();
-        
-        // 高亮当前活跃章节
-        highlightCurrentActiveHeading();
-        
-        // 滚动到当前活跃章节
-        scrollToActiveHeadingInToc();
-    }, 100); // 等待目录完全展开
+        if (currentActiveHeading) {
+            const activeTocLink = document.querySelector(`#floatingTocList a[href="#${currentActiveHeading}"]`);
+            if (activeTocLink) {
+                // 添加视觉强调效果
+                activeTocLink.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+                activeTocLink.style.transform = 'translateY(-2px) scale(1.02)';
+                activeTocLink.style.boxShadow = '0 8px 24px rgba(59, 130, 246, 0.2), 0 4px 12px rgba(0, 0, 0, 0.1)';
+                
+                // 恢复正常状态
+                setTimeout(() => {
+                    activeTocLink.style.transform = '';
+                    activeTocLink.style.boxShadow = '';
+                }, 600);
+            }
+        }
+    }, 200); // 等待目录展开动画完成
     
     // 添加键盘事件监听
     const handleKeyDown = (e) => {
@@ -519,10 +552,11 @@ function highlightCurrentActiveHeading() {
 }
 
 /**
- * Scroll to active heading in TOC list with enhanced animation
+ * Scroll to active heading in TOC list with smooth animation
+ * Used for dynamic updates when TOC is already visible
  */
 function scrollToActiveHeadingInToc() {
-    if (!currentActiveHeading) return;
+    if (!currentActiveHeading || !floatingTocVisible) return;
     
     const activeTocLink = document.querySelector(`#floatingTocList a[href="#${currentActiveHeading}"]`);
     if (!activeTocLink) return;
@@ -542,17 +576,6 @@ function scrollToActiveHeadingInToc() {
         top: Math.max(0, targetScroll),
         behavior: 'smooth'
     });
-    
-    // 添加视觉强调效果
-    activeTocLink.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
-    activeTocLink.style.transform = 'translateY(-2px) scale(1.02)';
-    activeTocLink.style.boxShadow = '0 8px 24px rgba(59, 130, 246, 0.2), 0 4px 12px rgba(0, 0, 0, 0.1)';
-    
-    // 恢复正常状态
-    setTimeout(() => {
-        activeTocLink.style.transform = '';
-        activeTocLink.style.boxShadow = '';
-    }, 600);
 }
 
 /**
