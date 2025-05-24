@@ -220,33 +220,82 @@ async function loadHeicImage(img, wrapper, heicUrl) {
     } catch (error) {
         console.error('HEIC conversion failed:', error);
         
-        // Show conversion error with fallback options
+        // Analyze the error type for better user feedback
+        let errorType = 'unknown';
+        let errorMessage = 'Unable to convert HEIC format';
+        let detailedMessage = '';
+        let showRetry = true;
+        let showRefresh = false;
+        
+        if (error.message.includes('Failed to fetch')) {
+            errorType = 'network';
+            errorMessage = 'Network error';
+            detailedMessage = 'Image link may be expired or inaccessible';
+            showRefresh = true;
+        } else if (error.message.includes('ERR_LIBHEIF format not supported') || error.code === 2) {
+            errorType = 'format';
+            errorMessage = 'HEIC format variant not supported';
+            detailedMessage = 'This HEIC file uses an encoding format that cannot be converted in the browser';
+            showRetry = false;
+        } else if (error.message.includes('timeout') || error.message.includes('Timeout')) {
+            errorType = 'timeout';
+            errorMessage = 'Conversion timeout';
+            detailedMessage = 'The conversion took too long, possibly due to file size';
+        } else if (error.message.includes('Invalid') || error.message.includes('corrupted')) {
+            errorType = 'invalid';
+            errorMessage = 'Invalid HEIC file';
+            detailedMessage = 'The file may be corrupted or not a valid HEIC image';
+            showRetry = false;
+        }
+        
+        // Show conversion error with specific messaging
         if (wrapper) {
             wrapper.classList.remove('loading');
             wrapper.innerHTML = `
                 <div class="image-error text-center p-8 bg-red-50 border-2 border-dashed border-red-300 rounded-lg">
-                    <div class="text-4xl mb-3">📷</div>
+                    <div class="text-4xl mb-3">${errorType === 'format' ? '🔧' : errorType === 'network' ? '🌐' : errorType === 'timeout' ? '⏱️' : '📷'}</div>
                     <div class="text-red-700 mb-2 font-medium">HEIC conversion failed</div>
-                    <div class="text-sm text-red-600 mb-3">
-                        ${error.message.includes('Failed to fetch') 
-                            ? 'Image link may be expired or inaccessible'
-                            : 'Unable to convert HEIC format to viewable format'
-                        }
-                    </div>
+                    <div class="text-sm text-red-600 mb-1 font-medium">${errorMessage}</div>
+                    <div class="text-sm text-red-500 mb-3">${detailedMessage}</div>
+                    
+                    ${errorType === 'format' ? `
+                        <div class="text-sm text-gray-600 mb-3 p-3 bg-gray-100 rounded">
+                            <strong>💡 Suggestions:</strong><br>
+                            • Try opening the image on iPhone/Mac and re-exporting as JPEG<br>
+                            • Use online HEIC converters before uploading<br>
+                            • Consider using standard formats (JPG, PNG, WebP) for web content
+                        </div>
+                    ` : ''}
+                    
                     <div class="space-y-2">
-                        <button onclick="retryHeicConversion(this, '${heicUrl}')" 
-                                class="mr-2 px-4 py-2 bg-blue-500 text-white rounded-md text-sm hover:bg-blue-600 transition-colors">
-                            🔄 Retry Conversion
-                        </button>
-                        ${error.message.includes('Failed to fetch') 
-                            ? `<button onclick="window.location.reload()" 
-                                      class="px-4 py-2 bg-green-500 text-white rounded-md text-sm hover:bg-green-600 transition-colors">
-                                  🔄 Refresh Page
-                              </button>`
-                            : ''
-                        }
+                        ${showRetry ? `
+                            <button onclick="retryHeicConversion(this, '${heicUrl}')" 
+                                    class="mr-2 px-4 py-2 bg-blue-500 text-white rounded-md text-sm hover:bg-blue-600 transition-colors">
+                                🔄 Retry Conversion
+                            </button>
+                        ` : ''}
+                        ${showRefresh ? `
+                            <button onclick="window.location.reload()" 
+                                    class="px-4 py-2 bg-green-500 text-white rounded-md text-sm hover:bg-green-600 transition-colors">
+                                🔄 Refresh Page
+                            </button>
+                        ` : ''}
+                        ${errorType === 'format' ? `
+                            <button onclick="copyToClipboard('${heicUrl}')" 
+                                    class="px-4 py-2 bg-gray-500 text-white rounded-md text-sm hover:bg-gray-600 transition-colors">
+                                📋 Copy URL for External Conversion
+                            </button>
+                        ` : ''}
                     </div>
-                    <div class="text-xs text-gray-400 mt-3 break-all">${heicUrl}</div>
+                    
+                    <details class="mt-3 text-left">
+                        <summary class="text-xs text-gray-500 cursor-pointer">Technical Details</summary>
+                        <div class="text-xs text-gray-400 mt-2 p-2 bg-gray-50 rounded break-all">
+                            <strong>Error:</strong> ${error.message || 'Unknown error'}<br>
+                            <strong>Code:</strong> ${error.code || 'N/A'}<br>
+                            <strong>URL:</strong> ${heicUrl}
+                        </div>
+                    </details>
                 </div>
             `;
         }
@@ -477,9 +526,114 @@ function preloadCriticalImages(imageSources) {
     });
 }
 
-// Make retry functions globally accessible
+/**
+ * Copy text to clipboard with fallback support
+ * @param {string} text - Text to copy
+ */
+function copyToClipboard(text) {
+    // Try modern clipboard API first
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text)
+            .then(() => {
+                showCopyFeedback('URL copied to clipboard! You can use online HEIC converters.');
+            })
+            .catch(err => {
+                console.error('Clipboard API failed:', err);
+                fallbackCopyToClipboard(text);
+            });
+    } else {
+        // Fallback for older browsers or non-secure contexts
+        fallbackCopyToClipboard(text);
+    }
+}
+
+/**
+ * Fallback method to copy text to clipboard
+ * @param {string} text - Text to copy
+ */
+function fallbackCopyToClipboard(text) {
+    try {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.top = '0';
+        textarea.style.left = '0';
+        textarea.style.width = '2em';
+        textarea.style.height = '2em';
+        textarea.style.padding = '0';
+        textarea.style.border = 'none';
+        textarea.style.outline = 'none';
+        textarea.style.boxShadow = 'none';
+        textarea.style.background = 'transparent';
+        
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        
+        if (successful) {
+            showCopyFeedback('URL copied to clipboard! You can use online HEIC converters.');
+        } else {
+            showCopyFeedback('Copy failed. Please manually copy the URL from technical details.', 'error');
+        }
+    } catch (err) {
+        console.error('Fallback copy failed:', err);
+        showCopyFeedback('Copy failed. Please manually copy the URL from technical details.', 'error');
+    }
+}
+
+/**
+ * Show feedback for copy operation
+ * @param {string} message - Message to show
+ * @param {string} type - Type of message ('success' or 'error')
+ */
+function showCopyFeedback(message, type = 'success') {
+    // Remove existing feedback
+    const existingFeedback = document.querySelector('.copy-feedback');
+    if (existingFeedback) {
+        existingFeedback.remove();
+    }
+    
+    // Create feedback element
+    const feedback = document.createElement('div');
+    feedback.className = `copy-feedback fixed top-4 right-4 p-3 rounded-lg shadow-lg z-50 text-sm font-medium transition-all duration-300 ${
+        type === 'success' 
+            ? 'bg-green-100 text-green-800 border border-green-200' 
+            : 'bg-red-100 text-red-800 border border-red-200'
+    }`;
+    feedback.innerHTML = `
+        <div class="flex items-center">
+            <span class="mr-2">${type === 'success' ? '✓' : '✗'}</span>
+            ${message}
+        </div>
+    `;
+    
+    document.body.appendChild(feedback);
+    
+    // Animate in
+    setTimeout(() => {
+        feedback.style.transform = 'translateX(0)';
+        feedback.style.opacity = '1';
+    }, 10);
+    
+    // Remove after 4 seconds
+    setTimeout(() => {
+        feedback.style.transform = 'translateX(100%)';
+        feedback.style.opacity = '0';
+        setTimeout(() => {
+            if (feedback.parentNode) {
+                feedback.remove();
+            }
+        }, 300);
+    }, 4000);
+}
+
+// Make functions globally accessible
 window.retryImageLoad = retryImageLoad;
 window.retryHeicConversion = retryHeicConversion;
+window.copyToClipboard = copyToClipboard;
 
 // Export functions and objects
 export {
