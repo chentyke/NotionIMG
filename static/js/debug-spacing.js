@@ -71,8 +71,11 @@
             console.log(`- 元素: ${el.tagName} ${el.className} ${el.id || '(无ID)'}`);
         });
         
+        // 收集所有有效的内容块（非调试元素、非加载指示器）
+        const validBlocks = [];
+        
         elements.forEach((element, index) => {
-            // 跳过加载指示器，但记录跳过的原因
+            // 跳过加载指示器
             if (element.id === 'background-loading') {
                 console.log(`⏭️ 跳过加载指示器: ${element.id}`);
                 return;
@@ -90,9 +93,23 @@
                 return;
             }
             
+            // 跳过空的或隐藏的元素
+            if (element.offsetHeight === 0 && element.offsetWidth === 0) {
+                console.log(`⏭️ 跳过隐藏元素: ${element.tagName}`);
+                return;
+            }
+            
+            validBlocks.push({ element, originalIndex: index });
+        });
+        
+        console.log(`🎯 找到 ${validBlocks.length} 个有效内容块`);
+        
+        // 为每个有效块添加编号和测量间距
+        validBlocks.forEach((blockInfo, validIndex) => {
+            const element = blockInfo.element;
             blockCounter++;
             
-            console.log(`📦 处理块 ${blockCounter}: ${element.tagName} (index: ${index})`);
+            console.log(`📦 处理块 ${blockCounter}: ${element.tagName} (有效索引: ${validIndex}, 原始索引: ${blockInfo.originalIndex})`);
             
             // 添加块编号标识
             const indicator = document.createElement('div');
@@ -121,43 +138,29 @@
             element.appendChild(indicator);
             element.dataset.debugBlockNumber = blockCounter;
             
-            // 测量与前一个元素的间距
-            if (index > 0) {
-                // 找到前一个有效的块元素
-                let prevElement = null;
-                let prevBlockNumber = null;
+            // 测量与前一个有效块的间距
+            if (validIndex > 0) {
+                const prevBlockInfo = validBlocks[validIndex - 1];
+                const prevElement = prevBlockInfo.element;
+                const prevBlockNumber = blockCounter - 1; // 前一个块号就是当前块号-1
                 
-                // 向前查找最近的有效块
-                for (let i = index - 1; i >= 0; i--) {
-                    const el = elements[i];
-                    if (el.dataset.debugBlockNumber) {
-                        prevElement = el;
-                        prevBlockNumber = el.dataset.debugBlockNumber;
-                        break;
-                    }
-                }
+                const spacing = measureSpacingBetween(prevElement, element);
+                console.log(`📏 测量间距 块${prevBlockNumber} -> 块${blockCounter}: ${spacing.toFixed(1)}px`);
                 
-                if (prevElement && prevBlockNumber) {
-                    const spacing = measureSpacingBetween(prevElement, element);
-                    console.log(`📏 测量间距 块${prevBlockNumber} -> 块${blockCounter}: ${spacing.toFixed(1)}px`);
-                    
-                    spacingMeasurements.push({
-                        from: prevBlockNumber,
-                        to: blockCounter,
-                        spacing: spacing,
-                        elements: [prevElement, element]
-                    });
-                    
-                    // 在页面上直接显示间距信息
-                    addSpacingIndicator(prevElement, element, spacing, prevBlockNumber, blockCounter);
-                    
-                    // 特别标记第15-16块或16-17块之间的间距
-                    if ((prevBlockNumber === '15' && blockCounter === 16) ||
-                        (prevBlockNumber === '16' && blockCounter === 17)) {
-                        highlightSpacing(prevElement, element, spacing, `块${prevBlockNumber}-${blockCounter}`);
-                    }
-                } else {
-                    console.log(`⚠️ 块${blockCounter} 找不到前一个有效块`);
+                spacingMeasurements.push({
+                    from: prevBlockNumber,
+                    to: blockCounter,
+                    spacing: spacing,
+                    elements: [prevElement, element]
+                });
+                
+                // 在页面上直接显示间距信息
+                addSpacingIndicator(prevElement, element, spacing, prevBlockNumber, blockCounter);
+                
+                // 特别标记第15-16块或16-17块之间的间距
+                if ((prevBlockNumber === 15 && blockCounter === 16) ||
+                    (prevBlockNumber === 16 && blockCounter === 17)) {
+                    highlightSpacing(prevElement, element, spacing, `块${prevBlockNumber}-${blockCounter}`);
                 }
             }
             

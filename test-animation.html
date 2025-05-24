@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three Dots Loading Animation</title>
+    <link rel="stylesheet" href="static/css/styles.css">
+</head>
+<body style="margin: 0; padding: 20px; background: #f9fafb;">
+    <h1 style="text-align: center; color: #374151; margin-bottom: 2rem;">Loading Animation</h1>
+    
+    <!-- 只显示三个错开跳动的小点 -->
+    <div class="loading-indicator-container">
+        <div class="loading-spinner">
+            <div class="spinner-dot"></div>
+            <div class="spinner-dot"></div>
+            <div class="spinner-dot"></div>
+        </div>
+    </div>
+    
+    <script>
+        console.log('Loading animation test page loaded');
+        
+        // 验证动画是否正确应用
+        const dots = document.querySelectorAll('.spinner-dot');
+        console.log('Found spinner dots:', dots.length);
+        
+        dots.forEach((dot, index) => {
+            const styles = window.getComputedStyle(dot);
+            console.log(`Dot ${index + 1}:`, {
+                animation: styles.animation,
+                animationDelay: styles.animationDelay,
+                width: styles.width,
+                height: styles.height,
+                background: styles.background
+            });
+        });
+    </script>
+</body>
+</html> 
