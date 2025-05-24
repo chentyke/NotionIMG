@@ -10,6 +10,7 @@ import * as NotionRenderer from './notionRenderer.js';
 let floatingHeaderVisible = false;
 let lastScrollTop = 0;
 let scrollHandlingPaused = false; // 标记是否暂停scroll处理
+let isInitializing = true; // 标记是否正在初始化
 
 // Floating TOC management
 let floatingTocVisible = false;
@@ -39,6 +40,11 @@ function initFloatingHeader() {
     // Update breadcrumb based on current heading
     const updateBreadcrumb = (animated = true) => {
         if (!floatingBreadcrumb) return;
+        
+        // 初始化时禁用动画
+        if (isInitializing) {
+            animated = false;
+        }
         
         if (floatingTocHeadings.length === 0) {
             // 没有标题时，隐藏面包屑并禁用点击
@@ -81,23 +87,27 @@ function initFloatingHeader() {
                 if (heading) {
                     // 章节切换时的动画效果
                     if (animated && floatingBreadcrumb.innerHTML && floatingBreadcrumb.classList.contains('visible')) {
-                        // 先淡出旧内容
-                        floatingBreadcrumb.classList.add('changing');
-                        floatingBreadcrumb.classList.remove('visible');
+                        const newBreadcrumbPath = buildBreadcrumbPath(heading);
                         
-                        setTimeout(() => {
-                            // 更新内容并淡入新内容
-                            const breadcrumbPath = buildBreadcrumbPath(heading);
-                            floatingBreadcrumb.innerHTML = breadcrumbPath;
-                            floatingBreadcrumb.classList.remove('changing');
-                            
-                            // 移动端动态调整标题宽度
-                            adjustMobileTitleWidth();
+                        // 只有当内容真的变化时才执行动画
+                        if (floatingBreadcrumb.innerHTML !== newBreadcrumbPath) {
+                            // 先淡出旧内容
+                            floatingBreadcrumb.classList.add('changing');
+                            floatingBreadcrumb.classList.remove('visible');
                             
                             setTimeout(() => {
-                                floatingBreadcrumb.classList.add('visible');
-                            }, 50);
-                        }, 200);
+                                // 更新内容并淡入新内容
+                                floatingBreadcrumb.innerHTML = newBreadcrumbPath;
+                                floatingBreadcrumb.classList.remove('changing');
+                                
+                                // 移动端动态调整标题宽度
+                                adjustMobileTitleWidth();
+                                
+                                setTimeout(() => {
+                                    floatingBreadcrumb.classList.add('visible');
+                                }, 50);
+                            }, 200);
+                        }
                     } else {
                         // 初次显示或无动画模式
                         const breadcrumbPath = buildBreadcrumbPath(heading);
@@ -145,7 +155,10 @@ function initFloatingHeader() {
                 dynamicHeader.classList.remove('large');
                 dynamicHeader.classList.add('small');
                 floatingHeaderVisible = true;
-                updateBreadcrumb(); // 切换时更新面包屑
+                // 只在非初始化状态时更新面包屑
+                if (!isInitializing) {
+                    updateBreadcrumb(); // 切换时更新面包屑
+                }
             }
         } else {
             // 滚动在阈值内，显示大标题样式
@@ -189,6 +202,10 @@ function initFloatingHeader() {
     setTimeout(() => {
         handleScroll();
         updateBreadcrumb();
+        // 延迟更长时间确保DOM完全稳定后才启用动画
+        setTimeout(() => {
+            isInitializing = false;
+        }, 500);
     }, 100);
 }
 
@@ -550,7 +567,8 @@ function updateFloatingTocScrollSpy() {
             if (floatingHeaderVisible) {
                 const floatingHeader = document.getElementById('dynamicHeader');
                 if (floatingHeader && floatingHeader._updateBreadcrumb) {
-                    floatingHeader._updateBreadcrumb(true); // 启用章节切换动画
+                    // 只在非初始化状态时启用动画
+                    floatingHeader._updateBreadcrumb(!isInitializing); // 初始化时禁用章节切换动画
                 }
             }
         }

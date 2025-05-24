@@ -160,12 +160,12 @@
     line-height: 1.4;
 }
 
-.dynamic-header.small .breadcrumb-trail {
+.dynamic-header.small .floating-breadcrumb .breadcrumb-trail {
     margin-left: auto; /* 推到右边 */
     margin-top: 0;
     font-size: 0.8125rem; /* 移动端面包屑字体 13px */
     transition: all 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    transform: translateY(6px) scale(0.97);
+    transform: translateY(0) scale(1); /* 初始状态不偏移，避免闪动 */
 }
 
 /* 移动端面包屑显示优化 */
@@ -259,7 +259,7 @@
     transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     opacity: 0;
     text-align: center;
-    transform: translateY(8px) scale(0.96);
+    transform: translateY(0) scale(1); /* 初始状态不偏移，避免闪动 */
     will-change: opacity, transform;
 }
 
