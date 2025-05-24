@@ -39,7 +39,7 @@ async function loadImageWithAnimation(img) {
         };
 
         preloadImg.onerror = () => {
-            handleImageError(img, wrapper);
+            handleImageError(img, wrapper, preloadImg.src);
         };
 
         // Start loading
@@ -47,7 +47,7 @@ async function loadImageWithAnimation(img) {
 
     } catch (error) {
         console.error('Error loading image:', error);
-        handleImageError(img, img.closest('.image-wrapper'));
+        handleImageError(img, img.closest('.image-wrapper'), img.dataset.src);
     }
 }
 
@@ -107,19 +107,52 @@ function displayImage(img, src, wrapper) {
  * Handles image loading errors gracefully
  * @param {HTMLImageElement} img - The image element
  * @param {HTMLElement} wrapper - The wrapper element
+ * @param {string} failedSrc - The source URL that failed to load
  */
-function handleImageError(img, wrapper) {
-    console.warn('Failed to load image:', img.dataset.src);
+function handleImageError(img, wrapper, failedSrc = '') {
+    const originalSrc = img.dataset.src || failedSrc;
+    console.error('Failed to load image:', originalSrc);
+    
+    // Check if it's a HEIC format issue
+    const isHeicFormat = originalSrc.toLowerCase().includes('.heic');
+    const isNotionImage = originalSrc.includes('prod-files-secure.s3.us-west-2.amazonaws.com');
     
     if (wrapper) {
         wrapper.classList.remove('loading');
+        
+        let errorMessage = 'Failed to load image';
+        let showRetry = true;
+        
+        if (isHeicFormat) {
+            errorMessage = 'HEIC format not supported by browser';
+            showRetry = false; // HEIC won't work with retry
+        } else if (isNotionImage && originalSrc.includes('X-Amz-Expires')) {
+            errorMessage = 'Image link expired - please refresh the page';
+            showRetry = false; // Expired AWS links need page refresh
+        }
+        
         wrapper.innerHTML = `
-            <div class="image-error">
-                <div>Failed to load image</div>
-                <button onclick="retryImageLoad(this)" 
-                        class="mt-2 px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors">
-                    Retry
-                </button>
+            <div class="image-error text-center p-8 bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg">
+                <div class="text-4xl mb-3">📷</div>
+                <div class="text-gray-600 mb-2">${errorMessage}</div>
+                ${isHeicFormat ? `
+                    <div class="text-sm text-gray-500 mb-3">
+                        HEIC images are not supported in web browsers.<br>
+                        Please convert to JPG, PNG, or WebP format.
+                    </div>
+                ` : ''}
+                ${showRetry ? `
+                    <button onclick="retryImageLoad(this)" 
+                            class="mt-2 px-4 py-2 bg-blue-500 text-white rounded-md text-sm hover:bg-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                        <i class="fa fa-refresh mr-1"></i> Retry
+                    </button>
+                ` : isNotionImage ? `
+                    <button onclick="window.location.reload()" 
+                            class="mt-2 px-4 py-2 bg-green-500 text-white rounded-md text-sm hover:bg-green-600 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                        <i class="fa fa-refresh mr-1"></i> Refresh Page
+                    </button>
+                ` : ''}
+                <div class="text-xs text-gray-400 mt-3 break-all">${originalSrc}</div>
             </div>
         `;
     }
