@@ -923,11 +923,7 @@ async function loadPage(pageId = null) {
         // Initialize image lazy loading for the initial content
         console.log('Initializing image observer...');
         try {
-            const images = pageContent.querySelectorAll('img[data-src]');
-            console.log(`Found ${images.length} images to observe`);
-            images.forEach(img => {
-                imageObserver.observe(img);
-            });
+            imageObserver.init();
             console.log('Image observer initialized');
         } catch (error) {
             console.error('Error initializing image observer:', error);
@@ -1425,22 +1421,9 @@ async function renderIntermediateBatch(blocks, pageContent, loadingIndicator) {
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = content;
             
-            // 为新内容添加动画类（与renderIncrementalBlocks保持一致）
             const fragment = document.createDocumentFragment();
             while (tempDiv.firstChild) {
-                const element = tempDiv.firstChild;
-                
-                // 添加新内容动画类
-                if (element.nodeType === Node.ELEMENT_NODE) {
-                    element.classList.add('new-content-block');
-                    
-                    // 延迟添加显示动画，创建交错效果
-                    setTimeout(() => {
-                        element.classList.add('new-content-show');
-                    }, 50);
-                }
-                
-                fragment.appendChild(element);
+                fragment.appendChild(tempDiv.firstChild);
             }
             pageContent.insertBefore(fragment, loadingIndicator);
             
@@ -1482,22 +1465,10 @@ async function renderFinalBatch(allNewBlocks, pageContent, loadingIndicator) {
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = content;
             
-            // 为新内容添加动画类（与其他渲染函数保持一致）
+            // 按顺序插入新内容到加载指示器之前
             const fragment = document.createDocumentFragment();
             while (tempDiv.firstChild) {
-                const element = tempDiv.firstChild;
-                
-                // 添加新内容动画类
-                if (element.nodeType === Node.ELEMENT_NODE) {
-                    element.classList.add('new-content-block');
-                    
-                    // 延迟添加显示动画，创建交错效果
-                    setTimeout(() => {
-                        element.classList.add('new-content-show');
-                    }, 50);
-                }
-                
-                fragment.appendChild(element);
+                fragment.appendChild(tempDiv.firstChild);
             }
             pageContent.insertBefore(fragment, loadingIndicator);
             
@@ -1597,10 +1568,10 @@ async function renderBlocksWithContext(blocks, pageContent = null, loadingIndica
                     
                     // For ordered lists, use calculated start number
                     if (listTag === 'ol') {
-                        content += `<${listTag} class="prose-list list-decimal ml-6" start="${orderedListStart}">`;
+                        content += `<${listTag} class="my-4 list-decimal ml-6" start="${orderedListStart}">`;
                         console.log(`Starting new ordered list from ${orderedListStart}`);
                     } else {
-                        content += `<${listTag} class="prose-list list-disc ml-6">`;
+                        content += `<${listTag} class="my-4 list-disc ml-6">`;
                     }
                     
                     currentList = { tag: listTag, type: block.type, startNumber: orderedListStart };

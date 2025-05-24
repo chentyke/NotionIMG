@@ -405,14 +405,16 @@ body {
     }
 }
 
-/* 新内容块动画 - 修复版本，不影响布局流 */
+/* 新内容块动画 */
 .new-content-block {
     opacity: 0;
-    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateY(20px);
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .new-content-show {
     opacity: 1;
+    transform: translateY(0);
 }
 
 /* 深色模式下的新内容块动画 */
@@ -429,6 +431,6 @@ body {
 /* 移动端新内容块动画优化 */
 @media (max-width: 640px) {
     .new-content-block {
-        opacity: 0;
+        transform: translateY(15px);
     }
 } 
