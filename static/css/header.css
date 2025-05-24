@@ -175,11 +175,18 @@
     transition-delay: 0.08s;
 }
 
+/* 面包屑显示动画 - 优化丝滑效果 */
+.floating-breadcrumb .breadcrumb-trail.visible {
+    opacity: 0.8;
+    transform: translateY(0) scale(1);
+    transition-delay: 0.05s; /* 减少延迟，更快响应 */
+}
+
 /* 章节切换时的动画效果 */
 .floating-breadcrumb .breadcrumb-trail.changing {
     opacity: 0;
     transform: translateY(-5px) scale(0.95);
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.6, 1);
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.6, 1); /* 缩短动画时间 */
 }
 
 .floating-breadcrumb .breadcrumb-separator {
@@ -211,7 +218,7 @@
 .dynamic-header.small .content-wrapper {
     flex-direction: row;
     justify-content: space-between;
-    gap: 16px;
+    gap: 20px; /* 桌面端增加间隙 */
     text-align: left;
 }
 
@@ -267,14 +274,14 @@
 .floating-breadcrumb .breadcrumb-trail.visible {
     opacity: 0.8;
     transform: translateY(0) scale(1);
-    transition-delay: 0.1s;
+    transition-delay: 0.05s; /* 减少延迟，更快响应 */
 }
 
 /* 章节切换时的动画效果 */
 .floating-breadcrumb .breadcrumb-trail.changing {
     opacity: 0;
-    transform: translateY(-5px) scale(0.95);
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.6, 1);
+    transform: translateY(-4px) scale(0.96);
+    transition: all 0.12s cubic-bezier(0.4, 0, 0.6, 1); /* 移动端更快 */
 }
 
 .floating-breadcrumb .breadcrumb-separator {
@@ -802,6 +809,10 @@
         padding: 16px 24px;
     }
     
+    .dynamic-header.small .content-wrapper {
+        gap: 18px; /* 平板端适中间隙 */
+    }
+    
     /* 平板大标题字体 - 覆盖桌面版设置 */
     .dynamic-header.large .main-title,
     .floating-breadcrumb .main-title {
@@ -948,7 +959,7 @@
         flex-direction: row;
         justify-content: space-between;
         align-items: center;
-        gap: 12px;
+        gap: 10px; /* 移动端适中间隙 */
     }
     
     .dynamic-header.small .floating-breadcrumb .breadcrumb-trail {
@@ -960,7 +971,7 @@
     .floating-breadcrumb .breadcrumb-trail.changing {
         opacity: 0;
         transform: translateY(-4px) scale(0.96);
-        transition: all 0.18s cubic-bezier(0.4, 0, 0.6, 1);
+        transition: all 0.12s cubic-bezier(0.4, 0, 0.6, 1); /* 移动端更快 */
     }
     
     /* 移动端全屏目录调整 */

@@ -105,8 +105,8 @@ function initFloatingHeader() {
                                 
                                 setTimeout(() => {
                                     floatingBreadcrumb.classList.add('visible');
-                                }, 50);
-                            }, 200);
+                                }, 30); // 减少延迟，更快显示
+                            }, 150); // 减少延迟，与CSS动画时长一致
                         }
                     } else {
                         // 初次显示或无动画模式
@@ -173,13 +173,13 @@ function initFloatingHeader() {
         lastScrollTop = currentScrollTop;
     };
     
-    // Add scroll listener with throttling
+    // Add scroll listener with minimal throttling for smooth transitions
     let scrollTimeout;
     window.addEventListener('scroll', () => {
         if (scrollTimeout) {
             clearTimeout(scrollTimeout);
         }
-        scrollTimeout = setTimeout(handleScroll, 10);
+        scrollTimeout = setTimeout(handleScroll, 5); // 减少延迟到5ms，接近实时
     }, { passive: true });
     
     // Store update function for later use
@@ -574,13 +574,16 @@ function updateFloatingTocScrollSpy() {
         }
     };
     
-    // Add scroll listener for scroll spy
-    let spyTimeout;
+    // Add scroll listener for scroll spy with throttling for real-time updates
+    let spyLastTime = 0;
+    const spyThrottle = 16; // ~60fps
+    
     window.addEventListener('scroll', () => {
-        if (spyTimeout) {
-            clearTimeout(spyTimeout);
+        const now = Date.now();
+        if (now - spyLastTime >= spyThrottle) {
+            spyLastTime = now;
+            handleScrollSpy();
         }
-        spyTimeout = setTimeout(handleScrollSpy, 50);
     }, { passive: true });
     
     // Initial check
@@ -965,7 +968,7 @@ function completeScrollAnimation(headingId) {
                     // 添加显示动画
                     setTimeout(() => {
                         floatingBreadcrumb.classList.add('visible');
-                    }, 100);
+                    }, 30); // 减少延迟，更快显示
                 }
             }
         }
