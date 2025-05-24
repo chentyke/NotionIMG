@@ -5,89 +5,495 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>页面列表</title>
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <style>
-        .page-card {
-            transition: all 0.2s ease-out;
+        /* 现代扁平化设计风格 */
+        .flat-card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .page-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        
+        .flat-card:hover {
+            border-color: #3b82f6;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.08);
         }
-        .loading-spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #3b82f6;
+
+        .flat-button {
+            background: transparent;
+            border: 1px solid #e5e7eb;
+            transition: all 0.2s ease;
+        }
+
+        .flat-button:hover {
+            background: #f9fafb;
+            border-color: #d1d5db;
+        }
+
+        .flat-button.active {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: white;
+        }
+
+        .search-container {
+            position: relative;
+            max-width: 400px;
+        }
+
+        .search-input {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            transition: all 0.2s ease;
+            padding: 10px 16px;
+            padding-left: 44px;
+        }
+
+        .search-input:focus {
+            background: white;
+            border-color: #3b82f6;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6b7280;
+            transition: color 0.2s ease;
+        }
+
+        .search-input:focus + .search-icon {
+            color: #3b82f6;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .slide-up {
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { 
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .grid-item {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .grid-item:hover {
+            transform: scale(1.02);
+        }
+
+        .loading-dots {
+            display: inline-flex;
+            gap: 4px;
+        }
+
+        .loading-dots div {
+            width: 6px;
+            height: 6px;
             border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            animation: spin 1s linear infinite;
+            background: #3b82f6;
+            animation: bounce 1.4s ease-in-out infinite both;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+
+        .loading-dots div:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dots div:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { 
+                transform: scale(0);
+            } 40% { 
+                transform: scale(1);
+            }
+        }
+
+        /* 后缀标签样式 */
+        .suffix-tag {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            color: #0369a1;
+            border: 1px solid #bae6fd;
+            font-weight: 500;
+            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+        }
+
+        /* 空状态美化 */
+        .empty-state {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 2px dashed #cbd5e1;
+            transition: all 0.3s ease;
+        }
+
+        .empty-state:hover {
+            border-color: #94a3b8;
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+        }
+
+        .empty-icon {
+            color: #94a3b8;
+            transition: all 0.3s ease;
+        }
+
+        .empty-state:hover .empty-icon {
+            color: #64748b;
+            transform: scale(1.05);
+        }
+
+        /* 移动端优化 */
+        @media (max-width: 768px) {
+            .container {
+                padding-left: 0.75rem;
+                padding-right: 0.75rem;
+            }
+            
+            .search-container {
+                max-width: none;
+                width: 100%;
+            }
+            
+            .grid-cols-responsive {
+                grid-template-columns: 1fr;
+            }
+            
+            header .container {
+                padding-top: 1rem;
+                padding-bottom: 1rem;
+            }
+            
+            header h1 {
+                font-size: 1.5rem;
+                text-align: center;
+                margin-bottom: 1rem;
+            }
+        }
+
+        @media (min-width: 769px) {
+            .grid-cols-responsive {
+                grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            }
         }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
-    <div class="container mx-auto px-4 py-8 max-w-4xl">
-        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-            <div class="p-6">
-                <h1 id="suffixTitle" class="text-3xl font-bold mb-8 pb-4 border-b border-gray-200"></h1>
-                <div id="pagesList" class="space-y-4">
-                    <div class="flex justify-center py-8">
-                        <div class="loading-spinner"></div>
+    <div id="app" class="min-h-screen">
+        <!-- Header -->
+        <header class="bg-white border-b border-gray-200">
+            <div class="container mx-auto px-4 py-6 max-w-7xl">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div class="flex items-center space-x-3">
+                        <button 
+                            @click="goBack"
+                            class="flat-button p-2 rounded-lg"
+                            title="返回页面列表"
+                        >
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                            </svg>
+                        </button>
+                        <div>
+                            <h1 class="text-2xl font-semibold text-gray-900">
+                                标签: <span class="suffix-tag px-3 py-1 rounded-lg text-sm">{{ suffix }}</span>
+                            </h1>
+                            <p class="text-sm text-gray-600 mt-1">共 {{ filteredPages.length }} 个页面</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Search -->
+                    <div class="search-container">
+                        <input 
+                            type="text" 
+                            v-model="searchQuery" 
+                            placeholder="搜索页面标题..." 
+                            class="search-input w-full rounded-lg"
+                        >
+                        <svg class="search-icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
                     </div>
                 </div>
             </div>
-        </div>
+        </header>
+
+        <main class="container mx-auto px-4 py-6 max-w-7xl">
+            <!-- Sort Controls -->
+            <div class="bg-white border border-gray-200 rounded-lg p-4 mb-6 fade-in">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div class="flex items-center space-x-4">
+                        <label class="text-sm font-medium text-gray-700">排序方式:</label>
+                        <div class="flex space-x-2">
+                            <button 
+                                @click="sortBy = 'last_edited_time'"
+                                :class="['flat-button px-3 py-2 rounded-lg text-sm', sortBy === 'last_edited_time' ? 'active' : '']"
+                            >
+                                修改时间
+                            </button>
+                            <button 
+                                @click="sortBy = 'title'"
+                                :class="['flat-button px-3 py-2 rounded-lg text-sm', sortBy === 'title' ? 'active' : '']"
+                            >
+                                标题
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-2">
+                        <button 
+                            @click="sortOrder = 'desc'"
+                            :class="['flat-button px-3 py-2 rounded-lg text-sm flex items-center space-x-1', sortOrder === 'desc' ? 'active' : '']"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
+                            </svg>
+                            <span>降序</span>
+                        </button>
+                        <button 
+                            @click="sortOrder = 'asc'"
+                            :class="['flat-button px-3 py-2 rounded-lg text-sm flex items-center space-x-1', sortOrder === 'asc' ? 'active' : '']"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
+                            </svg>
+                            <span>升序</span>
+                        </button>
+                        
+                        <button 
+                            @click="refreshPages" 
+                            :disabled="isLoading"
+                            class="flat-button px-3 py-2 rounded-lg text-sm flex items-center space-x-1 ml-4"
+                        >
+                            <svg v-if="!isLoading" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                            </svg>
+                            <div v-else class="loading-dots">
+                                <div></div>
+                                <div></div>
+                                <div></div>
+                            </div>
+                            <span>{{ isLoading ? '刷新中' : '刷新' }}</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div v-if="isLoading && !pages.length" class="flex justify-center py-16">
+                <div class="text-center">
+                    <div class="loading-dots mb-4">
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                    </div>
+                    <p class="text-gray-600">正在加载页面...</p>
+                </div>
+            </div>
+
+            <!-- Error State -->
+            <div v-else-if="error" class="bg-red-50 border border-red-200 rounded-lg p-6 slide-up">
+                <div class="flex items-center text-red-700 mb-2">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                    </svg>
+                    <span class="font-medium">加载失败</span>
+                </div>
+                <p class="text-red-600 text-sm mb-3">{{ error }}</p>
+                <button 
+                    @click="refreshPages" 
+                    class="bg-red-100 text-red-700 px-4 py-2 rounded-lg text-sm hover:bg-red-200 transition-colors"
+                >
+                    重新加载
+                </button>
+            </div>
+
+            <!-- Pages Grid -->
+            <div v-else-if="filteredPages.length" class="grid grid-cols-responsive gap-4 fade-in">
+                <div 
+                    v-for="page in filteredPages" 
+                    :key="page.id"
+                    class="grid-item flat-card rounded-lg overflow-hidden cursor-pointer"
+                    @click="goToPage(page.id)"
+                >
+                    <div class="p-6">
+                        <h3 class="font-semibold text-gray-900 text-lg mb-3 leading-relaxed">
+                            {{ page.title }}
+                        </h3>
+                        
+                        <div class="flex items-center justify-between text-sm text-gray-500">
+                            <div class="flex items-center space-x-1">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span>{{ formatDate(page.last_edited_time) }}</span>
+                            </div>
+                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div v-else class="text-center py-16 slide-up">
+                <div class="empty-state rounded-2xl p-12 max-w-lg mx-auto">
+                    <div class="empty-icon mb-6">
+                        <svg class="mx-auto h-16 w-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path v-if="searchQuery" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-3">
+                        {{ searchQuery ? '没有匹配的页面' : `暂无 ${suffix} 标签的页面` }}
+                    </h3>
+                    <p class="text-gray-600 text-sm mb-6 leading-relaxed">
+                        {{ searchQuery ? '请尝试调整搜索关键词' : `还没有创建带有 ${suffix} 标签的页面` }}
+                    </p>
+                    <div class="space-y-3">
+                        <button 
+                            v-if="searchQuery"
+                            @click="searchQuery = ''" 
+                            class="flat-button px-6 py-3 rounded-lg text-sm font-medium"
+                        >
+                            清除搜索
+                        </button>
+                        <div class="text-xs text-gray-500">
+                            可以在Notion中创建新页面并设置相应标签
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
     </div>
 
     <script>
-        // 获取当前 suffix
-        const suffix = window.location.pathname.substring(1);
-        
-        // 设置页面标题
-        document.getElementById('suffixTitle').textContent = `标签: ${suffix}`;
+    const { createApp, ref, computed, onMounted } = Vue
 
-        // 加载具有相同 suffix 的页面列表
-        async function loadSuffixPages() {
-            try {
-                const response = await fetch(`/api/pages?suffix=${suffix}`);
-                const data = await response.json();
-                const pages = data.pages;
-                
-                if (pages.length === 0) {
-                    document.getElementById('pagesList').innerHTML = `
-                        <div class="text-gray-500 text-center py-4">
-                            暂无页面
-                        </div>
-                    `;
-                    return;
+    createApp({
+        setup() {
+            const pages = ref([])
+            const isLoading = ref(true)
+            const error = ref(null)
+            const searchQuery = ref('')
+            const sortBy = ref('last_edited_time')
+            const sortOrder = ref('desc')
+            
+            // 获取当前 suffix
+            const suffix = window.location.pathname.substring(1)
+
+            const filteredPages = computed(() => {
+                let result = [...pages.value]
+
+                // 搜索筛选
+                if (searchQuery.value) {
+                    const query = searchQuery.value.toLowerCase()
+                    result = result.filter(page => 
+                        page.title.toLowerCase().includes(query)
+                    )
                 }
-                
-                const pagesListHtml = pages.map(page => `
-                    <div class="page-card bg-white rounded-lg border border-gray-200 p-4 hover:border-blue-300 cursor-pointer"
-                         onclick="window.location.href='/static/page.html?id=${page.id}'">
-                        <h2 class="text-xl font-semibold text-gray-900 mb-2">${page.title}</h2>
-                        <div class="text-sm text-gray-500">
-                            最后编辑: ${new Date(page.last_edited_time).toLocaleString('zh-CN')}
-                        </div>
-                    </div>
-                `).join('');
-                
-                document.getElementById('pagesList').innerHTML = pagesListHtml;
-            } catch (error) {
-                console.error('Error loading pages:', error);
-                document.getElementById('pagesList').innerHTML = `
-                    <div class="text-red-500 text-center py-4">
-                        加载页面时出错，请稍后重试
-                    </div>
-                `;
+
+                // 排序
+                result.sort((a, b) => {
+                    let aVal, bVal
+                    
+                    switch (sortBy.value) {
+                        case 'title':
+                            aVal = a.title.toLowerCase()
+                            bVal = b.title.toLowerCase()
+                            break
+                        case 'last_edited_time':
+                        default:
+                            aVal = new Date(a.last_edited_time)
+                            bVal = new Date(b.last_edited_time)
+                            break
+                    }
+
+                    if (aVal < bVal) return sortOrder.value === 'asc' ? -1 : 1
+                    if (aVal > bVal) return sortOrder.value === 'asc' ? 1 : -1
+                    return 0
+                })
+
+                return result
+            })
+
+            const formatDate = (dateString) => {
+                const date = new Date(dateString)
+                const now = new Date()
+                const diff = now - date
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+
+                if (days === 0) {
+                    return '今天 ' + date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+                } else if (days === 1) {
+                    return '昨天'
+                } else if (days < 7) {
+                    return `${days}天前`
+                } else {
+                    return date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })
+                }
+            }
+
+            const refreshPages = async () => {
+                isLoading.value = true
+                error.value = null
+                try {
+                    const response = await fetch(`/api/pages?suffix=${suffix}`)
+                    if (!response.ok) throw new Error('获取页面列表失败')
+                    const data = await response.json()
+                    pages.value = data.pages
+                } catch (e) {
+                    error.value = e.message
+                    console.error('Error fetching pages:', e)
+                } finally {
+                    isLoading.value = false
+                }
+            }
+
+            const goToPage = (pageId) => {
+                window.location.href = `/static/page.html?id=${pageId}`
+            }
+
+            const goBack = () => {
+                window.location.href = '/static/pages.html'
+            }
+
+            onMounted(() => {
+                refreshPages()
+            })
+
+            return {
+                pages,
+                isLoading,
+                error,
+                searchQuery,
+                sortBy,
+                sortOrder,
+                suffix,
+                filteredPages,
+                formatDate,
+                refreshPages,
+                goToPage,
+                goBack
             }
         }
-
-        // 加载页面列表
-        loadSuffixPages();
+    }).mount('#app')
     </script>
 </body>
 </html> 
