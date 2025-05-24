@@ -1,6 +1,6 @@
-// Enhanced Image handling with elegant loading animations
+// Enhanced Image handling with robust error handling and HEIC support
 
-// Optimize image loading with IntersectionObserver
+// Create image observer for lazy loading
 const imageObserver = new IntersectionObserver((entries, observer) => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
@@ -12,314 +12,89 @@ const imageObserver = new IntersectionObserver((entries, observer) => {
         }
     });
 }, {
-    rootMargin: '100px 0px', // Increased for better UX
+    rootMargin: '100px 0px',
     threshold: 0.1
 });
 
-// HEIC conversion library loading state
-let heicLibraryLoaded = false;
-let heicLibraryLoading = false;
-
 /**
- * Load HEIC conversion library dynamically
- * @returns {Promise<boolean>} - Whether the library loaded successfully
+ * Initialize image observer for all images with data-src
+ * Can be called multiple times safely
  */
-async function loadHeicLibrary() {
-    if (heicLibraryLoaded) {
-        return true;
-    }
-    
-    if (heicLibraryLoading) {
-        // Wait for existing load to complete
-        return new Promise((resolve) => {
-            const checkInterval = setInterval(() => {
-                if (!heicLibraryLoading) {
-                    clearInterval(checkInterval);
-                    resolve(heicLibraryLoaded);
-                }
-            }, 100);
-        });
-    }
-    
-    heicLibraryLoading = true;
-    
-    try {
-        // Load heic2any library from CDN
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';
-        
-        await new Promise((resolve, reject) => {
-            script.onload = resolve;
-            script.onerror = reject;
-            document.head.appendChild(script);
-        });
-        
-        heicLibraryLoaded = true;
-        console.log('HEIC conversion library loaded successfully');
-        return true;
-    } catch (error) {
-        console.error('Failed to load HEIC conversion library:', error);
-        return false;
-    } finally {
-        heicLibraryLoading = false;
-    }
-}
-
-/**
- * Convert HEIC image to JPEG
- * @param {string} heicUrl - URL of the HEIC image
- * @returns {Promise<string>} - Data URL of converted JPEG
- */
-async function convertHeicToJpeg(heicUrl) {
-    try {
-        // Load HEIC library if not already loaded
-        const libraryLoaded = await loadHeicLibrary();
-        if (!libraryLoaded) {
-            throw new Error('HEIC conversion library failed to load');
+function initImageObserver() {
+    const lazyImages = document.querySelectorAll('img[data-src]');
+    lazyImages.forEach(img => {
+        // Only observe if not already being observed
+        if (!img.dataset.observing) {
+            img.dataset.observing = 'true';
+            imageObserver.observe(img);
         }
-        
-        // Fetch the HEIC file
-        console.log('Downloading HEIC file for conversion...');
-        const response = await fetch(heicUrl);
-        if (!response.ok) {
-            throw new Error(`Failed to fetch HEIC file: ${response.status}`);
-        }
-        
-        const heicBlob = await response.blob();
-        console.log(`HEIC file size: ${(heicBlob.size / 1024 / 1024).toFixed(2)} MB`);
-        
-        // Convert HEIC to JPEG using heic2any
-        console.log('Converting HEIC to JPEG...');
-        const convertedBlob = await heic2any({
-            blob: heicBlob,
-            toType: "image/jpeg",
-            quality: 0.8 // High quality output
-        });
-        
-        // Create object URL for the converted image
-        const convertedUrl = URL.createObjectURL(convertedBlob);
-        console.log('HEIC conversion completed successfully');
-        
-        return convertedUrl;
-    } catch (error) {
-        console.error('HEIC conversion failed:', error);
-        throw error;
-    }
+    });
 }
 
 /**
- * Check if URL is a HEIC image
- * @param {string} url - Image URL to check
- * @returns {boolean} - Whether the URL points to a HEIC image
- */
-function isHeicFormat(url) {
-    return url.toLowerCase().includes('.heic') || url.toLowerCase().includes('.heif');
-}
-
-/**
- * Loads an image with elegant animation
+ * Loads an image with elegant animation and robust error handling
  * @param {HTMLImageElement} img - The image element to load
  * @returns {Promise<void>}
  */
 async function loadImageWithAnimation(img) {
     try {
-        const wrapper = img.closest('.image-wrapper');
+        const wrapper = img.closest('.image-wrapper') || img.closest('.image-container');
         if (wrapper) {
             wrapper.classList.add('loading');
         }
 
-        const originalSrc = img.dataset.src;
+        // Get original URL
+        const originalUrl = img.dataset.src;
         
-        // Check if it's a HEIC format
-        if (isHeicFormat(originalSrc)) {
-            console.log('HEIC format detected, attempting conversion...');
-            await loadHeicImage(img, wrapper, originalSrc);
-            return;
+        // Try to detect and handle HEIC images
+        const isHeicImage = originalUrl.toLowerCase().includes('.heic') || 
+                           originalUrl.toLowerCase().includes('heic');
+        
+        if (isHeicImage) {
+            console.warn('HEIC image detected, may not be supported by browser:', originalUrl);
         }
 
-        // Regular image loading
+        // Create a new image to preload
         const preloadImg = new Image();
         preloadImg.crossOrigin = "anonymous";
         
-        // Set up loading states
+        let loadingTimeout;
+        let hasLoaded = false;
+        
+        // Set up loading states with timeout
         preloadImg.onload = () => {
-            // Optimize image if needed
+            hasLoaded = true;
+            clearTimeout(loadingTimeout);
             optimizeAndDisplayImage(img, preloadImg, wrapper);
         };
 
-        preloadImg.onerror = () => {
-            handleImageError(img, wrapper, preloadImg.src);
+        preloadImg.onerror = (event) => {
+            hasLoaded = true;
+            clearTimeout(loadingTimeout);
+            console.error('Image load error:', {
+                url: originalUrl,
+                error: event,
+                isHeic: isHeicImage
+            });
+            handleImageError(img, wrapper, originalUrl, isHeicImage);
         };
+
+        // Set loading timeout (15 seconds)
+        loadingTimeout = setTimeout(() => {
+            if (!hasLoaded) {
+                console.warn('Image loading timeout:', originalUrl);
+                handleImageError(img, wrapper, originalUrl, isHeicImage, 'timeout');
+            }
+        }, 15000);
 
         // Start loading
-        preloadImg.src = originalSrc;
+        preloadImg.src = originalUrl;
 
     } catch (error) {
-        console.error('Error loading image:', error);
-        handleImageError(img, img.closest('.image-wrapper'), img.dataset.src);
+        console.error('Error in loadImageWithAnimation:', error);
+        const wrapper = img.closest('.image-wrapper') || img.closest('.image-container');
+        handleImageError(img, wrapper, img.dataset.src, false, 'exception');
     }
-}
-
-/**
- * Load and convert HEIC image
- * @param {HTMLImageElement} img - The image element
- * @param {HTMLElement} wrapper - The wrapper element
- * @param {string} heicUrl - The HEIC image URL
- */
-async function loadHeicImage(img, wrapper, heicUrl) {
-    try {
-        // Show HEIC conversion progress
-        if (wrapper) {
-            wrapper.innerHTML = `
-                <div class="heic-conversion-progress text-center p-8 bg-blue-50 border-2 border-dashed border-blue-300 rounded-lg">
-                    <div class="text-4xl mb-3">🔄</div>
-                    <div class="text-blue-700 mb-2 font-medium">Converting HEIC image...</div>
-                    <div class="text-sm text-blue-600 mb-3">
-                        This may take a few seconds for large images
-                    </div>
-                    <div class="loading-spinner">
-                        <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                    </div>
-                </div>
-            `;
-        }
-        
-        // Convert HEIC to JPEG
-        const convertedUrl = await convertHeicToJpeg(heicUrl);
-        
-        // Create new image element for converted image
-        const convertedImg = new Image();
-        convertedImg.crossOrigin = "anonymous";
-        
-        convertedImg.onload = () => {
-            // Success - display converted image
-            img.src = convertedUrl;
-            
-            if (wrapper) {
-                wrapper.classList.remove('loading');
-                wrapper.classList.add('loaded');
-                wrapper.innerHTML = `
-                    <img src="${convertedUrl}" alt="${img.alt}" 
-                         class="rounded-lg shadow-md transition-all duration-300 ease-out"
-                         onclick="openImageModal('${convertedUrl}')" loading="lazy">
-                    <div class="text-xs text-green-600 mt-2 text-center">
-                        ✓ Converted from HEIC format
-                    </div>
-                `;
-            }
-            
-            console.log('HEIC image successfully converted and displayed');
-        };
-        
-        convertedImg.onerror = () => {
-            throw new Error('Failed to load converted image');
-        };
-        
-        convertedImg.src = convertedUrl;
-        
-    } catch (error) {
-        console.error('HEIC conversion failed:', error);
-        
-        // Analyze the error type for better user feedback
-        let errorType = 'unknown';
-        let errorMessage = 'Unable to convert HEIC format';
-        let detailedMessage = '';
-        let showRetry = true;
-        let showRefresh = false;
-        
-        if (error.message.includes('Failed to fetch')) {
-            errorType = 'network';
-            errorMessage = 'Network error';
-            detailedMessage = 'Image link may be expired or inaccessible';
-            showRefresh = true;
-        } else if (error.message.includes('ERR_LIBHEIF format not supported') || error.code === 2) {
-            errorType = 'format';
-            errorMessage = 'HEIC format variant not supported';
-            detailedMessage = 'This HEIC file uses an encoding format that cannot be converted in the browser';
-            showRetry = false;
-        } else if (error.message.includes('timeout') || error.message.includes('Timeout')) {
-            errorType = 'timeout';
-            errorMessage = 'Conversion timeout';
-            detailedMessage = 'The conversion took too long, possibly due to file size';
-        } else if (error.message.includes('Invalid') || error.message.includes('corrupted')) {
-            errorType = 'invalid';
-            errorMessage = 'Invalid HEIC file';
-            detailedMessage = 'The file may be corrupted or not a valid HEIC image';
-            showRetry = false;
-        }
-        
-        // Show conversion error with specific messaging
-        if (wrapper) {
-            wrapper.classList.remove('loading');
-            wrapper.innerHTML = `
-                <div class="image-error text-center p-8 bg-red-50 border-2 border-dashed border-red-300 rounded-lg">
-                    <div class="text-4xl mb-3">${errorType === 'format' ? '🔧' : errorType === 'network' ? '🌐' : errorType === 'timeout' ? '⏱️' : '📷'}</div>
-                    <div class="text-red-700 mb-2 font-medium">HEIC conversion failed</div>
-                    <div class="text-sm text-red-600 mb-1 font-medium">${errorMessage}</div>
-                    <div class="text-sm text-red-500 mb-3">${detailedMessage}</div>
-                    
-                    ${errorType === 'format' ? `
-                        <div class="text-sm text-gray-600 mb-3 p-3 bg-gray-100 rounded">
-                            <strong>💡 Suggestions:</strong><br>
-                            • Try opening the image on iPhone/Mac and re-exporting as JPEG<br>
-                            • Use online HEIC converters before uploading<br>
-                            • Consider using standard formats (JPG, PNG, WebP) for web content
-                        </div>
-                    ` : ''}
-                    
-                    <div class="space-y-2">
-                        ${showRetry ? `
-                            <button onclick="retryHeicConversion(this, '${heicUrl}')" 
-                                    class="mr-2 px-4 py-2 bg-blue-500 text-white rounded-md text-sm hover:bg-blue-600 transition-colors">
-                                🔄 Retry Conversion
-                            </button>
-                        ` : ''}
-                        ${showRefresh ? `
-                            <button onclick="window.location.reload()" 
-                                    class="px-4 py-2 bg-green-500 text-white rounded-md text-sm hover:bg-green-600 transition-colors">
-                                🔄 Refresh Page
-                            </button>
-                        ` : ''}
-                        ${errorType === 'format' ? `
-                            <button onclick="copyToClipboard('${heicUrl}')" 
-                                    class="px-4 py-2 bg-gray-500 text-white rounded-md text-sm hover:bg-gray-600 transition-colors">
-                                📋 Copy URL for External Conversion
-                            </button>
-                        ` : ''}
-                    </div>
-                    
-                    <details class="mt-3 text-left">
-                        <summary class="text-xs text-gray-500 cursor-pointer">Technical Details</summary>
-                        <div class="text-xs text-gray-400 mt-2 p-2 bg-gray-50 rounded break-all">
-                            <strong>Error:</strong> ${error.message || 'Unknown error'}<br>
-                            <strong>Code:</strong> ${error.code || 'N/A'}<br>
-                            <strong>URL:</strong> ${heicUrl}
-                        </div>
-                    </details>
-                </div>
-            `;
-        }
-    }
-}
-
-/**
- * Retry HEIC conversion
- * @param {HTMLElement} button - The retry button
- * @param {string} heicUrl - The HEIC image URL
- */
-function retryHeicConversion(button, heicUrl) {
-    const wrapper = button.closest('.image-wrapper') || button.closest('.image-container');
-    if (!wrapper) return;
-    
-    // Reset wrapper and retry
-    wrapper.classList.add('loading');
-    wrapper.innerHTML = '<img src="" alt="" class="opacity-0 transition-all duration-300">';
-    
-    const newImg = wrapper.querySelector('img');
-    newImg.dataset.src = heicUrl;
-    newImg.alt = 'Converted HEIC image';
-    
-    loadHeicImage(newImg, wrapper, heicUrl);
 }
 
 /**
@@ -330,19 +105,17 @@ function retryHeicConversion(button, heicUrl) {
  */
 function optimizeAndDisplayImage(targetImg, preloadImg, wrapper) {
     try {
-        // Check if image needs compression based on size
         const naturalWidth = preloadImg.naturalWidth;
         const naturalHeight = preloadImg.naturalHeight;
         const fileSize = naturalWidth * naturalHeight * 4; // Rough estimate
         
         // For large images, compress them
-        if (fileSize > 2000000 || naturalWidth > 1920) { // ~2MB or wider than 1920px
+        if (fileSize > 2000000 || naturalWidth > 1920) {
             compressImage(preloadImg)
                 .then(compressedSrc => {
                     displayImage(targetImg, compressedSrc, wrapper);
                 })
                 .catch(() => {
-                    // Fallback to original if compression fails
                     displayImage(targetImg, preloadImg.src, wrapper);
                 });
         } else {
@@ -363,7 +136,6 @@ function optimizeAndDisplayImage(targetImg, preloadImg, wrapper) {
 function displayImage(img, src, wrapper) {
     img.src = src;
     
-    // Add smooth transition
     requestAnimationFrame(() => {
         img.classList.add('loaded');
         
@@ -375,61 +147,272 @@ function displayImage(img, src, wrapper) {
 }
 
 /**
- * Handles image loading errors gracefully
+ * Handles image loading errors gracefully with enhanced error info and download option
  * @param {HTMLImageElement} img - The image element
  * @param {HTMLElement} wrapper - The wrapper element
- * @param {string} failedSrc - The source URL that failed to load
+ * @param {string} originalUrl - The original image URL
+ * @param {boolean} isHeic - Whether the image is HEIC format
+ * @param {string} errorType - Type of error (timeout, exception, etc.)
  */
-function handleImageError(img, wrapper, failedSrc = '') {
-    const originalSrc = img.dataset.src || failedSrc;
-    console.error('Failed to load image:', originalSrc);
+function handleImageError(img, wrapper, originalUrl, isHeic = false, errorType = 'load') {
+    console.warn('Failed to load image:', {
+        url: originalUrl,
+        isHeic,
+        errorType
+    });
     
-    // Check if it's a HEIC format issue
-    const isHeicFormat = originalSrc.toLowerCase().includes('.heic');
-    const isNotionImage = originalSrc.includes('prod-files-secure.s3.us-west-2.amazonaws.com');
-    
-    if (wrapper) {
-        wrapper.classList.remove('loading');
-        
-        let errorMessage = 'Failed to load image';
-        let showRetry = true;
-        
-        if (isHeicFormat) {
-            errorMessage = 'HEIC format detected';
-            showRetry = false; // Will show HEIC-specific retry
-        } else if (isNotionImage && originalSrc.includes('X-Amz-Expires')) {
-            errorMessage = 'Image link expired - please refresh the page';
-            showRetry = false; // Expired AWS links need page refresh
-        }
-        
-        wrapper.innerHTML = `
-            <div class="image-error text-center p-8 bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg">
-                <div class="text-4xl mb-3">📷</div>
-                <div class="text-gray-600 mb-2">${errorMessage}</div>
-                ${isHeicFormat ? `
-                    <div class="text-sm text-blue-600 mb-3">
-                        Browser doesn't natively support HEIC format.<br>
-                        We can try to convert it for you!
-                    </div>
-                    <button onclick="retryHeicConversion(this, '${originalSrc}')" 
-                            class="px-4 py-2 bg-blue-500 text-white rounded-md text-sm hover:bg-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                        🔄 Convert HEIC to JPEG
-                    </button>
-                ` : showRetry ? `
-                    <button onclick="retryImageLoad(this)" 
-                            class="mt-2 px-4 py-2 bg-blue-500 text-white rounded-md text-sm hover:bg-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                        <i class="fa fa-refresh mr-1"></i> Retry
-                    </button>
-                ` : isNotionImage ? `
-                    <button onclick="window.location.reload()" 
-                            class="mt-2 px-4 py-2 bg-green-500 text-white rounded-md text-sm hover:bg-green-600 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
-                        <i class="fa fa-refresh mr-1"></i> Refresh Page
-                    </button>
-                ` : ''}
-                <div class="text-xs text-gray-400 mt-3 break-all">${originalSrc}</div>
-            </div>
-        `;
+    if (!wrapper) {
+        // Create wrapper if it doesn't exist
+        wrapper = document.createElement('div');
+        wrapper.className = 'image-wrapper';
+        img.parentNode.insertBefore(wrapper, img);
+        wrapper.appendChild(img);
     }
+    
+    wrapper.classList.remove('loading');
+    
+    // Determine error message based on type and format
+    let errorMessage = 'Failed to load image';
+    let errorDetails = '';
+    
+    if (isHeic) {
+        errorMessage = 'HEIC image format not supported';
+        errorDetails = 'Your browser cannot display HEIC images. Please use the download button to save the image.';
+    } else if (errorType === 'timeout') {
+        errorMessage = 'Image loading timeout';
+        errorDetails = 'The image took too long to load. Check your connection and try again.';
+    } else {
+        errorMessage = 'Failed to load image';
+        errorDetails = 'The image could not be loaded. It may be corrupted or the server is unavailable.';
+    }
+    
+    // Create enhanced error UI with download option
+    wrapper.innerHTML = `
+        <div class="image-error" style="
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border: 2px dashed #dee2e6;
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            transition: all 0.3s ease;
+        ">
+            <div style="
+                background: #ff6b6b;
+                color: white;
+                width: 48px;
+                height: 48px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.5rem;
+                margin-bottom: 0.5rem;
+            ">⚠️</div>
+            
+            <div style="color: #495057; font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem;">
+                ${errorMessage}
+            </div>
+            
+            ${errorDetails ? `<div style="color: #6c757d; font-size: 0.9rem; margin-bottom: 1rem; max-width: 300px; line-height: 1.4;">
+                ${errorDetails}
+            </div>` : ''}
+            
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: center;">
+                <button onclick="retryImageLoad(this)" 
+                        style="
+                            background: #007bff;
+                            color: white;
+                            border: none;
+                            padding: 0.75rem 1.5rem;
+                            border-radius: 8px;
+                            font-size: 0.9rem;
+                            font-weight: 500;
+                            cursor: pointer;
+                            transition: all 0.2s ease;
+                            display: flex;
+                            align-items: center;
+                            gap: 0.5rem;
+                        "
+                        onmouseover="this.style.background='#0056b3'; this.style.transform='translateY(-1px)'"
+                        onmouseout="this.style.background='#007bff'; this.style.transform='translateY(0)'">
+                    🔄 Retry
+                </button>
+                
+                <button onclick="downloadImage('${originalUrl}')" 
+                        style="
+                            background: #28a745;
+                            color: white;
+                            border: none;
+                            padding: 0.75rem 1.5rem;
+                            border-radius: 8px;
+                            font-size: 0.9rem;
+                            font-weight: 500;
+                            cursor: pointer;
+                            transition: all 0.2s ease;
+                            display: flex;
+                            align-items: center;
+                            gap: 0.5rem;
+                        "
+                        onmouseover="this.style.background='#1e7e34'; this.style.transform='translateY(-1px)'"
+                        onmouseout="this.style.background='#28a745'; this.style.transform='translateY(0)'">
+                    📥 Download
+                </button>
+                
+                <button onclick="openImageInNewTab('${originalUrl}')" 
+                        style="
+                            background: #6c757d;
+                            color: white;
+                            border: none;
+                            padding: 0.75rem 1.5rem;
+                            border-radius: 8px;
+                            font-size: 0.9rem;
+                            font-weight: 500;
+                            cursor: pointer;
+                            transition: all 0.2s ease;
+                            display: flex;
+                            align-items: center;
+                            gap: 0.5rem;
+                        "
+                        onmouseover="this.style.background='#545b62'; this.style.transform='translateY(-1px)'"
+                        onmouseout="this.style.background='#6c757d'; this.style.transform='translateY(0)'">
+                    🔗 Open Link
+                </button>
+            </div>
+            
+            ${isHeic ? `<div style="
+                background: #fff3cd;
+                border: 1px solid #ffeaa7;
+                color: #856404;
+                padding: 0.75rem;
+                border-radius: 6px;
+                font-size: 0.85rem;
+                margin-top: 1rem;
+                max-width: 400px;
+            ">
+                💡 <strong>Tip:</strong> HEIC is Apple's image format. For better compatibility, consider converting to JPG or PNG.
+            </div>` : ''}
+        </div>
+    `;
+}
+
+/**
+ * Downloads an image from the given URL
+ * @param {string} imageUrl - The image URL to download
+ */
+function downloadImage(imageUrl) {
+    try {
+        // Create a temporary anchor element for download
+        const link = document.createElement('a');
+        link.href = imageUrl;
+        link.download = getFilenameFromUrl(imageUrl) || 'image';
+        link.target = '_blank';
+        
+        // Append to body temporarily
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Show success message
+        showDownloadToast('Download started successfully!', 'success');
+    } catch (error) {
+        console.error('Error downloading image:', error);
+        showDownloadToast('Download failed. Please try opening the link manually.', 'error');
+        
+        // Fallback: open in new tab
+        openImageInNewTab(imageUrl);
+    }
+}
+
+/**
+ * Opens image in a new tab
+ * @param {string} imageUrl - The image URL to open
+ */
+function openImageInNewTab(imageUrl) {
+    try {
+        window.open(imageUrl, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+        console.error('Error opening image:', error);
+        showDownloadToast('Failed to open image. Please check the URL.', 'error');
+    }
+}
+
+/**
+ * Extracts filename from URL
+ * @param {string} url - The URL to extract filename from
+ * @returns {string} - The extracted filename
+ */
+function getFilenameFromUrl(url) {
+    try {
+        const urlObj = new URL(url);
+        const pathname = urlObj.pathname;
+        const filename = pathname.split('/').pop();
+        return filename || 'image';
+    } catch (error) {
+        return 'image';
+    }
+}
+
+/**
+ * Shows a toast message for download operations
+ * @param {string} message - The message to show
+ * @param {string} type - The type of message (success, error, info)
+ */
+function showDownloadToast(message, type = 'info') {
+    // Remove existing toast
+    const existingToast = document.querySelector('.download-toast');
+    if (existingToast) {
+        existingToast.remove();
+    }
+    
+    const toast = document.createElement('div');
+    toast.className = 'download-toast';
+    
+    const bgColor = type === 'success' ? '#28a745' : 
+                   type === 'error' ? '#dc3545' : '#007bff';
+    
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${bgColor};
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        z-index: 10000;
+        opacity: 0;
+        transform: translateX(100%);
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        max-width: 300px;
+    `;
+    
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    // Animate in
+    requestAnimationFrame(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateX(0)';
+    });
+    
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 300);
+    }, 3000);
 }
 
 /**
@@ -440,17 +423,75 @@ function retryImageLoad(button) {
     const wrapper = button.closest('.image-wrapper') || button.closest('.image-container');
     if (!wrapper) return;
     
-    const img = wrapper.querySelector('img');
-    if (!img || !img.dataset.src) return;
+    // Find the original img element data
+    const errorDiv = wrapper.querySelector('.image-error');
+    if (!errorDiv) return;
     
-    // Reset wrapper
+    // Get the original data from the error message or try to find it in the DOM
+    let originalSrc = '';
+    let originalAlt = '';
+    
+    // Try to extract URL from download button
+    const downloadBtn = errorDiv.querySelector('button[onclick*="downloadImage"]');
+    if (downloadBtn) {
+        const onclick = downloadBtn.getAttribute('onclick');
+        const match = onclick.match(/downloadImage\('([^']+)'\)/);
+        if (match) {
+            originalSrc = match[1];
+        }
+    }
+    
+    if (!originalSrc) {
+        console.error('Could not find original image source for retry');
+        return;
+    }
+    
+    // Reset wrapper and create new img element
     wrapper.classList.remove('loaded');
     wrapper.classList.add('loading');
     wrapper.innerHTML = '<img src="" alt="" class="opacity-0 transition-all duration-300">';
     
     const newImg = wrapper.querySelector('img');
-    newImg.dataset.src = img.dataset.src;
-    newImg.alt = img.alt;
+    newImg.dataset.src = originalSrc;
+    newImg.alt = originalAlt;
+    
+    // Add loading indicator
+    wrapper.insertAdjacentHTML('beforeend', `
+        <div class="loading-overlay" style="
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+        ">
+            <div style="
+                width: 40px;
+                height: 40px;
+                border: 3px solid #f3f3f3;
+                border-top: 3px solid #007bff;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+            "></div>
+        </div>
+    `);
+    
+    // Add CSS animation if not already present
+    if (!document.querySelector('#spin-animation')) {
+        const style = document.createElement('style');
+        style.id = 'spin-animation';
+        style.textContent = `
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+        `;
+        document.head.appendChild(style);
+    }
     
     loadImageWithAnimation(newImg);
 }
@@ -526,122 +567,17 @@ function preloadCriticalImages(imageSources) {
     });
 }
 
-/**
- * Copy text to clipboard with fallback support
- * @param {string} text - Text to copy
- */
-function copyToClipboard(text) {
-    // Try modern clipboard API first
-    if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(text)
-            .then(() => {
-                showCopyFeedback('URL copied to clipboard! You can use online HEIC converters.');
-            })
-            .catch(err => {
-                console.error('Clipboard API failed:', err);
-                fallbackCopyToClipboard(text);
-            });
-    } else {
-        // Fallback for older browsers or non-secure contexts
-        fallbackCopyToClipboard(text);
-    }
-}
-
-/**
- * Fallback method to copy text to clipboard
- * @param {string} text - Text to copy
- */
-function fallbackCopyToClipboard(text) {
-    try {
-        const textarea = document.createElement('textarea');
-        textarea.value = text;
-        textarea.style.position = 'fixed';
-        textarea.style.top = '0';
-        textarea.style.left = '0';
-        textarea.style.width = '2em';
-        textarea.style.height = '2em';
-        textarea.style.padding = '0';
-        textarea.style.border = 'none';
-        textarea.style.outline = 'none';
-        textarea.style.boxShadow = 'none';
-        textarea.style.background = 'transparent';
-        
-        document.body.appendChild(textarea);
-        textarea.focus();
-        textarea.select();
-        
-        const successful = document.execCommand('copy');
-        document.body.removeChild(textarea);
-        
-        if (successful) {
-            showCopyFeedback('URL copied to clipboard! You can use online HEIC converters.');
-        } else {
-            showCopyFeedback('Copy failed. Please manually copy the URL from technical details.', 'error');
-        }
-    } catch (err) {
-        console.error('Fallback copy failed:', err);
-        showCopyFeedback('Copy failed. Please manually copy the URL from technical details.', 'error');
-    }
-}
-
-/**
- * Show feedback for copy operation
- * @param {string} message - Message to show
- * @param {string} type - Type of message ('success' or 'error')
- */
-function showCopyFeedback(message, type = 'success') {
-    // Remove existing feedback
-    const existingFeedback = document.querySelector('.copy-feedback');
-    if (existingFeedback) {
-        existingFeedback.remove();
-    }
-    
-    // Create feedback element
-    const feedback = document.createElement('div');
-    feedback.className = `copy-feedback fixed top-4 right-4 p-3 rounded-lg shadow-lg z-50 text-sm font-medium transition-all duration-300 ${
-        type === 'success' 
-            ? 'bg-green-100 text-green-800 border border-green-200' 
-            : 'bg-red-100 text-red-800 border border-red-200'
-    }`;
-    feedback.innerHTML = `
-        <div class="flex items-center">
-            <span class="mr-2">${type === 'success' ? '✓' : '✗'}</span>
-            ${message}
-        </div>
-    `;
-    
-    document.body.appendChild(feedback);
-    
-    // Animate in
-    setTimeout(() => {
-        feedback.style.transform = 'translateX(0)';
-        feedback.style.opacity = '1';
-    }, 10);
-    
-    // Remove after 4 seconds
-    setTimeout(() => {
-        feedback.style.transform = 'translateX(100%)';
-        feedback.style.opacity = '0';
-        setTimeout(() => {
-            if (feedback.parentNode) {
-                feedback.remove();
-            }
-        }, 300);
-    }, 4000);
-}
-
 // Make functions globally accessible
 window.retryImageLoad = retryImageLoad;
-window.retryHeicConversion = retryHeicConversion;
-window.copyToClipboard = copyToClipboard;
+window.downloadImage = downloadImage;
+window.openImageInNewTab = openImageInNewTab;
 
 // Export functions and objects
 export {
     imageObserver,
+    initImageObserver,
     loadImageWithAnimation as loadImage,
     compressImage,
     preloadCriticalImages,
-    supportsWebP,
-    convertHeicToJpeg,
-    isHeicFormat
+    supportsWebP
 }; 

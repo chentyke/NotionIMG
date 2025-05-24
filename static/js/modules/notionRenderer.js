@@ -1,6 +1,6 @@
 // Notion page rendering functionality
 import { updateLoadingProgress } from './loader.js';
-import { imageObserver } from './imageHandler.js';
+import { imageObserver, initImageObserver } from './imageHandler.js';
 import { processRichText, generateHeadingId, updatePageTitle } from './utils.js';
 import { codeHighlighter, CodeHighlighter } from './codeHighlight.js';
 import { 
@@ -136,8 +136,8 @@ function getNotionColorStyle(color) {
 
 // Text and heading renderers
 async function renderParagraph(block, blockColorStyle) {
-    const paragraphText = block.text || '';
-    return `<p ${blockColorStyle ? `style="${blockColorStyle}"` : ''}>${paragraphText}</p>`;
+            const paragraphText = block.text || '';
+            return `<p ${blockColorStyle ? `style="${blockColorStyle}"` : ''}>${paragraphText}</p>`;
 }
 
 async function renderHeading(block, level, blockColorStyle) {
@@ -150,441 +150,441 @@ async function renderHeading(block, level, blockColorStyle) {
 async function renderListItem(block, blockColorStyle) {
     const text = block.text || '';
     let listItemContent = `<li ${blockColorStyle ? `style="${blockColorStyle}"` : ''}>${text}`;
-    
-    // Handle nested children if present
-    if (block.children && block.children.length > 0) {
-        try {
-            // Group nested list items by type
-            let nestedLists = '';
-            let currentNestedList = null;
             
-            for (const child of block.children) {
-                if (child.type === 'bulleted_list_item' || child.type === 'numbered_list_item') {
-                    const nestedListTag = child.type === 'bulleted_list_item' ? 'ul' : 'ol';
+            // Handle nested children if present
+            if (block.children && block.children.length > 0) {
+                try {
+                    // Group nested list items by type
+                    let nestedLists = '';
+                    let currentNestedList = null;
                     
-                    // Start a new nested list if needed
-                    if (!currentNestedList || currentNestedList.tag !== nestedListTag) {
-                        // Close previous nested list if exists
-                        if (currentNestedList) {
-                            nestedLists += `</${currentNestedList.tag}>`;
+                    for (const child of block.children) {
+                        if (child.type === 'bulleted_list_item' || child.type === 'numbered_list_item') {
+                            const nestedListTag = child.type === 'bulleted_list_item' ? 'ul' : 'ol';
+                            
+                            // Start a new nested list if needed
+                            if (!currentNestedList || currentNestedList.tag !== nestedListTag) {
+                                // Close previous nested list if exists
+                                if (currentNestedList) {
+                                    nestedLists += `</${currentNestedList.tag}>`;
+                                }
+                                
+                                // Start new nested list
+                                nestedLists += `<${nestedListTag} class="my-2 ${nestedListTag === 'ul' ? 'list-disc' : 'list-decimal'} ml-6">`;
+                                currentNestedList = { tag: nestedListTag };
+                            }
+                            
+                            // Render the nested list item
+                            nestedLists += await renderBlock(child);
+                        } else {
+                            // For non-list items, close any open nested list and render the item
+                            if (currentNestedList) {
+                                nestedLists += `</${currentNestedList.tag}>`;
+                                currentNestedList = null;
+                            }
+                            nestedLists += await renderBlock(child);
                         }
-                        
-                        // Start new nested list
-                        nestedLists += `<${nestedListTag} class="my-2 ${nestedListTag === 'ul' ? 'list-disc' : 'list-decimal'} ml-6">`;
-                        currentNestedList = { tag: nestedListTag };
                     }
                     
-                    // Render the nested list item
-                    nestedLists += await renderBlock(child);
-                } else {
-                    // For non-list items, close any open nested list and render the item
+                    // Close any remaining open nested list
                     if (currentNestedList) {
                         nestedLists += `</${currentNestedList.tag}>`;
-                        currentNestedList = null;
                     }
-                    nestedLists += await renderBlock(child);
+                    
+                    listItemContent += nestedLists;
+                } catch (error) {
+                    console.error('Error rendering nested list items:', error);
                 }
             }
             
-            // Close any remaining open nested list
-            if (currentNestedList) {
-                nestedLists += `</${currentNestedList.tag}>`;
-            }
-            
-            listItemContent += nestedLists;
-        } catch (error) {
-            console.error('Error rendering nested list items:', error);
-        }
-    }
-    
-    listItemContent += '</li>';
-    return listItemContent;
+            listItemContent += '</li>';
+            return listItemContent;
 }
 
 // Todo item renderer
 async function renderTodoItem(block, blockColorStyle) {
     try {
-        const todoText = block.text || 'Untitled todo item';
-        const isChecked = block.checked || false;
-        const color = block.color || 'default';
-        
-        return `
-            <div class="todo-item">
-                <input type="checkbox" ${isChecked ? 'checked' : ''} disabled 
-                    class="todo-checkbox">
-                <span class="todo-text ${isChecked ? 'completed' : ''}" 
-                    ${color !== 'default' ? 
-                        `style="${getNotionColorStyle(color)}"` : ''}>
-                    ${todoText}
-                </span>
-            </div>`;
-    } catch (error) {
-        console.error('Error rendering todo item:', error);
-        return '<div class="text-red-500">Error rendering todo item</div>';
+                const todoText = block.text || 'Untitled todo item';
+                const isChecked = block.checked || false;
+                const color = block.color || 'default';
+                
+                return `
+                    <div class="todo-item">
+                        <input type="checkbox" ${isChecked ? 'checked' : ''} disabled 
+                            class="todo-checkbox">
+                        <span class="todo-text ${isChecked ? 'completed' : ''}" 
+                            ${color !== 'default' ? 
+                                `style="${getNotionColorStyle(color)}"` : ''}>
+                            ${todoText}
+                        </span>
+                    </div>`;
+            } catch (error) {
+                console.error('Error rendering todo item:', error);
+                return '<div class="text-red-500">Error rendering todo item</div>';
     }
-}
-
+            }
+        
 // Image renderer
 async function renderImage(block) {
-    try {
-        let imgSrc = '';
-        
-        // Handle different image data structures
-        if (block.image_url) {
-            imgSrc = block.image_url;
-        } else if (block.image?.type === 'external') {
-            imgSrc = block.image.external.url;
-        } else if (block.image?.type === 'file') {
-            imgSrc = block.image.file.url;
-        }
-        
-        if (!imgSrc) return '';
-        
+            try {
+                let imgSrc = '';
+                
+                // Handle different image data structures
+                if (block.image_url) {
+                    imgSrc = block.image_url;
+                } else if (block.image?.type === 'external') {
+                    imgSrc = block.image.external.url;
+                } else if (block.image?.type === 'file') {
+                    imgSrc = block.image.file.url;
+                }
+                
+                if (!imgSrc) return '';
+                
         // Get caption if available
-        let caption = '';
-        if (block.caption) {
-            caption = block.caption;
-        } else if (block.image?.caption) {
-            caption = processRichText(block.image.caption);
-        }
-        
-        return `
-            <figure class="image-container my-4">
-                <div class="image-wrapper loading">
-                    <img src="" data-src="${imgSrc}" alt="${caption}" 
-                        class="rounded-lg shadow-md opacity-0 transition-all duration-300 ease-out"
-                        onclick="openImageModal('${imgSrc}')" loading="lazy">
-                </div>
-                ${caption ? `<figcaption class="text-center text-sm text-gray-500 mt-2">${caption}</figcaption>` : ''}
-            </figure>`;
-    } catch (error) {
-        console.error('Error rendering image:', error);
-        return '<div class="text-red-500">Error rendering image</div>';
-    }
+                let caption = '';
+                if (block.caption) {
+                    caption = block.caption;
+                } else if (block.image?.caption) {
+                    caption = processRichText(block.image.caption);
+                }
+                
+                return `
+                    <figure class="image-container my-4">
+                        <div class="image-wrapper loading">
+                            <img src="" data-src="${imgSrc}" alt="${caption}" 
+                                class="rounded-lg shadow-md opacity-0 transition-all duration-300 ease-out"
+                                onclick="openImageModal('${imgSrc}')" loading="lazy">
+                        </div>
+                        ${caption ? `<figcaption class="text-center text-sm text-gray-500 mt-2">${caption}</figcaption>` : ''}
+                    </figure>`;
+            } catch (error) {
+                console.error('Error rendering image:', error);
+                return '<div class="text-red-500">Error rendering image</div>';
+            }
 }
 
 // Quote renderer
 async function renderQuote(block, blockColorStyle) {
-    const quoteText = block.text || '';
-    let quoteChildren = '';
-    
-    // Process children if present
-    if (block.children && block.children.length > 0) {
-        try {
-            const childBlocks = await Promise.all(block.children.map(async child => {
-                return await renderBlock(child);
-            }));
-            quoteChildren = childBlocks.join('');
-        } catch (error) {
-            console.error(`Error processing quote children: ${error}`);
-        }
-    }
-    
-    return `
-        <blockquote class="border-l-4 pl-4 italic my-4" ${blockColorStyle ? `style="${blockColorStyle}"` : ''}>
-            ${quoteText}
-            ${quoteChildren}
-        </blockquote>`;
+            const quoteText = block.text || '';
+            let quoteChildren = '';
+            
+            // Process children if present
+            if (block.children && block.children.length > 0) {
+                try {
+                    const childBlocks = await Promise.all(block.children.map(async child => {
+                        return await renderBlock(child);
+                    }));
+                    quoteChildren = childBlocks.join('');
+                } catch (error) {
+                    console.error(`Error processing quote children: ${error}`);
+                }
+            }
+            
+            return `
+                <blockquote class="border-l-4 pl-4 italic my-4" ${blockColorStyle ? `style="${blockColorStyle}"` : ''}>
+                    ${quoteText}
+                    ${quoteChildren}
+                </blockquote>`;
 }
-
+        
 // Code block renderer
 async function renderCodeBlock(block, blockColorStyle) {
-    try {
-        const codeText = block.rich_text 
-            ? block.rich_text.map(text => text.plain_text).join('')
-            : block.text || '';
-        const language = block.language || 'plain text';
-        const codeId = `code-${Math.random().toString(36).substr(2, 9)}`;
-        
-        const hljsLanguage = CodeHighlighter.getLanguageClass(language);
-        const codeContainerStyle = blockColorStyle ? ` style="${blockColorStyle}"` : '';
-        
-        return `
-            <div class="code-block"${codeContainerStyle}>
-                <div class="code-header">
-                    <span class="code-language">${language}</span>
-                    <button onclick="copyCode(this)" data-code-id="${codeId}" class="copy-code-btn">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                  d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
-                        </svg>
-                        Copy
-                    </button>
-                </div>
-                <pre><code id="${codeId}" class="language-${hljsLanguage}">${codeText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>
-            </div>`;
-    } catch (error) {
-        console.error('Error rendering code block:', error);
-        return '<div class="text-red-500">Error rendering code block</div>';
+            try {
+                const codeText = block.rich_text 
+                    ? block.rich_text.map(text => text.plain_text).join('')
+                    : block.text || '';
+                const language = block.language || 'plain text';
+                const codeId = `code-${Math.random().toString(36).substr(2, 9)}`;
+                
+                const hljsLanguage = CodeHighlighter.getLanguageClass(language);
+                const codeContainerStyle = blockColorStyle ? ` style="${blockColorStyle}"` : '';
+                
+                return `
+                    <div class="code-block"${codeContainerStyle}>
+                        <div class="code-header">
+                            <span class="code-language">${language}</span>
+                            <button onclick="copyCode(this)" data-code-id="${codeId}" class="copy-code-btn">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                          d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                                </svg>
+                                Copy
+                            </button>
+                        </div>
+                        <pre><code id="${codeId}" class="language-${hljsLanguage}">${codeText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>
+                    </div>`;
+            } catch (error) {
+                console.error('Error rendering code block:', error);
+                return '<div class="text-red-500">Error rendering code block</div>';
     }
-}
-
+            }
+        
 // Bookmark renderer
 async function renderBookmark(block) {
-    const bookmarkData = block.bookmark;
-    if (!bookmarkData || !bookmarkData.url) return '';
-    
-    return `
-        <div class="bookmark-block border rounded-lg overflow-hidden my-4 hover:bg-gray-50 transition-colors">
-            <a href="${bookmarkData.url}" target="_blank" rel="noopener noreferrer" 
-               class="block p-4 text-blue-600 hover:text-blue-700">
-                <div class="flex items-center gap-3">
-                    <i class="fas fa-link text-gray-400"></i>
-                    <div class="flex-1 min-w-0">
-                        <div class="text-base font-medium truncate">${bookmarkData.url}</div>
-                        ${bookmarkData.caption ? 
-                            `<div class="text-sm text-gray-500 mt-1 truncate">${bookmarkData.caption}</div>` 
-                            : ''}
-                    </div>
-                    <i class="fas fa-external-link-alt text-gray-400"></i>
-                </div>
-            </a>
-        </div>`;
+            const bookmarkData = block.bookmark;
+            if (!bookmarkData || !bookmarkData.url) return '';
+            
+            return `
+                <div class="bookmark-block border rounded-lg overflow-hidden my-4 hover:bg-gray-50 transition-colors">
+                    <a href="${bookmarkData.url}" target="_blank" rel="noopener noreferrer" 
+                       class="block p-4 text-blue-600 hover:text-blue-700">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-link text-gray-400"></i>
+                            <div class="flex-1 min-w-0">
+                                <div class="text-base font-medium truncate">${bookmarkData.url}</div>
+                                ${bookmarkData.caption ? 
+                                    `<div class="text-sm text-gray-500 mt-1 truncate">${bookmarkData.caption}</div>` 
+                                    : ''}
+                            </div>
+                            <i class="fas fa-external-link-alt text-gray-400"></i>
+                        </div>
+                    </a>
+                </div>`;
 }
-
+                
 // Child page renderer
 async function renderChildPage(block) {
-    return `<div class="border rounded-lg p-4 my-4 hover:bg-gray-50" 
-        onclick="loadChildPage('${block.page_id}', '${block.title}')"
-        style="cursor: pointer;">
-        <div class="flex items-center text-blue-600">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
-                </path>
-            </svg>
-            ${block.title}
-        </div>
-    </div>`;
+            return `<div class="border rounded-lg p-4 my-4 hover:bg-gray-50" 
+                onclick="loadChildPage('${block.page_id}', '${block.title}')"
+                style="cursor: pointer;">
+                <div class="flex items-center text-blue-600">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                        </path>
+                    </svg>
+                    ${block.title}
+                </div>
+            </div>`;
 }
-
+        
 // Toggle block renderer
 async function renderToggle(block, blockColorStyle) {
-    const toggleId = `toggle-${Math.random().toString(36).substr(2, 9)}`;
-    let toggleContent = '';
-    
-    // Recursively render nested blocks
-    if (block.children && block.children.length > 0) {
-        const nestedContent = await Promise.all(block.children.map(async child => {
-            // Handle nested lists
-            if (child.type === 'bulleted_list_item' || child.type === 'numbered_list_item') {
-                const listType = child.type === 'bulleted_list_item' ? 'ul' : 'ol';
-                return `<${listType}>${await renderBlock(child)}</${listType}>`;
-            }
-            return await renderBlock(child);
-        }));
-        toggleContent = nestedContent.join('');
-    }
-
-    return `
-        <div class="toggle-block" id="${toggleId}">
-            <div class="toggle-header" onclick="toggleBlock('${toggleId}')" ${blockColorStyle ? `style="${blockColorStyle}"` : ''}>
-                <svg class="toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5l7 7-7 7"></path>
-                </svg>
-                <div class="toggle-text">${block.text || ''}</div>
-            </div>
-            <div class="toggle-content">
-                <div class="toggle-content-inner prose">
-                    ${toggleContent}
-                </div>
-            </div>
-        </div>`;
-}
-
-// Column list and layout renderers
-async function renderColumnList(block) {
-    if (block.columns && block.columns.length > 0) {
-        const columnsHtml = await Promise.all(block.columns.map(async (column, index) => {
-            if (column.children && column.children.length > 0) {
-                const columnContent = await Promise.all(column.children.map(async child => {
+            const toggleId = `toggle-${Math.random().toString(36).substr(2, 9)}`;
+            let toggleContent = '';
+            
+            // Recursively render nested blocks
+            if (block.children && block.children.length > 0) {
+                const nestedContent = await Promise.all(block.children.map(async child => {
+                    // Handle nested lists
+                    if (child.type === 'bulleted_list_item' || child.type === 'numbered_list_item') {
+                        const listType = child.type === 'bulleted_list_item' ? 'ul' : 'ol';
+                        return `<${listType}>${await renderBlock(child)}</${listType}>`;
+                    }
                     return await renderBlock(child);
                 }));
-                return `<div class="column flex-1">${columnContent.join('')}</div>`;
+                toggleContent = nestedContent.join('');
             }
-            return '<div class="column flex-1"></div>';
-        }));
+
+            return `
+                <div class="toggle-block" id="${toggleId}">
+                    <div class="toggle-header" onclick="toggleBlock('${toggleId}')" ${blockColorStyle ? `style="${blockColorStyle}"` : ''}>
+                        <svg class="toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                        <div class="toggle-text">${block.text || ''}</div>
+                    </div>
+                    <div class="toggle-content">
+                        <div class="toggle-content-inner prose">
+                            ${toggleContent}
+                        </div>
+                    </div>
+                </div>`;
+}
         
-        return `
-            <div class="column-list flex gap-4 my-4">
-                ${columnsHtml.join('')}
-            </div>`;
-    }
-    return '';
+// Column list and layout renderers
+async function renderColumnList(block) {
+            if (block.columns && block.columns.length > 0) {
+                const columnsHtml = await Promise.all(block.columns.map(async (column, index) => {
+                    if (column.children && column.children.length > 0) {
+                        const columnContent = await Promise.all(column.children.map(async child => {
+                            return await renderBlock(child);
+                        }));
+                        return `<div class="column flex-1">${columnContent.join('')}</div>`;
+                    }
+                    return '<div class="column flex-1"></div>';
+                }));
+                
+                return `
+                    <div class="column-list flex gap-4 my-4">
+                        ${columnsHtml.join('')}
+                    </div>`;
+            }
+            return '';
 }
-
+            
 async function renderColumn(block) {
-    if (block.children && block.children.length > 0) {
-        const content = await Promise.all(block.children.map(async child => {
-            return await renderBlock(child);
-        }));
-        return content.join('');
-    }
-    return '';
+            if (block.children && block.children.length > 0) {
+                const content = await Promise.all(block.children.map(async child => {
+                    return await renderBlock(child);
+                }));
+                return content.join('');
+            }
+            return '';
 }
-
+            
 // Table renderer
 async function renderTable(block) {
-    if (block.rows && block.rows.length > 0) {
-        const hasColumnHeader = block.has_column_header || false;
-        const hasRowHeader = block.has_row_header || false;
-        
-        let tableHtml = '<table class="table-auto w-full border-collapse border border-gray-300 my-4">';
-        
-        block.rows.forEach((row, rowIndex) => {
-            const isHeaderRow = hasColumnHeader && rowIndex === 0;
-            const tag = isHeaderRow ? 'th' : 'td';
-            const rowClass = isHeaderRow ? 'bg-gray-100 font-semibold' : '';
-            
-            tableHtml += `<tr class="${rowClass}">`;
-            
-            if (row.cells && row.cells.length > 0) {
-                row.cells.forEach((cell, cellIndex) => {
-                    const isHeaderCell = hasRowHeader && cellIndex === 0 && !isHeaderRow;
-                    const cellTag = isHeaderCell ? 'th' : tag;
-                    const cellClass = isHeaderCell ? 'bg-gray-50 font-semibold' : '';
+            if (block.rows && block.rows.length > 0) {
+                const hasColumnHeader = block.has_column_header || false;
+                const hasRowHeader = block.has_row_header || false;
+                
+                let tableHtml = '<table class="table-auto w-full border-collapse border border-gray-300 my-4">';
+                
+                block.rows.forEach((row, rowIndex) => {
+                    const isHeaderRow = hasColumnHeader && rowIndex === 0;
+                    const tag = isHeaderRow ? 'th' : 'td';
+                    const rowClass = isHeaderRow ? 'bg-gray-100 font-semibold' : '';
                     
-                    // Process rich text in cell
-                    let cellContent = '';
-                    if (Array.isArray(cell)) {
-                        cellContent = processRichText(cell);
-                    } else if (typeof cell === 'string') {
-                        cellContent = cell;
+                    tableHtml += `<tr class="${rowClass}">`;
+                    
+                    if (row.cells && row.cells.length > 0) {
+                        row.cells.forEach((cell, cellIndex) => {
+                            const isHeaderCell = hasRowHeader && cellIndex === 0 && !isHeaderRow;
+                            const cellTag = isHeaderCell ? 'th' : tag;
+                            const cellClass = isHeaderCell ? 'bg-gray-50 font-semibold' : '';
+                            
+                            // Process rich text in cell
+                            let cellContent = '';
+                            if (Array.isArray(cell)) {
+                                cellContent = processRichText(cell);
+                            } else if (typeof cell === 'string') {
+                                cellContent = cell;
+                            }
+                            
+                            tableHtml += `<${cellTag} class="border border-gray-300 px-3 py-2 ${cellClass}">${cellContent}</${cellTag}>`;
+                        });
                     }
                     
-                    tableHtml += `<${cellTag} class="border border-gray-300 px-3 py-2 ${cellClass}">${cellContent}</${cellTag}>`;
+                    tableHtml += '</tr>';
                 });
+                
+                tableHtml += '</table>';
+                return tableHtml;
             }
-            
-            tableHtml += '</tr>';
-        });
-        
-        tableHtml += '</table>';
-        return tableHtml;
-    }
-    return '';
+            return '';
 }
-
+            
 // Callout renderer
 async function renderCallout(block) {
-    const calloutContent = block.text || '';
-    
-    let icon = '💡';
-    if (block.callout?.icon) {
-        if (block.callout.icon.type === 'emoji') {
-            icon = block.callout.icon.emoji;
-        } else if (block.callout.icon.type === 'external') {
-            icon = `<img src="${block.callout.icon.external.url}" alt="icon">`;
-        } else if (block.callout.icon.type === 'file') {
-            icon = `<img src="${block.callout.icon.file.url}" alt="icon">`;
-        }
-    }
-    
-    // Determine callout color class
-    let colorClass = '';
-    if (block.color && block.color !== 'default') {
-        colorClass = ` callout-${block.color}`;
-    }
-    
-    return `
-        <div class="callout${colorClass}">
-            <div class="callout-icon">${icon}</div>
-            <div class="callout-content">${calloutContent}</div>
-        </div>`;
-}
-
-// Media renderers
-async function renderEmbed(block) {
-    if (block.embed?.url) {
-        return `
-            <div class="embed-block my-4">
-                <iframe src="${block.embed.url}" 
-                        class="w-full h-96 border rounded-lg"
-                        frameborder="0" 
-                        allowfullscreen>
-                </iframe>
-                ${block.embed.caption ? 
-                    `<div class="text-center text-sm text-gray-500 mt-2">${block.embed.caption}</div>` 
-                    : ''}
-            </div>`;
-    }
-    return '';
-}
-
-async function renderVideo(block) {
-    if (block.video?.url) {
-        const videoUrl = block.video.url;
-        
-        // Check if it's a YouTube video
-        if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
-            let embedUrl = videoUrl;
-            if (videoUrl.includes('watch?v=')) {
-                const videoId = videoUrl.split('watch?v=')[1]?.split('&')[0];
-                embedUrl = `https://www.youtube.com/embed/${videoId}`;
-            } else if (videoUrl.includes('youtu.be/')) {
-                const videoId = videoUrl.split('youtu.be/')[1]?.split('?')[0];
-                embedUrl = `https://www.youtube.com/embed/${videoId}`;
+            const calloutContent = block.text || '';
+            
+            let icon = '💡';
+            if (block.callout?.icon) {
+                if (block.callout.icon.type === 'emoji') {
+                    icon = block.callout.icon.emoji;
+                } else if (block.callout.icon.type === 'external') {
+                    icon = `<img src="${block.callout.icon.external.url}" alt="icon">`;
+                } else if (block.callout.icon.type === 'file') {
+                    icon = `<img src="${block.callout.icon.file.url}" alt="icon">`;
+                }
+            }
+            
+            // Determine callout color class
+            let colorClass = '';
+            if (block.color && block.color !== 'default') {
+                colorClass = ` callout-${block.color}`;
             }
             
             return `
-                <div class="video-block my-4">
-                    <iframe src="${embedUrl}" 
-                            class="w-full h-96 rounded-lg"
-                            frameborder="0" 
-                            allowfullscreen>
-                    </iframe>
-                    ${block.video.caption ? 
-                        `<div class="text-center text-sm text-gray-500 mt-2">${block.video.caption}</div>` 
-                        : ''}
+                <div class="callout${colorClass}">
+                    <div class="callout-icon">${icon}</div>
+                    <div class="callout-content">${calloutContent}</div>
                 </div>`;
-        } else {
-            // Regular video file
-            return `
-                <div class="video-block my-4">
-                    <video controls class="w-full rounded-lg">
-                        <source src="${videoUrl}" type="video/mp4">
-                        Your browser does not support the video tag.
-                    </video>
-                    ${block.video.caption ? 
-                        `<div class="text-center text-sm text-gray-500 mt-2">${block.video.caption}</div>` 
-                        : ''}
-                </div>`;
-        }
-    }
-    return '';
 }
-
-async function renderEquation(block) {
-    if (block.equation?.expression) {
-        return `
-            <div class="equation-block my-4 text-center">
-                <div class="bg-gray-50 p-4 rounded-lg inline-block">
-                    <code class="text-lg">${block.equation.expression}</code>
-                </div>
-            </div>`;
-    }
-    return '';
-}
-
-async function renderFile(block) {
-    if (block.file?.url) {
-        const fileName = block.file.name || 'Download File';
-        return `
-            <div class="file-block border rounded-lg p-4 my-4 hover:bg-gray-50 transition-colors">
-                <a href="${block.file.url}" target="_blank" rel="noopener noreferrer" 
-                   class="flex items-center gap-3 text-blue-600 hover:text-blue-700">
-                    <i class="fas fa-file text-2xl"></i>
-                    <div class="flex-1">
-                        <div class="font-medium">${fileName}</div>
-                        ${block.file.caption ? 
-                            `<div class="text-sm text-gray-500">${block.file.caption}</div>` 
+                
+// Media renderers
+async function renderEmbed(block) {
+            if (block.embed?.url) {
+                return `
+                    <div class="embed-block my-4">
+                        <iframe src="${block.embed.url}" 
+                                class="w-full h-96 border rounded-lg"
+                                frameborder="0" 
+                                allowfullscreen>
+                        </iframe>
+                        ${block.embed.caption ? 
+                            `<div class="text-center text-sm text-gray-500 mt-2">${block.embed.caption}</div>` 
                             : ''}
-                    </div>
-                    <i class="fas fa-download"></i>
-                </a>
-            </div>`;
-    }
-    return '';
+                    </div>`;
+            }
+            return '';
+}
+            
+async function renderVideo(block) {
+            if (block.video?.url) {
+                const videoUrl = block.video.url;
+                
+                // Check if it's a YouTube video
+                if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
+                    let embedUrl = videoUrl;
+                    if (videoUrl.includes('watch?v=')) {
+                        const videoId = videoUrl.split('watch?v=')[1]?.split('&')[0];
+                        embedUrl = `https://www.youtube.com/embed/${videoId}`;
+                    } else if (videoUrl.includes('youtu.be/')) {
+                        const videoId = videoUrl.split('youtu.be/')[1]?.split('?')[0];
+                        embedUrl = `https://www.youtube.com/embed/${videoId}`;
+                    }
+                    
+                    return `
+                        <div class="video-block my-4">
+                            <iframe src="${embedUrl}" 
+                                    class="w-full h-96 rounded-lg"
+                                    frameborder="0" 
+                                    allowfullscreen>
+                            </iframe>
+                            ${block.video.caption ? 
+                                `<div class="text-center text-sm text-gray-500 mt-2">${block.video.caption}</div>` 
+                                : ''}
+                        </div>`;
+                } else {
+                    // Regular video file
+                    return `
+                        <div class="video-block my-4">
+                            <video controls class="w-full rounded-lg">
+                                <source src="${videoUrl}" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                            ${block.video.caption ? 
+                                `<div class="text-center text-sm text-gray-500 mt-2">${block.video.caption}</div>` 
+                                : ''}
+                        </div>`;
+                }
+            }
+            return '';
+}
+            
+async function renderEquation(block) {
+            if (block.equation?.expression) {
+                return `
+                    <div class="equation-block my-4 text-center">
+                        <div class="bg-gray-50 p-4 rounded-lg inline-block">
+                            <code class="text-lg">${block.equation.expression}</code>
+                        </div>
+                    </div>`;
+            }
+            return '';
+}
+            
+async function renderFile(block) {
+            if (block.file?.url) {
+                const fileName = block.file.name || 'Download File';
+                return `
+                    <div class="file-block border rounded-lg p-4 my-4 hover:bg-gray-50 transition-colors">
+                        <a href="${block.file.url}" target="_blank" rel="noopener noreferrer" 
+                           class="flex items-center gap-3 text-blue-600 hover:text-blue-700">
+                            <i class="fas fa-file text-2xl"></i>
+                            <div class="flex-1">
+                                <div class="font-medium">${fileName}</div>
+                                ${block.file.caption ? 
+                                    `<div class="text-sm text-gray-500">${block.file.caption}</div>` 
+                                    : ''}
+                            </div>
+                            <i class="fas fa-download"></i>
+                        </a>
+                    </div>`;
+            }
+            return '';
 }
 
 /**
@@ -831,11 +831,7 @@ async function loadPage(pageId = null) {
         
         // Initialize image lazy loading for the initial content
         try {
-            const images = pageContent.querySelectorAll('img[data-src]');
-            images.forEach(img => {
-                imageObserver.observe(img);
-            });
-            console.log(`Initialized lazy loading for ${images.length} images`);
+            initImageObserver();
         } catch (error) {
             console.error('Error initializing image observer:', error);
         }

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片错误处理测试</title>
+    <link rel="stylesheet" href="static/css/main.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+            color: #333;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .test-section {
+            margin: 40px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .test-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #495057;
+        }
+        
+        .test-description {
+            margin-bottom: 20px;
+            color: #6c757d;
+            font-size: 0.95rem;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 16px;
+        }
+        
+        .header h1 {
+            margin: 0 0 10px 0;
+            font-size: 2rem;
+        }
+        
+        .header p {
+            margin: 0;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="header">
+            <h1>图片错误处理测试</h1>
+            <p>测试各种图片加载失败场景的处理</p>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">测试1：无效URL</div>
+            <div class="test-description">
+                这个图片使用一个无效的URL，应该立即显示错误状态并提供重试和下载选项。
+            </div>
+            <figure class="image-container my-4">
+                <div class="image-wrapper">
+                    <img src="" data-src="https://invalid-domain-test-12345.com/nonexistent-image.jpg" 
+                         alt="无效URL测试图片" 
+                         class="rounded-lg shadow-md opacity-0 transition-all duration-300 ease-out"
+                         loading="lazy">
+                </div>
+            </figure>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">测试2：HEIC格式图片</div>
+            <div class="test-description">
+                这个图片是HEIC格式（苹果设备的图片格式），大部分浏览器不支持，应该显示特殊的HEIC错误提示。
+            </div>
+            <figure class="image-container my-4">
+                <div class="image-wrapper">
+                    <img src="" data-src="https://example.com/test-image.heic" 
+                         alt="HEIC格式测试图片" 
+                         class="rounded-lg shadow-md opacity-0 transition-all duration-300 ease-out"
+                         loading="lazy">
+                </div>
+            </figure>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">测试3：实际的HEIC图片（来自Notion）</div>
+            <div class="test-description">
+                这是从控制台错误中提取的实际HEIC图片URL，用于测试真实场景。
+            </div>
+            <figure class="image-container my-4">
+                <div class="image-wrapper">
+                    <img src="" data-src="https://prod-files-secure.s3.us-west-2.amazonaws.com/45e9d135-9939-47d9-9926-65d8fce8f56e/2ee129b1-3306-4f6b-8bcd-ea6bc9b3de66/PhotonCam_20250129_171019.heic" 
+                         alt="真实HEIC图片测试" 
+                         class="rounded-lg shadow-md opacity-0 transition-all duration-300 ease-out"
+                         loading="lazy">
+                </div>
+            </figure>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">测试4：404错误图片</div>
+            <div class="test-description">
+                这个图片URL存在但文件不存在（404错误），测试服务器错误的处理。
+            </div>
+            <figure class="image-container my-4">
+                <div class="image-wrapper">
+                    <img src="" data-src="https://httpbin.org/status/404" 
+                         alt="404错误测试图片" 
+                         class="rounded-lg shadow-md opacity-0 transition-all duration-300 ease-out"
+                         loading="lazy">
+                </div>
+            </figure>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">测试5：正常图片（对照组）</div>
+            <div class="test-description">
+                这是一个正常可以加载的图片，用作对照测试。
+            </div>
+            <figure class="image-container my-4">
+                <div class="image-wrapper">
+                    <img src="" data-src="https://picsum.photos/800/400" 
+                         alt="正常图片测试" 
+                         class="rounded-lg shadow-md opacity-0 transition-all duration-300 ease-out"
+                         loading="lazy">
+                </div>
+            </figure>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">测试说明</div>
+            <div class="test-description">
+                <strong>预期行为：</strong>
+                <ul>
+                    <li>无效URL和404错误应该快速显示错误状态</li>
+                    <li>HEIC图片应该显示特殊的格式不支持提示</li>
+                    <li>所有错误状态都应该提供：重试按钮、下载按钮、打开链接按钮</li>
+                    <li>点击下载按钮应该尝试下载图片或打开新标签页</li>
+                    <li>重试按钮应该重新加载图片</li>
+                    <li>正常图片应该正常加载并显示</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入所需的JavaScript模块 -->
+    <script type="module">
+        import { initImageObserver } from './static/js/modules/imageHandler.js';
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('开始图片错误处理测试...');
+            
+            // 初始化图片观察器
+            try {
+                initImageObserver();
+                console.log('图片观察器初始化成功');
+            } catch (error) {
+                console.error('图片观察器初始化失败:', error);
+            }
+            
+            // 添加一些额外的测试信息
+            console.log('测试页面加载完成。请观察图片加载行为：');
+            console.log('- 无效URL应该立即失败');
+            console.log('- HEIC图片应该显示格式不支持警告');
+            console.log('- 正常图片应该成功加载');
+        });
+        
+        // 测试下载功能的辅助函数
+        window.testDownload = function(url) {
+            console.log('测试下载功能:', url);
+            if (window.downloadImage) {
+                window.downloadImage(url);
+            } else {
+                console.error('downloadImage 函数未找到');
+            }
+        };
+        
+        // 测试打开链接功能的辅助函数
+        window.testOpenLink = function(url) {
+            console.log('测试打开链接功能:', url);
+            if (window.openImageInNewTab) {
+                window.openImageInNewTab(url);
+            } else {
+                console.error('openImageInNewTab 函数未找到');
+            }
+        };
+    </script>
+    
+    <style>
+        /* 添加一些额外的测试样式 */
+        .image-container {
+            border: 2px dashed #dee2e6;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 8px;
+            background: rgba(248, 249, 250, 0.5);
+        }
+        
+        .image-wrapper {
+            border-radius: 6px;
+            overflow: hidden;
+        }
+    </style>
+</body>
+</html> 

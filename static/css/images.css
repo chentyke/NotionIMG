@@ -161,33 +161,97 @@
     }
 }
 
-/* Simplified error state */
+/* Enhanced error state with better styling */
 .image-error {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 2rem;
-    background: #fef2f2;
-    border: 1px solid #fecaca;
-    color: #dc2626;
-    font-size: 0.875rem;
-    border-radius: 0.5rem;
-    text-align: center;
-    min-height: 120px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
 }
 
-.image-error::before {
-    content: '⚠️';
-    font-size: 2rem;
-    margin-bottom: 0.5rem;
+.image-error:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
 }
 
+/* Error button styling */
+.image-error button {
+    position: relative;
+    overflow: hidden;
+    border: none;
+    outline: none;
+    font-family: inherit;
+}
+
+.image-error button::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+    transform: translate(-50%, -50%);
+}
+
+.image-error button:active::before {
+    width: 100px;
+    height: 100px;
+}
+
+/* Loading overlay styling */
+.loading-overlay {
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+}
+
+.loading-overlay > div {
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+/* Download toast improvements */
+.download-toast {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* HEIC specific warning styling */
+.heic-warning {
+    background: linear-gradient(135deg, #fff3cd, #ffeaa7) !important;
+    border: 1px solid #ffeaa7 !important;
+    color: #856404 !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.heic-warning::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    animation: shimmerWarning 2s infinite;
+}
+
+@keyframes shimmerWarning {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+/* Dark theme support for enhanced error states */
 @media (prefers-color-scheme: dark) {
-    .image-error {
-        background: #1f1f1f;
-        border-color: #dc2626;
-        color: #ef4444;
+    .heic-warning {
+        background: linear-gradient(135deg, #3d2914, #4a3619) !important;
+        border-color: #6b4423 !important;
+        color: #fbbf24 !important;
+    }
+    
+    .download-toast {
+        border-color: rgba(0, 0, 0, 0.3);
     }
 }
 
