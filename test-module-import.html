@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>模块导入测试</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .status {
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            font-weight: 500;
+        }
+        .success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+        .loading {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #93c5fd;
+        }
+        pre {
+            background: #f8fafc;
+            padding: 1rem;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>模块导入测试</h1>
+        <p>测试 loader.js 模块的导入是否正常工作</p>
+        
+        <div id="testStatus" class="status loading">
+            正在测试模块导入...
+        </div>
+        
+        <div id="testDetails" style="display: none;">
+            <h3>测试详情</h3>
+            <pre id="testOutput"></pre>
+        </div>
+    </div>
+
+    <script type="module">
+        const testStatus = document.getElementById('testStatus');
+        const testDetails = document.getElementById('testDetails');
+        const testOutput = document.getElementById('testOutput');
+        
+        let outputLines = [];
+        
+        function log(message) {
+            outputLines.push(message);
+            testOutput.textContent = outputLines.join('\n');
+            console.log(message);
+        }
+        
+        async function runTests() {
+            try {
+                log('开始测试模块导入...');
+                
+                // 测试导入 loader.js
+                log('1. 测试导入 loader.js 模块...');
+                const loaderModule = await import('./static/js/modules/loader.js');
+                log('✓ loader.js 模块导入成功');
+                
+                // 检查导出的函数
+                log('2. 检查导出的函数...');
+                const requiredFunctions = [
+                    'updateLoadingProgress',
+                    'showLoadingOverlay', 
+                    'hideLoadingOverlay',
+                    'resetLoadingState'
+                ];
+                
+                for (const funcName of requiredFunctions) {
+                    if (typeof loaderModule[funcName] === 'function') {
+                        log(`✓ ${funcName} 函数存在且类型正确`);
+                    } else {
+                        throw new Error(`${funcName} 函数不存在或类型错误`);
+                    }
+                }
+                
+                // 测试函数调用
+                log('3. 测试函数调用...');
+                loaderModule.updateLoadingProgress(50);
+                log('✓ updateLoadingProgress(50) 调用成功');
+                
+                loaderModule.resetLoadingState();
+                log('✓ resetLoadingState() 调用成功');
+                
+                log('4. 测试完成！');
+                
+                testStatus.className = 'status success';
+                testStatus.textContent = '✅ 所有测试通过！模块导入工作正常。';
+                testDetails.style.display = 'block';
+                
+            } catch (error) {
+                log(`❌ 测试失败: ${error.message}`);
+                log(`错误详情: ${error.stack}`);
+                
+                testStatus.className = 'status error';
+                testStatus.textContent = `❌ 测试失败: ${error.message}`;
+                testDetails.style.display = 'block';
+            }
+        }
+        
+        // 运行测试
+        runTests();
+    </script>
+</body>
+</html> 

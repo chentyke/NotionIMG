@@ -112,6 +112,9 @@ function hideLoadingOverlay() {
 }
 
 // Export functions for use in other modules
-window.updateLoadingProgress = updateLoadingProgress;
-window.showLoadingOverlay = showLoadingOverlay;
-window.hideLoadingOverlay = hideLoadingOverlay; 
+export {
+    updateLoadingProgress,
+    showLoadingOverlay,
+    hideLoadingOverlay,
+    resetLoadingState
+}; 
