@@ -1358,93 +1358,14 @@ async function renderIncrementalBlocks(blocks, pageContent, loadingIndicator) {
             validateBlockOrder(blocks, "Incremental blocks - after sorting");
         }
         
-        // 获取最后的列表上下文
-        let currentList = getLastListContext(pageContent, loadingIndicator);
-        let orderedListStart = null; // 有序列表的起始编号
-        
-        if (currentList && currentList.tag === 'ol') {
-            // 只有当最后一个元素确实是有序列表时才继续编号
-            orderedListStart = currentList.nextNumber;
-        }
-        
-        // 渲染块
-        let processedContent = '';
-        let listContinuationHandled = false;
-        
-        for (let i = 0; i < blocks.length; i++) {
-            const block = blocks[i];
-            try {
-                // 特殊处理列表项以确保正确分组
-                if (block.type === 'bulleted_list_item' || block.type === 'numbered_list_item') {
-                    const listTag = block.type === 'bulleted_list_item' ? 'ul' : 'ol';
-                    
-                    // 如果是第一个块且可以续接现有列表
-                    if (i === 0 && currentList && currentList.tag === listTag && currentList.element && !listContinuationHandled) {
-                        // 直接渲染列表项并添加到现有列表
-                        const listItem = await renderBlock(block);
-                        currentList.element.insertAdjacentHTML('beforeend', listItem);
-                        listContinuationHandled = true;
-                        continue;
-                    }
-                    
-                    // 开始新列表或继续当前列表
-                    if (!currentList || currentList.tag !== listTag || currentList.element) {
-                        // 关闭之前的列表
-                        if (currentList && !currentList.element) {
-                            processedContent += `</${currentList.tag}>`;
-                        }
-                        
-                        // 开始新列表，对于有序列表需要设置起始编号
-                        if (listTag === 'ol') {
-                            // 如果还没有计算起始编号，现在计算
-                            if (orderedListStart === null) {
-                                orderedListStart = calculateOrderedListStart(pageContent, loadingIndicator);
-                                console.log(`Calculated ordered list start: ${orderedListStart}`);
-                            }
-                            processedContent += `<ol class="my-4 list-decimal ml-6" start="${orderedListStart}">`;
-                            console.log(`Starting new ordered list from ${orderedListStart}`);
-                        } else {
-                            processedContent += `<ul class="my-4 list-disc ml-6">`;
-                        }
-                        
-                        currentList = { tag: listTag, type: block.type, element: null };
-                    }
-                    
-                    // 添加列表项
-                    const renderedItem = await renderBlock(block);
-                    processedContent += renderedItem;
-                    
-                    // 更新有序列表的计数
-                    if (listTag === 'ol' && orderedListStart !== null) {
-                        orderedListStart++;
-                    }
-                } else {
-                    // 非列表项：关闭任何打开的列表
-                    if (currentList && !currentList.element) {
-                        processedContent += `</${currentList.tag}>`;
-                        currentList = null;
-                        orderedListStart = null; // 重置编号，下一个有序列表将从1开始
-                    }
-                    
-                    // 添加块内容
-                    processedContent += await renderBlock(block);
-                }
-            } catch (error) {
-                console.error(`Error rendering incremental block ${block.id}:`, error);
-                processedContent += `<div class="text-red-500">Error rendering a block: ${error.message}</div>`;
-            }
-        }
-        
-        // 关闭任何剩余的打开列表
-        if (currentList && !currentList.element) {
-            processedContent += `</${currentList.tag}>`;
-        }
+        // 使用统一的渲染逻辑，传入上下文信息
+        const content = await renderBlocksWithContext(blocks, pageContent, loadingIndicator);
         
         // 只有在有处理过的内容时才添加到页面
-        if (processedContent.trim()) {
+        if (content.trim()) {
             // 创建临时容器
             const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = processedContent;
+            tempDiv.innerHTML = content;
             
             // 为新内容添加动画类
             const fragment = document.createDocumentFragment();
@@ -1493,7 +1414,8 @@ async function renderIntermediateBatch(blocks, pageContent, loadingIndicator) {
             validateBlockOrder(blocks, "Intermediate batch - after sorting");
         }
         
-        const content = await renderBlocks(blocks);
+        // 使用上下文感知的渲染函数
+        const content = await renderBlocksWithContext(blocks, pageContent, loadingIndicator);
         
         if (content.trim()) {
             const tempDiv = document.createElement('div');
@@ -1534,96 +1456,14 @@ async function renderFinalBatch(allNewBlocks, pageContent, loadingIndicator) {
             validateBlockOrder(allNewBlocks, "Final batch - after sorting");
         }
         
-        // 检查最后一个元素是否是列表，以便正确续接
-        const lastElement = pageContent.children[pageContent.children.length - 2]; // -2 because last is loading indicator
-        let currentList = null;
-        
-        // 检查是否可以续接现有列表
-        if (lastElement && (lastElement.tagName === 'UL' || lastElement.tagName === 'OL')) {
-            const firstNewBlock = allNewBlocks[0];
-            if (firstNewBlock && 
-                ((firstNewBlock.type === 'bulleted_list_item' && lastElement.tagName === 'UL') ||
-                 (firstNewBlock.type === 'numbered_list_item' && lastElement.tagName === 'OL'))) {
-                currentList = { 
-                    tag: lastElement.tagName.toLowerCase(), 
-                    type: firstNewBlock.type,
-                    element: lastElement 
-                };
-                console.log(`Will extend existing ${currentList.tag} list`);
-            }
-        }
-        
-        // 渲染所有新块
-        let processedContent = '';
-        let listContinuationHandled = false;
-        
-        for (let i = 0; i < allNewBlocks.length; i++) {
-            const block = allNewBlocks[i];
-            try {
-                // Log block processing for debugging
-                if (block._sequence !== undefined) {
-                    console.log(`Processing final block ${i+1}/${allNewBlocks.length}, sequence: ${block._sequence}, type: ${block.type}`);
-                }
-                
-                // 特殊处理列表项以确保正确分组
-                if (block.type === 'bulleted_list_item' || block.type === 'numbered_list_item') {
-                    const listTag = block.type === 'bulleted_list_item' ? 'ul' : 'ol';
-                    
-                    // 如果是第一个块且可以续接现有列表
-                    if (i === 0 && currentList && currentList.tag === listTag && currentList.element && !listContinuationHandled) {
-                        // 直接渲染列表项并添加到现有列表
-                        const listItem = await renderBlock(block);
-                        currentList.element.insertAdjacentHTML('beforeend', listItem);
-                        listContinuationHandled = true;
-                        continue;
-                    }
-                    
-                    // 开始新列表或继续当前列表
-                    if (!currentList || currentList.tag !== listTag || currentList.element) {
-                        // 关闭之前的列表
-                        if (currentList && !currentList.element) {
-                            processedContent += `</${currentList.tag}>`;
-                        }
-                        
-                        // 开始新列表，对于有序列表设置起始编号
-                        if (listTag === 'ol') {
-                            const orderedListStart = calculateOrderedListStart(pageContent, loadingIndicator);
-                            processedContent += `<${listTag} class="my-4 list-decimal ml-6" start="${orderedListStart}">`;
-                            console.log(`Starting new ordered list from ${orderedListStart}`);
-                        } else {
-                            processedContent += `<${listTag} class="my-4 list-disc ml-6">`;
-                        }
-                        currentList = { tag: listTag, type: block.type, element: null };
-                    }
-                    
-                    // 添加列表项
-                    processedContent += await renderBlock(block);
-                } else {
-                    // 非列表项：关闭任何打开的列表
-                    if (currentList && !currentList.element) {
-                        processedContent += `</${currentList.tag}>`;
-                        currentList = null;
-                    }
-                    
-                    // 添加块内容
-                    processedContent += await renderBlock(block);
-                }
-            } catch (error) {
-                console.error(`Error rendering block ${block.id}:`, error);
-                processedContent += `<div class="text-red-500">Error rendering a block: ${error.message}</div>`;
-            }
-        }
-        
-        // 关闭任何剩余的打开列表
-        if (currentList && !currentList.element) {
-            processedContent += `</${currentList.tag}>`;
-        }
+        // 使用统一的上下文感知渲染函数
+        const content = await renderBlocksWithContext(allNewBlocks, pageContent, loadingIndicator);
         
         // 只有在有处理过的内容时才添加到页面
-        if (processedContent.trim()) {
+        if (content.trim()) {
             // 创建临时容器
             const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = processedContent;
+            tempDiv.innerHTML = content;
             
             // 按顺序插入新内容到加载指示器之前
             const fragment = document.createDocumentFragment();
@@ -1663,11 +1503,13 @@ async function renderFinalBatch(allNewBlocks, pageContent, loadingIndicator) {
 }
 
 /**
- * Render multiple blocks
+ * Render multiple blocks with context awareness for list continuation
  * @param {Array} blocks - Array of blocks to render
+ * @param {HTMLElement} pageContent - Page content container (optional, for context)
+ * @param {HTMLElement} loadingIndicator - Loading indicator element (optional, for context)
  * @returns {string} - HTML content
  */
-async function renderBlocks(blocks) {
+async function renderBlocksWithContext(blocks, pageContent = null, loadingIndicator = null) {
     // 确保块按序列顺序排列（如果有序列信息的话）
     if (blocks && blocks.length > 0 && blocks[0]._sequence !== undefined) {
         blocks.sort((a, b) => (a._sequence || 0) - (b._sequence || 0));
@@ -1676,7 +1518,17 @@ async function renderBlocks(blocks) {
     
     let content = '';
     let currentList = null;
-    let orderedListStart = 1; // 追踪当前有序列表的起始编号
+    let orderedListStart = 1;
+    let listContinuationHandled = false;
+    
+    // 如果有上下文信息，获取最后的列表状态
+    if (pageContent && loadingIndicator) {
+        const lastListContext = getLastListContext(pageContent, loadingIndicator);
+        if (lastListContext && lastListContext.tag === 'ol') {
+            orderedListStart = lastListContext.nextNumber;
+            console.log(`Context-aware ordered list start: ${orderedListStart}`);
+        }
+    }
     
     for (let i = 0; i < blocks.length; i++) {
         const block = blocks[i];
@@ -1690,6 +1542,23 @@ async function renderBlocks(blocks) {
             if (block.type === 'bulleted_list_item' || block.type === 'numbered_list_item') {
                 const listTag = block.type === 'bulleted_list_item' ? 'ul' : 'ol';
                 
+                // 检查是否可以续接现有列表（仅对第一个块检查）
+                if (i === 0 && pageContent && loadingIndicator && !listContinuationHandled) {
+                    const lastElement = pageContent.children[pageContent.children.length - 2];
+                    if (lastElement && lastElement.tagName === listTag.toUpperCase()) {
+                        // 直接添加到现有列表，不创建新列表
+                        const listItem = await renderBlock(block);
+                        lastElement.insertAdjacentHTML('beforeend', listItem);
+                        listContinuationHandled = true;
+                        
+                        // 更新编号（如果是有序列表）
+                        if (listTag === 'ol') {
+                            orderedListStart++;
+                        }
+                        continue;
+                    }
+                }
+                
                 // Start a new list if needed
                 if (!currentList || currentList.tag !== listTag) {
                     // Close previous list if exists
@@ -1697,9 +1566,8 @@ async function renderBlocks(blocks) {
                         content += `</${currentList.tag}>`;
                     }
                     
-                    // For ordered lists, reset numbering when starting a new list
+                    // For ordered lists, use calculated start number
                     if (listTag === 'ol') {
-                        orderedListStart = 1;
                         content += `<${listTag} class="my-4 list-decimal ml-6" start="${orderedListStart}">`;
                         console.log(`Starting new ordered list from ${orderedListStart}`);
                     } else {
@@ -1739,6 +1607,15 @@ async function renderBlocks(blocks) {
     }
 
     return content;
+}
+
+/**
+ * Render multiple blocks (legacy function for initial page load)
+ * @param {Array} blocks - Array of blocks to render
+ * @returns {string} - HTML content
+ */
+async function renderBlocks(blocks) {
+    return await renderBlocksWithContext(blocks, null, null);
 }
 
 /**
