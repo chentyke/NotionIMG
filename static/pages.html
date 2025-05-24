@@ -74,9 +74,21 @@
         .dropdown {
             background: white;
             border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
             z-index: 50;
+            animation: dropdownSlide 0.2s ease-out;
+        }
+
+        @keyframes dropdownSlide {
+            from {
+                opacity: 0;
+                transform: translateY(-8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .filter-chip {
@@ -84,11 +96,19 @@
             color: #1d4ed8;
             border: 1px solid #bfdbfe;
             transition: all 0.2s ease;
+            cursor: pointer;
         }
 
         .filter-chip:hover {
             background: #dbeafe;
             border-color: #93c5fd;
+            transform: translateY(-1px);
+        }
+
+        .filter-chip.selected {
+            background: #1d4ed8;
+            color: white;
+            border-color: #1d4ed8;
         }
 
         .fade-in {
@@ -147,11 +167,33 @@
             }
         }
 
+        /* 空状态美化 */
+        .empty-state {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 2px dashed #cbd5e1;
+            transition: all 0.3s ease;
+        }
+
+        .empty-state:hover {
+            border-color: #94a3b8;
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+        }
+
+        .empty-icon {
+            color: #94a3b8;
+            transition: all 0.3s ease;
+        }
+
+        .empty-state:hover .empty-icon {
+            color: #64748b;
+            transform: scale(1.05);
+        }
+
         /* 移动端优化 */
         @media (max-width: 768px) {
             .container {
-                padding-left: 1rem;
-                padding-right: 1rem;
+                padding-left: 0.75rem;
+                padding-right: 0.75rem;
             }
             
             .search-container {
@@ -159,15 +201,139 @@
                 width: 100%;
             }
             
-            .controls-grid {
-                grid-template-columns: 1fr;
+            .controls-section {
+                background: white;
+                border-radius: 12px;
+                border: 1px solid #e5e7eb;
+                padding: 1rem;
+                margin-bottom: 1rem;
+            }
+            
+            .mobile-controls {
+                display: flex;
+                flex-direction: column;
                 gap: 1rem;
             }
             
-            .filter-controls {
-                flex-wrap: wrap;
+            .mobile-sort-group {
+                display: flex;
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+            
+            .mobile-button-group {
+                display: flex;
+                gap: 0.5rem;
+                overflow-x: auto;
+                padding-bottom: 2px;
+            }
+            
+            .mobile-button-group button {
+                white-space: nowrap;
+                flex-shrink: 0;
+            }
+            
+            .mobile-actions {
+                display: flex;
+                gap: 0.5rem;
+                justify-content: space-between;
+            }
+            
+            .mobile-actions > * {
+                flex: 1;
+            }
+            
+            .dropdown {
+                position: fixed !important;
+                top: 50% !important;
+                left: 50% !important;
+                transform: translate(-50%, -50%) !important;
+                width: 90vw !important;
+                max-width: 400px !important;
+                max-height: 70vh;
+                overflow-y: auto;
+            }
+            
+            .grid-cols-responsive {
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            }
+            
+            header .container {
+                padding-top: 1rem;
+                padding-bottom: 1rem;
+            }
+            
+            header h1 {
+                font-size: 1.5rem;
+                text-align: center;
+                margin-bottom: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .grid-cols-responsive {
+                grid-template-columns: 1fr;
+            }
+            
+            .mobile-button-group {
+                flex-direction: column;
                 gap: 0.5rem;
             }
+            
+            .mobile-actions {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+        }
+
+        /* 桌面端控制面板隐藏筛选 */
+        @media (min-width: 769px) {
+            .advanced-controls {
+                opacity: 0;
+                max-height: 0;
+                overflow: hidden;
+                transition: all 0.3s ease;
+                margin-bottom: 0;
+            }
+            
+            .advanced-controls.show {
+                opacity: 1;
+                max-height: 200px;
+                margin-bottom: 1.5rem;
+            }
+            
+            .controls-toggle {
+                margin-bottom: 1rem;
+            }
+        }
+
+        /* 后缀标签美化 */
+        .suffix-tag {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            color: #0369a1;
+            border: 1px solid #bae6fd;
+            font-weight: 500;
+            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+        }
+
+        .suffix-tag.no-suffix {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            color: #64748b;
+            border: 1px solid #cbd5e1;
+        }
+
+        /* 筛选器计数徽章 */
+        .filter-badge {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            font-weight: 600;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
         }
     </style>
 </head>
@@ -196,93 +362,199 @@
         </header>
 
         <main class="container mx-auto px-4 py-6 max-w-7xl">
-            <!-- Controls -->
-            <div class="controls-grid grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-                <!-- Sort Options -->
-                <div class="flex flex-col space-y-2">
-                    <label class="text-sm font-medium text-gray-700">排序方式</label>
-                    <div class="flex space-x-2">
-                        <button 
-                            v-for="option in sortOptions" 
-                            :key="option.value"
-                            @click="sortBy = option.value"
-                            :class="['flat-button px-3 py-2 rounded-lg text-sm', sortBy === option.value ? 'active' : '']"
-                        >
-                            {{ option.label }}
-                        </button>
-                    </div>
-                </div>
+            <!-- Desktop Advanced Controls Toggle -->
+            <div class="controls-toggle hidden md:block">
+                <button 
+                    @click="showAdvancedControls = !showAdvancedControls"
+                    class="flat-button px-4 py-2 rounded-lg text-sm flex items-center space-x-2"
+                >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"/>
+                    </svg>
+                    <span>{{ showAdvancedControls ? '隐藏' : '显示' }}高级选项</span>
+                    <svg 
+                        :class="['w-4 h-4 transition-transform', showAdvancedControls ? 'rotate-180' : '']" 
+                        fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                    >
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </button>
+            </div>
 
-                <!-- Sort Order -->
-                <div class="flex flex-col space-y-2">
-                    <label class="text-sm font-medium text-gray-700">排序顺序</label>
-                    <div class="flex space-x-2">
-                        <button 
-                            @click="sortOrder = 'desc'"
-                            :class="['flat-button px-3 py-2 rounded-lg text-sm flex items-center space-x-1', sortOrder === 'desc' ? 'active' : '']"
-                        >
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
-                            </svg>
-                            <span>降序</span>
-                        </button>
-                        <button 
-                            @click="sortOrder = 'asc'"
-                            :class="['flat-button px-3 py-2 rounded-lg text-sm flex items-center space-x-1', sortOrder === 'asc' ? 'active' : '']"
-                        >
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
-                            </svg>
-                            <span>升序</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Filter and Refresh -->
-                <div class="flex flex-col space-y-2">
-                    <label class="text-sm font-medium text-gray-700">操作</label>
-                    <div class="flex space-x-2">
-                        <div class="relative">
-                            <button 
-                                @click="showFilterDropdown = !showFilterDropdown"
-                                class="flat-button px-3 py-2 rounded-lg text-sm flex items-center space-x-1"
-                            >
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z"/>
-                                </svg>
-                                <span>筛选</span>
-                                <span v-if="activeFilters.length" class="bg-blue-500 text-white text-xs rounded-full px-1">{{ activeFilters.length }}</span>
-                            </button>
-                            
-                            <!-- Filter Dropdown -->
-                            <div v-if="showFilterDropdown" class="dropdown absolute top-full left-0 mt-2 w-64 p-4">
-                                <div class="space-y-3">
-                                    <div>
-                                        <label class="text-sm font-medium text-gray-700 block mb-2">按后缀筛选</label>
-                                        <div class="flex flex-wrap gap-2">
-                                            <button 
-                                                v-for="suffix in availableSuffixes" 
-                                                :key="suffix"
-                                                @click="toggleFilter('suffix', suffix)"
-                                                :class="['filter-chip px-2 py-1 rounded-full text-xs', activeFilters.includes(`suffix:${suffix}`) ? 'bg-blue-100 border-blue-300' : '']"
-                                            >
-                                                {{ suffix || '无后缀' }}
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div class="border-t pt-3">
-                                        <button @click="clearFilters" class="text-sm text-gray-600 hover:text-gray-800">
-                                            清除所有筛选
-                                        </button>
-                                    </div>
-                                </div>
+            <!-- Desktop Advanced Controls -->
+            <div :class="['advanced-controls hidden md:block', showAdvancedControls ? 'show' : '']">
+                <div class="controls-section">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Sort Options -->
+                        <div class="flex flex-col space-y-3">
+                            <label class="text-sm font-semibold text-gray-700">排序方式</label>
+                            <div class="flex space-x-2">
+                                <button 
+                                    v-for="option in sortOptions" 
+                                    :key="option.value"
+                                    @click="sortBy = option.value"
+                                    :class="['flat-button px-3 py-2 rounded-lg text-sm', sortBy === option.value ? 'active' : '']"
+                                >
+                                    {{ option.label }}
+                                </button>
                             </div>
                         </div>
+
+                        <!-- Sort Order -->
+                        <div class="flex flex-col space-y-3">
+                            <label class="text-sm font-semibold text-gray-700">排序顺序</label>
+                            <div class="flex space-x-2">
+                                <button 
+                                    @click="sortOrder = 'desc'"
+                                    :class="['flat-button px-3 py-2 rounded-lg text-sm flex items-center space-x-1', sortOrder === 'desc' ? 'active' : '']"
+                                >
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
+                                    </svg>
+                                    <span>降序</span>
+                                </button>
+                                <button 
+                                    @click="sortOrder = 'asc'"
+                                    :class="['flat-button px-3 py-2 rounded-lg text-sm flex items-center space-x-1', sortOrder === 'asc' ? 'active' : '']"
+                                >
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
+                                    </svg>
+                                    <span>升序</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Filter and Refresh -->
+                        <div class="flex flex-col space-y-3">
+                            <label class="text-sm font-semibold text-gray-700">操作</label>
+                            <div class="flex space-x-2">
+                                <div class="relative">
+                                    <button 
+                                        @click="showFilterDropdown = !showFilterDropdown"
+                                        class="flat-button px-3 py-2 rounded-lg text-sm flex items-center space-x-1"
+                                    >
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z"/>
+                                        </svg>
+                                        <span>筛选</span>
+                                        <span v-if="activeFilters.length" class="filter-badge text-xs rounded-full px-1.5 py-0.5">{{ activeFilters.length }}</span>
+                                    </button>
+                                    
+                                    <!-- Filter Dropdown -->
+                                    <div v-if="showFilterDropdown" class="dropdown absolute top-full left-0 mt-2 w-80 p-6">
+                                        <div class="space-y-4">
+                                            <div>
+                                                <label class="text-sm font-semibold text-gray-700 block mb-3">按后缀筛选</label>
+                                                <div class="flex flex-wrap gap-2">
+                                                    <button 
+                                                        v-for="suffix in availableSuffixes" 
+                                                        :key="suffix"
+                                                        @click="toggleFilter('suffix', suffix)"
+                                                        :class="[
+                                                            'filter-chip px-3 py-2 rounded-lg text-xs font-medium',
+                                                            activeFilters.includes(`suffix:${suffix}`) ? 'selected' : '',
+                                                            suffix ? 'suffix-tag' : 'suffix-tag no-suffix'
+                                                        ]"
+                                                    >
+                                                        {{ suffix || '无后缀' }}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div class="border-t border-gray-200 pt-4 flex justify-between">
+                                                <button @click="clearFilters" class="text-sm text-gray-600 hover:text-gray-800 font-medium">
+                                                    清除筛选
+                                                </button>
+                                                <button @click="showFilterDropdown = false" class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                                                    完成
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <button 
+                                    @click="refreshPages" 
+                                    :disabled="isLoading"
+                                    class="flat-button px-3 py-2 rounded-lg text-sm flex items-center space-x-1"
+                                >
+                                    <svg v-if="!isLoading" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                    </svg>
+                                    <div v-else class="loading-dots">
+                                        <div></div>
+                                        <div></div>
+                                        <div></div>
+                                    </div>
+                                    <span>{{ isLoading ? '刷新中' : '刷新' }}</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mobile Controls -->
+            <div class="controls-section md:hidden">
+                <div class="mobile-controls">
+                    <!-- Mobile Sort -->
+                    <div class="mobile-sort-group">
+                        <div>
+                            <label class="text-sm font-semibold text-gray-700 block mb-2">排序方式</label>
+                            <div class="mobile-button-group">
+                                <button 
+                                    v-for="option in sortOptions" 
+                                    :key="option.value"
+                                    @click="sortBy = option.value"
+                                    :class="['flat-button px-3 py-2 rounded-lg text-sm', sortBy === option.value ? 'active' : '']"
+                                >
+                                    {{ option.label }}
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="text-sm font-semibold text-gray-700 block mb-2">排序顺序</label>
+                            <div class="mobile-button-group">
+                                <button 
+                                    @click="sortOrder = 'desc'"
+                                    :class="['flat-button px-3 py-2 rounded-lg text-sm flex items-center space-x-1', sortOrder === 'desc' ? 'active' : '']"
+                                >
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
+                                    </svg>
+                                    <span>降序</span>
+                                </button>
+                                <button 
+                                    @click="sortOrder = 'asc'"
+                                    :class="['flat-button px-3 py-2 rounded-lg text-sm flex items-center space-x-1', sortOrder === 'asc' ? 'active' : '']"
+                                >
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
+                                    </svg>
+                                    <span>升序</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Mobile Actions -->
+                    <div class="mobile-actions">
+                        <button 
+                            @click="showFilterDropdown = !showFilterDropdown"
+                            class="flat-button px-3 py-2 rounded-lg text-sm flex items-center justify-center space-x-1"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z"/>
+                            </svg>
+                            <span>筛选</span>
+                            <span v-if="activeFilters.length" class="filter-badge text-xs rounded-full px-1.5 py-0.5">{{ activeFilters.length }}</span>
+                        </button>
                         
                         <button 
                             @click="refreshPages" 
                             :disabled="isLoading"
-                            class="flat-button px-3 py-2 rounded-lg text-sm flex items-center space-x-1"
+                            class="flat-button px-3 py-2 rounded-lg text-sm flex items-center justify-center space-x-1"
                         >
                             <svg v-if="!isLoading" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
@@ -296,18 +568,49 @@
                         </button>
                     </div>
                 </div>
+                
+                <!-- Mobile Filter Dropdown -->
+                <div v-if="showFilterDropdown" class="dropdown mt-4 p-6">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="text-sm font-semibold text-gray-700 block mb-3">按后缀筛选</label>
+                            <div class="flex flex-wrap gap-2">
+                                <button 
+                                    v-for="suffix in availableSuffixes" 
+                                    :key="suffix"
+                                    @click="toggleFilter('suffix', suffix)"
+                                    :class="[
+                                        'filter-chip px-3 py-2 rounded-lg text-xs font-medium',
+                                        activeFilters.includes(`suffix:${suffix}`) ? 'selected' : '',
+                                        suffix ? 'suffix-tag' : 'suffix-tag no-suffix'
+                                    ]"
+                                >
+                                    {{ suffix || '无后缀' }}
+                                </button>
+                            </div>
+                        </div>
+                        <div class="border-t border-gray-200 pt-4 flex justify-between">
+                            <button @click="clearFilters" class="text-sm text-gray-600 hover:text-gray-800 font-medium">
+                                清除筛选
+                            </button>
+                            <button @click="showFilterDropdown = false" class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                                完成
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Active Filters Display -->
-            <div v-if="activeFilters.length" class="flex flex-wrap gap-2 mb-4">
-                <span class="text-sm text-gray-600">已筛选:</span>
+            <div v-if="activeFilters.length" class="flex flex-wrap gap-2 mb-6">
+                <span class="text-sm font-medium text-gray-600">已筛选:</span>
                 <span 
                     v-for="filter in activeFilters" 
                     :key="filter"
-                    class="filter-chip px-2 py-1 rounded-full text-xs flex items-center space-x-1"
+                    class="filter-chip selected px-3 py-1 rounded-full text-xs flex items-center space-x-2"
                 >
                     <span>{{ formatFilterLabel(filter) }}</span>
-                    <button @click="removeFilter(filter)" class="hover:text-red-600">
+                    <button @click="removeFilter(filter)" class="hover:text-red-200 transition-colors">
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                         </svg>
@@ -319,12 +622,12 @@
             <div class="bg-white border border-gray-200 rounded-lg p-4 mb-6 fade-in">
                 <div class="flex items-center justify-between text-sm text-gray-600">
                     <div class="flex items-center space-x-4">
-                        <span>共 {{ filteredPages.length }} 个页面</span>
-                        <span v-if="searchQuery || activeFilters.length">
+                        <span class="font-medium">共 {{ filteredPages.length }} 个页面</span>
+                        <span v-if="searchQuery || activeFilters.length" class="text-blue-600">
                             (从 {{ pages.length }} 个中筛选)
                         </span>
                     </div>
-                    <div class="text-xs">
+                    <div class="text-xs text-gray-500">
                         最后更新: {{ lastUpdateTime }}
                     </div>
                 </div>
@@ -360,7 +663,7 @@
             </div>
 
             <!-- Pages Grid -->
-            <div v-else-if="filteredPages.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 fade-in">
+            <div v-else-if="filteredPages.length" class="grid grid-cols-responsive gap-4 fade-in">
                 <div 
                     v-for="page in filteredPages" 
                     :key="page.id"
@@ -372,7 +675,7 @@
                             <h3 class="font-medium text-gray-900 line-clamp-2 text-sm leading-relaxed">
                                 {{ page.title }}
                             </h3>
-                            <div v-if="page.suffix" class="ml-2 px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs whitespace-nowrap">
+                            <div v-if="page.suffix" :class="['ml-2 px-2 py-1 rounded text-xs whitespace-nowrap font-medium', 'suffix-tag']">
                                 {{ page.suffix }}
                             </div>
                         </div>
@@ -394,23 +697,31 @@
 
             <!-- Empty State -->
             <div v-else class="text-center py-16 slide-up">
-                <div class="bg-white rounded-lg border border-gray-200 p-8 max-w-md mx-auto">
-                    <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                    </svg>
-                    <h3 class="text-lg font-medium text-gray-900 mb-2">
+                <div class="empty-state rounded-2xl p-12 max-w-lg mx-auto">
+                    <div class="empty-icon mb-6">
+                        <svg class="mx-auto h-16 w-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path v-if="searchQuery || activeFilters.length" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-3">
                         {{ searchQuery || activeFilters.length ? '没有匹配的页面' : '暂无页面' }}
                     </h3>
-                    <p class="text-gray-500 text-sm mb-4">
-                        {{ searchQuery || activeFilters.length ? '请尝试调整搜索条件或筛选器' : '开始创建你的第一个页面吧' }}
+                    <p class="text-gray-600 text-sm mb-6 leading-relaxed">
+                        {{ searchQuery || activeFilters.length ? '请尝试调整搜索条件或筛选器，或者创建一个新页面' : '开始创建你的第一个页面，让这里变得生动起来吧' }}
                     </p>
-                    <button 
-                        v-if="searchQuery || activeFilters.length"
-                        @click="clearAllFilters" 
-                        class="flat-button px-4 py-2 rounded-lg text-sm"
-                    >
-                        清除所有筛选
-                    </button>
+                    <div class="space-y-3">
+                        <button 
+                            v-if="searchQuery || activeFilters.length"
+                            @click="clearAllFilters" 
+                            class="flat-button px-6 py-3 rounded-lg text-sm font-medium"
+                        >
+                            清除所有筛选
+                        </button>
+                        <div class="text-xs text-gray-500">
+                            小提示: 可以使用搜索框快速查找页面
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>
@@ -429,6 +740,7 @@
             const sortOrder = ref('desc')
             const activeFilters = ref([])
             const showFilterDropdown = ref(false)
+            const showAdvancedControls = ref(false)
             const lastUpdateTime = ref('')
 
             const sortOptions = [
@@ -589,6 +901,7 @@
                 sortOrder,
                 activeFilters,
                 showFilterDropdown,
+                showAdvancedControls,
                 lastUpdateTime,
                 sortOptions,
                 availableSuffixes,
