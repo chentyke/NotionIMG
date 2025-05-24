@@ -442,44 +442,39 @@ function showFloatingToc() {
     floatingToc.classList.add('visible');
     floatingTocVisible = true;
     
-    // 使用requestAnimationFrame确保DOM渲染完成后再设置滚动位置
-    requestAnimationFrame(() => {
+    // 等待目录完全展开后再设置滚动位置和视觉效果
+    setTimeout(() => {
         if (currentActiveHeading) {
             const activeTocLink = document.querySelector(`#floatingTocList a[href="#${currentActiveHeading}"]`);
             const tocContent = document.querySelector('.floating-toc-content');
             
             if (activeTocLink && tocContent) {
-                // 计算目标滚动位置，将当前章节居中显示
-                const activeLinkTop = activeTocLink.offsetTop;
-                const activeLinkHeight = activeTocLink.offsetHeight;
-                const contentHeight = tocContent.clientHeight;
-                
-                const targetScroll = activeLinkTop - (contentHeight / 2) + (activeLinkHeight / 2);
-                
-                // 立即设置滚动位置，不使用动画，避免与入场动画冲突
-                tocContent.scrollTop = Math.max(0, targetScroll);
+                // 等待一帧确保DOM完全渲染
+                requestAnimationFrame(() => {
+                    // 计算目标滚动位置，将当前章节居中显示
+                    const activeLinkTop = activeTocLink.offsetTop;
+                    const activeLinkHeight = activeTocLink.offsetHeight;
+                    const contentHeight = tocContent.clientHeight;
+                    
+                    const targetScroll = activeLinkTop - (contentHeight / 2) + (activeLinkHeight / 2);
+                    
+                    // 立即设置滚动位置，确保当前章节居中
+                    tocContent.scrollTop = Math.max(0, targetScroll);
+                    
+                    // 添加视觉强调效果
+                    activeTocLink.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+                    activeTocLink.style.transform = 'translateY(-2px) scale(1.02)';
+                    activeTocLink.style.boxShadow = '0 8px 24px rgba(59, 130, 246, 0.2), 0 4px 12px rgba(0, 0, 0, 0.1)';
+                    
+                    // 恢复正常状态
+                    setTimeout(() => {
+                        activeTocLink.style.transform = '';
+                        activeTocLink.style.boxShadow = '';
+                    }, 600);
+                });
             }
         }
-    });
-    
-    // 在目录完全展开后，添加视觉强调效果
-    setTimeout(() => {
-        if (currentActiveHeading) {
-            const activeTocLink = document.querySelector(`#floatingTocList a[href="#${currentActiveHeading}"]`);
-            if (activeTocLink) {
-                // 添加视觉强调效果
-                activeTocLink.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
-                activeTocLink.style.transform = 'translateY(-2px) scale(1.02)';
-                activeTocLink.style.boxShadow = '0 8px 24px rgba(59, 130, 246, 0.2), 0 4px 12px rgba(0, 0, 0, 0.1)';
-                
-                // 恢复正常状态
-                setTimeout(() => {
-                    activeTocLink.style.transform = '';
-                    activeTocLink.style.boxShadow = '';
-                }, 600);
-            }
-        }
-    }, 200); // 等待目录展开动画完成
+    }, 400); // 增加等待时间，确保目录展开动画完全完成
     
     // 添加键盘事件监听
     const handleKeyDown = (e) => {
