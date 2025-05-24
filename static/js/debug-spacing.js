@@ -66,10 +66,33 @@
         blockCounter = 0;
         spacingMeasurements = [];
         
+        console.log(`🔍 开始调试，找到 ${elements.length} 个子元素`);
+        elements.forEach(el => {
+            console.log(`- 元素: ${el.tagName} ${el.className} ${el.id || '(无ID)'}`);
+        });
+        
         elements.forEach((element, index) => {
-            if (element.id === 'background-loading') return; // 跳过加载指示器
+            // 跳过加载指示器，但记录跳过的原因
+            if (element.id === 'background-loading') {
+                console.log(`⏭️ 跳过加载指示器: ${element.id}`);
+                return;
+            }
+            
+            // 跳过调试元素本身
+            if (element.className && (
+                element.className.includes('debug-block-indicator') ||
+                element.className.includes('debug-class-indicator') ||
+                element.className.includes('debug-spacing-indicator') ||
+                element.className.includes('debug-spacing-area') ||
+                element.className.includes('debug-summary-info')
+            )) {
+                console.log(`⏭️ 跳过调试元素: ${element.className}`);
+                return;
+            }
             
             blockCounter++;
+            
+            console.log(`📦 处理块 ${blockCounter}: ${element.tagName} (index: ${index})`);
             
             // 添加块编号标识
             const indicator = document.createElement('div');
@@ -100,24 +123,41 @@
             
             // 测量与前一个元素的间距
             if (index > 0) {
-                const prevElement = elements[index - 1];
-                if (prevElement.id !== 'background-loading') {
+                // 找到前一个有效的块元素
+                let prevElement = null;
+                let prevBlockNumber = null;
+                
+                // 向前查找最近的有效块
+                for (let i = index - 1; i >= 0; i--) {
+                    const el = elements[i];
+                    if (el.dataset.debugBlockNumber) {
+                        prevElement = el;
+                        prevBlockNumber = el.dataset.debugBlockNumber;
+                        break;
+                    }
+                }
+                
+                if (prevElement && prevBlockNumber) {
                     const spacing = measureSpacingBetween(prevElement, element);
+                    console.log(`📏 测量间距 块${prevBlockNumber} -> 块${blockCounter}: ${spacing.toFixed(1)}px`);
+                    
                     spacingMeasurements.push({
-                        from: prevElement.dataset.debugBlockNumber,
+                        from: prevBlockNumber,
                         to: blockCounter,
                         spacing: spacing,
                         elements: [prevElement, element]
                     });
                     
                     // 在页面上直接显示间距信息
-                    addSpacingIndicator(prevElement, element, spacing, prevElement.dataset.debugBlockNumber, blockCounter);
+                    addSpacingIndicator(prevElement, element, spacing, prevBlockNumber, blockCounter);
                     
                     // 特别标记第15-16块或16-17块之间的间距
-                    if ((prevElement.dataset.debugBlockNumber === '15' && blockCounter === 16) ||
-                        (prevElement.dataset.debugBlockNumber === '16' && blockCounter === 17)) {
-                        highlightSpacing(prevElement, element, spacing, `块${prevElement.dataset.debugBlockNumber}-${blockCounter}`);
+                    if ((prevBlockNumber === '15' && blockCounter === 16) ||
+                        (prevBlockNumber === '16' && blockCounter === 17)) {
+                        highlightSpacing(prevElement, element, spacing, `块${prevBlockNumber}-${blockCounter}`);
                     }
+                } else {
+                    console.log(`⚠️ 块${blockCounter} 找不到前一个有效块`);
                 }
             }
             
