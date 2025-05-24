@@ -621,82 +621,168 @@ async function loadChildPage(pageId, title) {
  * @param {Object} block - The block to render
  * @returns {string} - HTML representation of the block
  */
+/**
+ * Generate unique ID for a block
+ * @param {Object} block - The block object
+ * @returns {string} Unique block ID
+ */
+function generateBlockId(block) {
+    if (block.id) {
+        return block.id.replace(/-/g, '');
+    }
+    // Fallback: generate from block type and content
+    const content = block.text || block.rich_text?.[0]?.plain_text || '';
+    const prefix = block.type.replace(/_/g, '');
+    const hash = content.slice(0, 20).replace(/[^a-zA-Z0-9]/g, '');
+    return `${prefix}-${hash}-${Math.random().toString(36).substr(2, 6)}`;
+}
+
+/**
+ * Create copy link button for a block
+ * @param {string} blockId - The block ID
+ * @param {string} blockType - The block type for styling
+ * @returns {string} HTML for the copy button
+ */
+function createBlockCopyButton(blockId, blockType) {
+    return `<button class="block-copy-link" onclick="copyBlockLink('${blockId}')" title="复制块链接">
+        <i class="fa fa-link"></i>
+    </button>`;
+}
+
+/**
+ * Wrap block content with copy button container
+ * @param {string} content - The rendered block content
+ * @param {Object} block - The block object
+ * @returns {string} Wrapped content with copy button
+ */
+function wrapBlockWithCopyButton(content, block) {
+    // Skip wrapping for certain block types
+    const skipTypes = ['column_list', 'column', 'divider'];
+    if (skipTypes.includes(block.type) || !content.trim()) {
+        return content;
+    }
+
+    const blockId = generateBlockId(block);
+    const blockType = block.type.replace(/_/g, '-');
+    const copyButton = createBlockCopyButton(blockId, blockType);
+    
+    // Add ID to the first element in the content if it doesn't have one
+    let processedContent = content;
+    if (!content.includes(' id="')) {
+        // For headings, the ID is already added in renderHeading
+        if (!block.type.startsWith('heading_')) {
+            // Add ID to the first HTML element
+            processedContent = content.replace(/^(<[^>]+)/, `$1 id="${blockId}"`);
+        }
+    }
+    
+    return `<div class="block-container ${blockType}">
+        ${copyButton}
+        ${processedContent}
+    </div>`;
+}
+
 async function renderBlock(block) {
     incrementLoadedBlocks();
     updateLoadingProgress((getLoadedBlocks() / getTotalBlocks()) * 100);
     
     const blockColorStyle = getNotionColorStyle(block.color);
+    let content = '';
 
     switch (block.type) {
         case 'paragraph':
-            return await renderParagraph(block, blockColorStyle);
+            content = await renderParagraph(block, blockColorStyle);
+            break;
         
         case 'heading_1':
-            return await renderHeading(block, 1, blockColorStyle);
+            content = await renderHeading(block, 1, blockColorStyle);
+            break;
         
         case 'heading_2':
-            return await renderHeading(block, 2, blockColorStyle);
+            content = await renderHeading(block, 2, blockColorStyle);
+            break;
         
         case 'heading_3':
-            return await renderHeading(block, 3, blockColorStyle);
+            content = await renderHeading(block, 3, blockColorStyle);
+            break;
         
         case 'bulleted_list_item':
         case 'numbered_list_item':
-            return await renderListItem(block, blockColorStyle);
+            content = await renderListItem(block, blockColorStyle);
+            break;
         
         case 'to_do':
-            return await renderTodoItem(block, blockColorStyle);
+            content = await renderTodoItem(block, blockColorStyle);
+            break;
         
         case 'image':
-            return await renderImage(block);
+            content = await renderImage(block);
+            break;
         
         case 'divider':
-            return '<hr class="my-6 border-gray-200">';
+            content = '<hr class="my-6 border-gray-200">';
+            break;
         
         case 'quote':
-            return await renderQuote(block, blockColorStyle);
+            content = await renderQuote(block, blockColorStyle);
+            break;
         
         case 'code':
-            return await renderCodeBlock(block, blockColorStyle);
+            content = await renderCodeBlock(block, blockColorStyle);
+            break;
         
         case 'bookmark':
-            return await renderBookmark(block);
+            content = await renderBookmark(block);
+            break;
                 
         case 'child_page':
-            return await renderChildPage(block);
+            content = await renderChildPage(block);
+            break;
         
         case 'toggle':
-            return await renderToggle(block, blockColorStyle);
+            content = await renderToggle(block, blockColorStyle);
+            break;
         
         case 'column_list':
-            return await renderColumnList(block);
+            content = await renderColumnList(block);
+            break;
             
         case 'column':
-            return await renderColumn(block);
+            content = await renderColumn(block);
+            break;
             
         case 'table':
-            return await renderTable(block);
+            content = await renderTable(block);
+            break;
             
         case 'callout':
-            return await renderCallout(block);
+            content = await renderCallout(block);
+            break;
                 
         case 'embed':
-            return await renderEmbed(block);
+            content = await renderEmbed(block);
+            break;
             
         case 'video':
-            return await renderVideo(block);
+            content = await renderVideo(block);
+            break;
             
         case 'equation':
-            return await renderEquation(block);
+            content = await renderEquation(block);
+            break;
             
         case 'file':
-            return await renderFile(block);
+            content = await renderFile(block);
+            break;
         
         default:
             // Log unhandled block types for debugging
             console.warn(`Unhandled block type: ${block.type}`, block);
             return '';
     }
+    
+    // Wrap content with copy button (except for certain types)
+    return wrapBlockWithCopyButton(content, block);
 }
 
 // validateBlockOrder function removed - debug functionality no longer needed
@@ -868,6 +954,9 @@ async function loadPage(pageId = null) {
             } catch (error) {
                 console.error('Error initializing floating TOC after page load:', error);
             }
+            
+            // Handle anchor links after content is loaded
+            handleAnchorNavigation();
             
             // Start loading remaining content in background if there's more
             if (data.has_more && data.next_cursor) {
@@ -1654,6 +1743,107 @@ function copyPageLink() {
         // Fallback for older browsers or non-secure contexts
         fallbackCopyToClipboard(currentUrl);
     }
+}
+
+/**
+ * Copy block link to clipboard
+ * @param {string} blockId - The ID of the block to link to
+ */
+function copyBlockLink(blockId) {
+    try {
+        // Create URL with block anchor
+        const baseUrl = window.location.href.split('#')[0];
+        const blockUrl = `${baseUrl}#${blockId}`;
+        
+        // Find the copy button to show visual feedback
+        const button = document.querySelector(`button[onclick="copyBlockLink('${blockId}')"]`);
+        
+        if (navigator.clipboard && window.isSecureContext) {
+            // Use modern clipboard API
+            navigator.clipboard.writeText(blockUrl).then(() => {
+                showBlockCopySuccess(button, '块链接已复制');
+            }).catch(() => {
+                fallbackCopyToClipboard(blockUrl);
+                showBlockCopySuccess(button, '块链接已复制');
+            });
+        } else {
+            // Fallback for older browsers or insecure contexts
+            fallbackCopyToClipboard(blockUrl);
+            showBlockCopySuccess(button, '块链接已复制');
+        }
+    } catch (error) {
+        console.error('Error copying block link:', error);
+        showCopyError('复制失败，请手动复制链接');
+    }
+}
+
+/**
+ * Show visual feedback for successful block copy
+ * @param {HTMLElement} button - The copy button element
+ * @param {string} message - Success message
+ */
+function showBlockCopySuccess(button, message) {
+    if (!button) return;
+    
+    // Add success class
+    button.classList.add('copied');
+    
+    // Change icon to checkmark
+    const icon = button.querySelector('i');
+    if (icon) {
+        icon.className = 'fa fa-check';
+    }
+    
+    // Show toast message
+    showToast(message, 'success');
+    
+    // Reset after 2 seconds
+    setTimeout(() => {
+        button.classList.remove('copied');
+        if (icon) {
+            icon.className = 'fa fa-link';
+        }
+    }, 2000);
+}
+
+/**
+ * Handle anchor navigation when page loads with hash
+ */
+function handleAnchorNavigation() {
+    const hash = window.location.hash;
+    if (hash && hash.length > 1) {
+        const targetId = hash.substring(1);
+        const targetElement = document.getElementById(targetId);
+        
+        if (targetElement) {
+            // Smooth scroll to the target element
+            setTimeout(() => {
+                targetElement.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+                
+                // Highlight the target block briefly
+                highlightBlock(targetElement);
+            }, 300);
+        }
+    }
+}
+
+/**
+ * Highlight a block briefly to indicate it's the target
+ * @param {HTMLElement} element - The element to highlight
+ */
+function highlightBlock(element) {
+    const container = element.closest('.block-container') || element;
+    
+    // Add highlight class
+    container.classList.add('block-highlighted');
+    
+    // Remove highlight after 3 seconds
+    setTimeout(() => {
+        container.classList.remove('block-highlighted');
+    }, 3000);
 }
 
 /**
