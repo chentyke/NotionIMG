@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>浮动TOC滚动条样式测试</title>
+    <link rel="stylesheet" href="static/css/main.css">
+    <link rel="stylesheet" href="static/css/header.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+            color: #333;
+        }
+        .page-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 40px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .long-content {
+            height: 600px;
+            background: linear-gradient(to bottom, #f8f9fa, #e9ecef);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .test-info {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .scrollbar-demo {
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            color: #0d47a1;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- 浮动标题岛 -->
+    <div id="floatingHeader" class="floating-header">
+        <div class="floating-title" id="floatingTitle">
+            浮动TOC滚动条样式测试
+        </div>
+        <div class="floating-breadcrumb" id="floatingBreadcrumb"></div>
+    </div>
+
+    <!-- 浮动TOC -->
+    <div id="floatingToc" class="floating-toc-fullscreen">
+        <div class="floating-toc-backdrop"></div>
+        <div class="floating-toc-panel">
+            <div class="floating-toc-header">
+                <h2>目录</h2>
+                <button onclick="hideFloatingToc()" class="floating-toc-close">×</button>
+            </div>
+            <div class="floating-toc-content">
+                <ul id="floatingTocList" class="floating-toc-list"></ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页面头部 -->
+    <div class="page-header">
+        <h1 id="pageTitle">浮动TOC滚动条样式测试</h1>
+        <p>测试新的轻盈滚动条设计</p>
+    </div>
+
+    <!-- 主要内容 -->
+    <div class="container" id="pageContent">
+        <div class="test-info">
+            <strong>测试说明：</strong> 向下滚动让页面标题消失，浮动标题岛会出现。点击标题岛打开TOC，查看新的轻盈滚动条样式。
+        </div>
+
+        <div class="scrollbar-demo">
+            <strong>滚动条特点：</strong>
+            <ul>
+                <li>8px宽度，圆角设计</li>
+                <li>半透明灰色，与界面融为一体</li>
+                <li>悬停时变得更明显</li>
+                <li>平滑的过渡动画</li>
+                <li>深色模式自适应</li>
+            </ul>
+        </div>
+
+        <div class="long-content">
+            <p>滚动让浮动标题岛出现...</p>
+        </div>
+
+        <h1 id="chapter1">第一章：滚动条设计原理</h1>
+        <div class="test-section">
+            <p>新的滚动条设计遵循现代UI设计原则，注重轻盈感和美观性。</p>
+        </div>
+
+        <div class="long-content">
+            <p>更多内容...</p>
+        </div>
+
+        <h2 id="section1-1">第一节：轻盈感设计</h2>
+        <div class="test-section">
+            <p>使用半透明颜色和圆角设计，让滚动条看起来更加轻盈。</p>
+        </div>
+
+        <div class="long-content">
+            <p>继续滚动...</p>
+        </div>
+
+        <h3 id="subsection1-1-1">第一小节：透明度控制</h3>
+        <div class="test-section">
+            <p>正常状态下滚动条较透明，悬停时变得更明显，提供清晰的交互反馈。</p>
+        </div>
+
+        <div class="long-content">
+            <p>测试区域...</p>
+        </div>
+
+        <h3 id="subsection1-1-2">第一小节：圆角设计</h3>
+        <div class="test-section">
+            <p>10px的圆角让滚动条看起来更加现代和友好。</p>
+        </div>
+
+        <div class="long-content">
+            <p>更多测试内容...</p>
+        </div>
+
+        <h2 id="section1-2">第二节：交互体验</h2>
+        <div class="test-section">
+            <p>滚动条的交互设计考虑了用户的使用习惯。</p>
+        </div>
+
+        <div class="long-content">
+            <p>交互测试...</p>
+        </div>
+
+        <h3 id="subsection1-2-1">第二小节：悬停效果</h3>
+        <div class="test-section">
+            <p>当鼠标悬停在TOC区域时，滚动条会变得更明显，方便用户定位。</p>
+        </div>
+
+        <div class="long-content">
+            <p>测试结束区域...</p>
+        </div>
+
+        <h3 id="subsection1-2-2">第二小节：点击响应</h3>
+        <div class="test-section">
+            <p>点击滚动条时有视觉反馈，颜色会加深。</p>
+        </div>
+
+        <div class="long-content">
+            <p>更多内容...</p>
+        </div>
+
+        <h1 id="chapter2">第二章：技术实现细节</h1>
+        <div class="test-section">
+            <p>滚动条样式通过CSS的webkit-scrollbar系列属性实现。</p>
+        </div>
+
+        <div class="long-content">
+            <p>技术细节...</p>
+        </div>
+
+        <h2 id="section2-1">第一节：Webkit滚动条</h2>
+        <div class="test-section">
+            <p>主要使用-webkit-scrollbar、-webkit-scrollbar-thumb等属性。</p>
+        </div>
+
+        <div class="long-content">
+            <p>实现方式...</p>
+        </div>
+
+        <h3 id="subsection2-1-1">第一小节：基础样式</h3>
+        <div class="test-section">
+            <p>设置滚动条的宽度、背景色和圆角。</p>
+        </div>
+
+        <h3 id="subsection2-1-2">第一小节：悬停状态</h3>
+        <div class="test-section">
+            <p>通过伪类选择器实现悬停时的样式变化。</p>
+        </div>
+
+        <h2 id="section2-2">第二节：Firefox兼容</h2>
+        <div class="test-section">
+            <p>使用scrollbar-width和scrollbar-color属性适配Firefox。</p>
+        </div>
+
+        <h3 id="subsection2-2-1">第二小节：标准属性</h3>
+        <div class="test-section">
+            <p>Firefox支持CSS标准的滚动条样式属性。</p>
+        </div>
+
+        <h3 id="subsection2-2-2">第二小节：颜色适配</h3>
+        <div class="test-section">
+            <p>使用相同的颜色值确保各浏览器显示一致。</p>
+        </div>
+
+        <h1 id="chapter3">第三章：深色模式适配</h1>
+        <div class="test-section">
+            <p>滚动条在深色模式下有专门的样式适配。</p>
+        </div>
+
+        <h2 id="section3-1">第一节：颜色调整</h2>
+        <div class="test-section">
+            <p>深色模式下使用更高对比度的颜色。</p>
+        </div>
+
+        <h3 id="subsection3-1-1">第一小节：对比度优化</h3>
+        <div class="test-section">
+            <p>确保在深色背景下滚动条仍然清晰可见。</p>
+        </div>
+
+        <h3 id="subsection3-1-2">第一小节：一致性保持</h3>
+        <div class="test-section">
+            <p>保持与界面整体风格的一致性。</p>
+        </div>
+
+        <h2 id="section3-2">第二节：自动切换</h2>
+        <div class="test-section">
+            <p>通过媒体查询自动切换深色模式样式。</p>
+        </div>
+
+        <h1 id="chapter4">第四章：性能优化</h1>
+        <div class="test-section">
+            <p>滚动条样式的性能考虑。</p>
+        </div>
+
+        <h2 id="section4-1">第一节：CSS优化</h2>
+        <div class="test-section">
+            <p>使用高效的CSS选择器和属性。</p>
+        </div>
+
+        <h2 id="section4-2">第二节：渲染性能</h2>
+        <div class="test-section">
+            <p>避免频繁的重绘和重排。</p>
+        </div>
+
+        <div class="long-content">
+            <p>测试完成！现在打开TOC查看美观的滚动条效果。</p>
+        </div>
+    </div>
+
+    <!-- 引入JavaScript -->
+    <script type="module" src="static/js/modules/index.js"></script>
+    <script>
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化浮动头部
+            if (typeof initFloatingHeader === 'function') {
+                initFloatingHeader();
+            }
+            
+            // 初始化浮动TOC
+            if (typeof initFloatingToc === 'function') {
+                initFloatingToc();
+            }
+            
+            console.log('滚动条测试页面已加载，请滚动查看浮动标题岛效果，然后点击打开TOC测试滚动条');
+        });
+    </script>
+</body>
+</html> 
