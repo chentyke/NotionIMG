@@ -342,6 +342,111 @@
             }
         }
 
+        /* 大屏幕优化 - 增加宽度和字体大小以提高可读性 */
+        @media (min-width: 1200px) {
+            .container {
+                max-width: 1400px;
+            }
+            
+            /* 增加主要字体大小 */
+            header h1 {
+                font-size: 2rem;
+            }
+            
+            .suffix-tag {
+                font-size: 1rem;
+                padding: 0.75rem 1rem;
+            }
+            
+            .stats-badge {
+                font-size: 1rem;
+                padding: 0.75rem 1rem;
+            }
+            
+            /* 增加卡片内容字体 */
+            .flat-card h2 {
+                font-size: 1.5rem;
+            }
+            
+            .flat-card p {
+                font-size: 1.1rem;
+                line-height: 1.7;
+            }
+            
+            /* 增加搜索框大小 */
+            .search-input {
+                font-size: 1.1rem;
+                padding: 14px 20px;
+                padding-left: 50px;
+            }
+            
+            .search-icon {
+                left: 18px;
+                width: 1.25rem;
+                height: 1.25rem;
+            }
+            
+            /* 增加按钮字体 */
+            .flat-button {
+                font-size: 1rem;
+                padding: 0.75rem 1.25rem;
+            }
+            
+            /* 增加网格间距 */
+            .grid-cols-responsive {
+                grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+                gap: 2rem;
+            }
+            
+            /* 增加控件区域字体 */
+            .controls-section label {
+                font-size: 1rem;
+            }
+            
+            .controls-section button {
+                font-size: 1rem;
+            }
+        }
+
+        @media (min-width: 1600px) {
+            .container {
+                max-width: 1600px;
+            }
+            
+            /* 超大屏幕进一步优化 */
+            header h1 {
+                font-size: 2.25rem;
+            }
+            
+            .flat-card h2 {
+                font-size: 1.75rem;
+            }
+            
+            .flat-card p {
+                font-size: 1.2rem;
+                line-height: 1.8;
+            }
+            
+            .search-input {
+                font-size: 1.2rem;
+                max-width: 500px;
+            }
+            
+            .grid-cols-responsive {
+                grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
+                gap: 2.5rem;
+            }
+            
+            /* 增加内边距 */
+            .flat-card {
+                padding: 2rem;
+            }
+            
+            .controls-section {
+                padding: 2rem;
+            }
+        }
+
         @media (max-width: 480px) {
             .grid-cols-responsive {
                 grid-template-columns: 1fr;
