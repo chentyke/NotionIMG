@@ -477,8 +477,30 @@ def process_block_content(block: dict) -> dict:
                 "is_toggleable": block_content.get("is_toggleable", False)
             }
         elif block_type == "image":
-            image_info = block_content.get("file") or block_content.get("external", {})
-            result["image_url"] = image_info.get("url", "")
+            # 处理图片块，保持 Notion API 标准结构
+            image_data = {}
+            
+            # 检查是否是外部链接
+            if "external" in block_content:
+                image_data = {
+                    "type": "external",
+                    "external": {
+                        "url": block_content["external"]["url"]
+                    }
+                }
+            # 检查是否是上传的文件
+            elif "file" in block_content:
+                image_data = {
+                    "type": "file", 
+                    "file": {
+                        "url": block_content["file"]["url"],
+                        "expiry_time": block_content["file"].get("expiry_time")
+                    }
+                }
+            
+            result["image"] = image_data
+            
+            # 处理图片标题
             if "caption" in block_content and block_content["caption"]:
                 result["caption"] = process_rich_text(block_content["caption"])
         elif block_type == "code":

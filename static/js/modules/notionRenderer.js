@@ -230,17 +230,21 @@ async function renderImage(block) {
                 let imgSrc = '';
                 
                 // Handle different image data structures
-                if (block.image_url) {
-                    imgSrc = block.image_url;
-                } else if (block.image?.type === 'external') {
+                if (block.image?.type === 'external') {
                     imgSrc = block.image.external.url;
                 } else if (block.image?.type === 'file') {
                     imgSrc = block.image.file.url;
+                } else if (block.image_url) {
+                    // Backward compatibility for old structure
+                    imgSrc = block.image_url;
                 }
                 
-                if (!imgSrc) return '';
+                if (!imgSrc) {
+                    console.warn('No image URL found in block:', block);
+                    return '';
+                }
                 
-        // Get caption if available
+                // Get caption if available
                 let caption = '';
                 if (block.caption) {
                     caption = block.caption;
