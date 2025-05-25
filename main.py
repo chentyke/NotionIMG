@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import RedirectResponse, JSONResponse, FileResponse
+from fastapi.responses import RedirectResponse, JSONResponse, FileResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from notion_client import Client
@@ -1462,6 +1462,93 @@ async def get_database_raw():
         logger.error(f"Error getting raw database: {str(e)}")
         logger.error("Stack trace:", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/proxy/heic")
+async def proxy_heic_image(url: str):
+    """
+    Server-side proxy for fetching HEIC images to bypass CORS restrictions.
+    This endpoint fetches HEIC images from external URLs and serves them with proper headers.
+    """
+    try:
+        logger.info(f"Proxying HEIC image request for URL: {url}")
+        
+        # Validate URL
+        if not url or not url.startswith(('http://', 'https://')):
+            raise HTTPException(status_code=400, detail="Invalid URL provided")
+        
+        # Set up headers to mimic a real browser request
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'Accept': 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'DNT': '1',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+        }
+        
+        # For Notion URLs, add referer
+        if 'notion.so' in url:
+            headers['Referer'] = 'https://www.notion.so/'
+        
+        # Use httpx for async HTTP requests with longer timeout
+        async with httpx.AsyncClient(
+            timeout=httpx.Timeout(60.0),  # 60 second timeout
+            follow_redirects=True,
+            headers=headers
+        ) as client:
+            logger.info(f"Making request to: {url}")
+            response = await client.get(url)
+            
+            logger.info(f"Response status: {response.status_code}")
+            logger.info(f"Response headers: {dict(response.headers)}")
+            
+            if response.status_code != 200:
+                logger.error(f"Failed to fetch image: HTTP {response.status_code}")
+                raise HTTPException(
+                    status_code=response.status_code, 
+                    detail=f"Failed to fetch image: HTTP {response.status_code}"
+                )
+            
+            # Get content type
+            content_type = response.headers.get('content-type', 'application/octet-stream')
+            content_length = len(response.content)
+            
+            logger.info(f"Successfully fetched {content_length} bytes")
+            logger.info(f"Content type: {content_type}")
+            
+            # Validate HEIC file signature
+            if content_length >= 12:
+                header = response.content[:12]
+                # Check for HEIC signature: ftypheic or ftypmif1
+                if b'ftypheic' in header or b'ftypmif1' in header:
+                    logger.info("✅ Valid HEIC file signature detected")
+                else:
+                    logger.warning(f"⚠️ File signature check: {header.hex()}")
+            
+            # Return the image data with proper headers
+            return Response(
+                content=response.content,
+                media_type='image/heic',
+                headers={
+                    'Content-Type': 'image/heic',
+                    'Content-Length': str(content_length),
+                    'Cache-Control': 'public, max-age=3600',  # Cache for 1 hour
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Methods': 'GET',
+                    'Access-Control-Allow-Headers': '*',
+                }
+            )
+            
+    except httpx.RequestError as e:
+        logger.error(f"Network error while fetching image: {e}")
+        raise HTTPException(status_code=503, detail=f"Network error: {str(e)}")
+    except httpx.TimeoutException:
+        logger.error("Timeout while fetching image")
+        raise HTTPException(status_code=504, detail="Timeout while fetching image")
+    except Exception as e:
+        logger.error(f"Unexpected error in HEIC proxy: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 @app.get("/api/validate/{page_id}")
 async def validate_page(page_id: str):

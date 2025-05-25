@@ -1,4 +1,5 @@
 // Enhanced Image handling with robust error handling and HEIC support
+import { smartImageLoader, isHEICImage } from './heicConverter.js';
 
 // Create image observer for lazy loading
 const imageObserver = new IntersectionObserver((entries, observer) => {
@@ -7,8 +8,6 @@ const imageObserver = new IntersectionObserver((entries, observer) => {
             const img = entry.target;
             // 检查loading状态：只有当loading不是'true'时才加载
             if (img.dataset.src && img.dataset.loading !== 'true') {
-                console.log('Observer triggering load for:', img.dataset.src);
-                // 不在这里设置loading状态，让loadImageWithAnimation函数来处理
                 loadImageWithAnimation(img);
                 observer.unobserve(img);
             }
@@ -28,13 +27,19 @@ function initImageObserver() {
     console.log(`Initializing image observer for ${lazyImages.length} images`);
     
     lazyImages.forEach(img => {
-        // 正确检查状态：只要没有正在加载或已加载，就可以观察
+        // 检查状态：只要没有正在加载或已加载，就可以观察
         const isLoading = img.dataset.loading === 'true';
         const isLoaded = img.dataset.loaded === 'true';
         const isObserving = img.dataset.observing === 'true';
         
+        // 检查是否图片处于"卡住"的加载状态（有loading标记但没有实际在加载）
+        if (isLoading && !img.src && img.complete) {
+            console.warn('Found stuck image, resetting state:', img.dataset.src);
+            img.dataset.loading = 'false';
+            img.dataset.loaded = 'false';
+        }
+        
         if (!isObserving && !isLoading && !isLoaded) {
-            console.log('Adding observer for image:', img.dataset.src);
             img.dataset.observing = 'true';
             imageObserver.observe(img);
         }
@@ -48,25 +53,16 @@ function initImageObserver() {
  */
 async function loadImageWithAnimation(img) {
     const imgSrc = img.dataset.src;
-    console.log('🖼️ Starting image load for:', imgSrc);
     
-    // 防止重复加载 - 更详细的状态检查
+    // 防止重复加载
     const isLoading = img.dataset.loading === 'true';
     const isLoaded = img.dataset.loaded === 'true';
     
     if (isLoading || isLoaded) {
-        console.log('⚠️ Image already loading or loaded:', {
-            url: imgSrc,
-            isLoading,
-            isLoaded,
-            complete: img.complete,
-            naturalWidth: img.naturalWidth
-        });
         return;
     }
 
     img.dataset.loading = 'true';
-    console.log('✅ Image loading state set to true for:', imgSrc);
     
     try {
         const wrapper = img.closest('.image-wrapper') || img.closest('.image-container');
@@ -78,12 +74,30 @@ async function loadImageWithAnimation(img) {
         // Get original URL
         const originalUrl = img.dataset.src;
         
-        // Try to detect and handle HEIC images
-        const isHeicImage = originalUrl.toLowerCase().includes('.heic') || 
-                           originalUrl.toLowerCase().includes('heic');
+        // Check if this is a HEIC image and handle conversion
+        const isHeicImage = isHEICImage(originalUrl);
+        
+        let finalImageUrl = originalUrl;
         
         if (isHeicImage) {
-            console.warn('HEIC image detected, may not be supported by browser:', originalUrl);
+            try {
+                finalImageUrl = await smartImageLoader(originalUrl, wrapper, {
+                    quality: 0.85,
+                    maxWidth: 1920,
+                    maxHeight: 1080
+                });
+                
+                if (finalImageUrl !== originalUrl) {
+                    console.log('✅ HEIC图片转换成功');
+                }
+            } catch (heicError) {
+                console.error('❌ HEIC转换失败:', heicError.message);
+                finalImageUrl = originalUrl;
+                
+                if (wrapper) {
+                    showHEICFailureNotification(wrapper, heicError.message);
+                }
+            }
         }
 
         // Create a new image to preload
@@ -110,27 +124,21 @@ async function loadImageWithAnimation(img) {
                 if (!timeoutTriggered) {
                     loadCompleted = true;
                     clearTimeout(loadingTimeout);
-                    console.error('Image load error:', {
-                        url: originalUrl,
-                        error: event,
-                        isHeic: isHeicImage
-                    });
                     reject(new Error('Image load failed'));
                 }
             };
 
-            // Set loading timeout (增加到20秒，给图片更多加载时间)
+            // Set loading timeout
             loadingTimeout = setTimeout(() => {
                 if (!loadCompleted) {
                     timeoutTriggered = true;
-                    console.warn('Image loading timeout after 20s:', originalUrl);
                     reject(new Error('timeout'));
                 }
             }, 20000);
         });
 
-        // Start loading
-        preloadImg.src = originalUrl;
+        // Start loading with the final URL (converted if HEIC)
+        preloadImg.src = finalImageUrl;
 
         try {
             const loadedImg = await loadPromise;
@@ -142,22 +150,18 @@ async function loadImageWithAnimation(img) {
             img.dataset.loading = 'false';
             
         } catch (error) {
-            // 只有在确实失败时才显示错误
             if (error.message === 'timeout') {
-                console.warn('Image timeout, but attempting to show it anyway:', originalUrl);
-                // 超时情况下，尝试直接设置图片源，可能图片实际已加载
+                // 超时情况下，尝试直接设置图片源
                 try {
-                    img.src = originalUrl;
+                    img.src = finalImageUrl;
                     img.dataset.loaded = 'true';
                     img.dataset.loading = 'false';
                     if (wrapper) {
                         wrapper.classList.remove('loading');
                         wrapper.classList.add('loaded');
                     }
-                    // 等待片刻检查图片是否实际加载成功
                     setTimeout(() => {
                         if (img.complete && img.naturalWidth > 0) {
-                            console.log('Image actually loaded despite timeout:', originalUrl);
                             return; // 成功加载，不显示错误
                         } else {
                             handleImageError(img, wrapper, originalUrl, isHeicImage, 'timeout');
@@ -323,8 +327,8 @@ function handleImageError(img, wrapper, originalUrl, isHeic = false, errorType =
     let errorDetails = '';
     
     if (isHeic) {
-        errorMessage = 'HEIC image format not supported';
-        errorDetails = 'Your browser cannot display HEIC images. Please use the download button to save the image.';
+        errorMessage = 'HEIC图片处理失败';
+        errorDetails = '我们尝试转换这张HEIC图片以便显示，但是转换失败了。您可以尝试下载原图片或重试。';
     } else if (errorType === 'timeout') {
         errorMessage = 'Image loading timeout';
         errorDetails = 'The image took too long to load. It might still be loading in the background.';
@@ -885,119 +889,62 @@ if (typeof window !== 'undefined') {
     }
 }
 
+/**
+ * 显示HEIC转换失败的简短通知
+ * @param {HTMLElement} wrapper - 图片容器
+ * @param {string} errorMessage - 错误信息
+ */
+function showHEICFailureNotification(wrapper, errorMessage) {
+    if (!wrapper) return;
+    
+    // 移除已存在的通知
+    const existingNotification = wrapper.querySelector('.heic-failure-notification');
+    if (existingNotification) {
+        existingNotification.remove();
+    }
+    
+    const notification = document.createElement('div');
+    notification.className = 'heic-failure-notification';
+    notification.style.cssText = `
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: rgba(239, 68, 68, 0.9);
+        color: white;
+        padding: 0.5rem 0.75rem;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        z-index: 15;
+        backdrop-filter: blur(4px);
+        max-width: 200px;
+        text-align: center;
+    `;
+    
+    notification.innerHTML = `
+        <div style="margin-bottom: 0.25rem;">⚠️ HEIC转换失败</div>
+        <div style="font-size: 0.7rem; opacity: 0.9;">${errorMessage.slice(0, 50)}${errorMessage.length > 50 ? '...' : ''}</div>
+    `;
+    
+    wrapper.appendChild(notification);
+    
+    // 5秒后自动移除
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 5000);
+}
+
 // Make functions globally accessible
 window.retryImageLoad = retryImageLoad;
 window.downloadImage = downloadImage;
 window.openImageInNewTab = openImageInNewTab;
 window.checkImageHealthAndRecover = checkImageHealthAndRecover;
 window.isImageActuallyLoaded = isImageActuallyLoaded;
+window.showHEICFailureNotification = showHEICFailureNotification;
 
-/**
- * Show a friendly notification about image loading improvements
- * This helps users understand the new optimizations
- */
-function showImageOptimizationInfo() {
-    const hasShownInfo = localStorage.getItem('imageOptimizationInfoShown');
-    
-    if (!hasShownInfo) {
-        const notification = document.createElement('div');
-        notification.className = 'image-optimization-info';
-        notification.innerHTML = `
-            <div style="
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                padding: 1rem 1.5rem;
-                border-radius: 12px;
-                box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-                font-size: 0.9rem;
-                max-width: 320px;
-                z-index: 9999;
-                transform: translateX(100%);
-                transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-                backdrop-filter: blur(10px);
-            ">
-                <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
-                    <div style="
-                        background: rgba(255,255,255,0.2);
-                        border-radius: 50%;
-                        width: 32px;
-                        height: 32px;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        font-size: 1.2rem;
-                    ">🖼️</div>
-                    <div style="font-weight: 600; font-size: 1rem;">图片加载已优化</div>
-                </div>
-                <div style="line-height: 1.4; margin-bottom: 1rem; opacity: 0.95;">
-                    我们改进了图片加载机制，减少了错误提示。如果图片仍然无法显示，请尝试重新加载或检查网络连接。
-                </div>
-                <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
-                    <button onclick="closeImageOptimizationInfo()" style="
-                        background: rgba(255,255,255,0.2);
-                        border: 1px solid rgba(255,255,255,0.3);
-                        color: white;
-                        padding: 0.5rem 1rem;
-                        border-radius: 6px;
-                        font-size: 0.85rem;
-                        cursor: pointer;
-                        transition: all 0.2s ease;
-                    " onmouseover="this.style.background='rgba(255,255,255,0.3)'" 
-                       onmouseout="this.style.background='rgba(255,255,255,0.2)'">
-                        知道了
-                    </button>
-                </div>
-            </div>
-        `;
-        
-        document.body.appendChild(notification);
-        
-        // Animate in
-        setTimeout(() => {
-            notification.firstElementChild.style.transform = 'translateX(0)';
-        }, 100);
-        
-        // Auto hide after 10 seconds
-        setTimeout(() => {
-            closeImageOptimizationInfo();
-        }, 10000);
-        
-        localStorage.setItem('imageOptimizationInfoShown', 'true');
-    }
-}
 
-/**
- * Close the image optimization info notification
- */
-function closeImageOptimizationInfo() {
-    const notification = document.querySelector('.image-optimization-info');
-    if (notification) {
-        notification.firstElementChild.style.transform = 'translateX(100%)';
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.parentNode.removeChild(notification);
-            }
-        }, 400);
-    }
-}
-
-// Show info notification on first visit
-if (typeof window !== 'undefined') {
-    setTimeout(() => {
-        // Only show if there are images on the page
-        const hasImages = document.querySelectorAll('img[data-src], .image-container').length > 0;
-        if (hasImages) {
-            showImageOptimizationInfo();
-        }
-    }, 3000); // Show after 3 seconds to not interfere with page loading
-}
-
-// Make notification functions globally accessible
-window.showImageOptimizationInfo = showImageOptimizationInfo;
-window.closeImageOptimizationInfo = closeImageOptimizationInfo;
 
 // Export functions and objects
 export {
@@ -1009,6 +956,5 @@ export {
     supportsWebP,
     startImageHealthMonitor,
     checkImageHealthAndRecover,
-    isImageActuallyLoaded,
-    showImageOptimizationInfo
+    isImageActuallyLoaded
 }; 
