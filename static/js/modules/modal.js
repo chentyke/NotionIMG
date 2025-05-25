@@ -194,8 +194,9 @@ function completeModalClose(modal, modalImg, closeButton, downloadButton) {
     if (closeButton) closeButton.style.opacity = '';
     if (downloadButton) downloadButton.style.opacity = '';
     
-    // Clear source rect
+    // Clear stored data
     modalSourceRect = null;
+    modalOriginalUrl = null; // Clear original URL for download
 }
 
 /**
@@ -514,29 +515,69 @@ function initImageModalControls() {
  */
 async function downloadModalImage(event) {
     const modalImg = document.getElementById('modalImage');
-    if (!modalImg || !modalImg.src) return;
+    
+    // Use original URL for download if available (preserves HEIC format)
+    const downloadUrl = modalOriginalUrl || modalImg?.src;
+    
+    if (!downloadUrl) {
+        console.error('No download URL available');
+        return;
+    }
     
     try {
+        console.log('Downloading original image from:', downloadUrl);
+        
         // Create a temporary link element to download the image
         const link = document.createElement('a');
-        link.href = modalImg.src;
+        link.href = downloadUrl;
         
-        // Extract filename from URL or use a default
-        const urlParts = modalImg.src.split('/');
-        let filename = urlParts[urlParts.length - 1].split('?')[0];
+        // Extract filename from original URL (preserves HEIC extension)
+        let filename = 'notion-image';
         
-        // Check if we have a valid filename with extension
-        if (!filename || filename.indexOf('.') === -1) {
+        try {
+            const urlParts = downloadUrl.split('/');
+            const urlFilename = urlParts[urlParts.length - 1].split('?')[0];
+            
+            if (urlFilename && urlFilename.includes('.')) {
+                filename = urlFilename;
+            } else {
+                // If no filename in URL, determine extension from URL or default
+                if (downloadUrl.toLowerCase().includes('.heic')) {
+                    filename = 'notion-image.heic';
+                } else if (downloadUrl.toLowerCase().includes('.png')) {
+                    filename = 'notion-image.png';
+                } else if (downloadUrl.toLowerCase().includes('.gif')) {
+                    filename = 'notion-image.gif';
+                } else {
+                    filename = 'notion-image.jpg';
+                }
+            }
+        } catch (error) {
+            console.warn('Error parsing filename, using default:', error);
             filename = 'notion-image.jpg';
         }
         
         link.download = filename;
+        link.target = '_blank'; // Open in new tab as fallback
+        
+        console.log('Downloading as filename:', filename);
+        
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         
+        // Show success feedback
+        console.log('Download initiated successfully');
+        
     } catch (error) {
         console.error('Error downloading image:', error);
+        
+        // Fallback: try to open in new tab
+        try {
+            window.open(downloadUrl, '_blank');
+        } catch (fallbackError) {
+            console.error('Fallback download also failed:', fallbackError);
+        }
     }
 }
 
@@ -592,6 +633,9 @@ function openImageModalWithPreview(clickedElement, originalUrl) {
 // Global variable to store source position for close animation
 let modalSourceRect = null;
 
+// Global variable to store original image URL for download
+let modalOriginalUrl = null;
+
 /**
  * Opens an image modal with animation from source position
  * @param {string} originalUrl - The URL of the image to display
@@ -604,6 +648,9 @@ function openImageModalWithAnimation(originalUrl, previewUrl = null, sourceRect 
     
     // Store source rect for close animation
     modalSourceRect = sourceRect;
+    
+    // Store original URL for download (important for HEIC files)
+    modalOriginalUrl = originalUrl;
     
     // Reset any existing transforms/state
     resetImageModalState();
