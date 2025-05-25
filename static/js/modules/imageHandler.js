@@ -597,6 +597,9 @@ function retryImageLoad(button) {
         return;
     }
     
+    // Ensure originalSrc is a string
+    originalSrc = String(originalSrc);
+    
     console.log('Retrying image load for:', originalSrc);
     
     // 智能重试策略：首先尝试直接加载
@@ -823,6 +826,9 @@ function checkImageHealthAndRecover() {
         }
         
         if (imgUrl) {
+            // Ensure imgUrl is a string
+            imgUrl = String(imgUrl);
+            
             // 测试图片是否现在可以加载
             const testImg = new Image();
             testImg.crossOrigin = "anonymous";

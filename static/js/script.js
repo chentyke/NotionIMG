@@ -121,7 +121,7 @@ async function loadImages() {
         // 异步加载每个图片的预览图
         data.images.forEach(async (image, index) => {
             try {
-                const previewUrl = await compressImage(`/image/${image.id}`);
+                const previewUrl = String(await compressImage(`/image/${image.id}`) || '');
                 const imagePreview = imageGrid.children[index].querySelector('.image-preview');
                 imagePreview.innerHTML = `<img src="${previewUrl}" alt="${image.title}" loading="lazy">`;
             } catch (err) {

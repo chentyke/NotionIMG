@@ -231,12 +231,18 @@ async function renderImage(block) {
                 
                 // Handle different image data structures
                 if (block.image?.type === 'external') {
-                    imgSrc = block.image.external.url;
+                    imgSrc = String(block.image.external.url || '');
                 } else if (block.image?.type === 'file') {
-                    imgSrc = block.image.file.url;
+                    imgSrc = String(block.image.file.url || '');
                 } else if (block.image_url) {
                     // Backward compatibility for old structure
-                    imgSrc = block.image_url;
+                    imgSrc = String(block.image_url || '');
+                }
+                
+                // Ensure imgSrc is always a string
+                if (typeof imgSrc !== 'string') {
+                    console.warn('Image URL is not a string:', imgSrc, 'Block:', block);
+                    imgSrc = String(imgSrc || '');
                 }
                 
                 if (!imgSrc) {
@@ -260,7 +266,7 @@ async function renderImage(block) {
                         <div class="image-wrapper">
                             <img src="" data-src="${imgSrc}" alt="${caption}" 
                                 class="rounded-lg shadow-md opacity-0 transition-all duration-300 ease-out"
-                                onclick="openImageModalWithPreview(this, '${imgSrc}')" 
+                                onclick="openImageModalWithPreview(this, '${imgSrc.replace(/'/g, '&#39;')}')" 
                                 loading="lazy"
                                 data-image-id="${imageId}">
                         </div>
@@ -333,14 +339,16 @@ async function renderBookmark(block) {
             const bookmarkData = block.bookmark;
             if (!bookmarkData || !bookmarkData.url) return '';
             
+            const bookmarkUrl = String(bookmarkData.url || '');
+            
             return `
                 <div class="bookmark-block border rounded-lg overflow-hidden my-4 hover:bg-gray-50 transition-colors">
-                    <a href="${bookmarkData.url}" target="_blank" rel="noopener noreferrer" 
+                    <a href="${bookmarkUrl}" target="_blank" rel="noopener noreferrer" 
                        class="block p-4 text-blue-600 hover:text-blue-700">
                         <div class="flex items-center gap-3">
                             <i class="fas fa-link text-gray-400"></i>
                             <div class="flex-1 min-w-0">
-                                <div class="text-base font-medium truncate">${bookmarkData.url}</div>
+                                <div class="text-base font-medium truncate">${bookmarkUrl}</div>
                                 ${bookmarkData.caption ? 
                                     `<div class="text-sm text-gray-500 mt-1 truncate">${bookmarkData.caption}</div>` 
                                     : ''}
@@ -483,9 +491,11 @@ async function renderCallout(block) {
                 if (block.callout.icon.type === 'emoji') {
                     icon = block.callout.icon.emoji;
                 } else if (block.callout.icon.type === 'external') {
-                    icon = `<img src="${block.callout.icon.external.url}" alt="icon">`;
+                    const iconUrl = String(block.callout.icon.external.url || '');
+                    icon = `<img src="${iconUrl}" alt="icon">`;
                 } else if (block.callout.icon.type === 'file') {
-                    icon = `<img src="${block.callout.icon.file.url}" alt="icon">`;
+                    const iconUrl = String(block.callout.icon.file.url || '');
+                    icon = `<img src="${iconUrl}" alt="icon">`;
                 }
             }
             
@@ -505,9 +515,10 @@ async function renderCallout(block) {
 // Media renderers
 async function renderEmbed(block) {
             if (block.embed?.url) {
+                const embedUrl = String(block.embed.url || '');
                 return `
                     <div class="embed-block my-4">
-                        <iframe src="${block.embed.url}" 
+                        <iframe src="${embedUrl}" 
                                 class="w-full h-96 border rounded-lg"
                                 frameborder="0" 
                                 allowfullscreen>
@@ -522,7 +533,7 @@ async function renderEmbed(block) {
             
 async function renderVideo(block) {
             if (block.video?.url) {
-                const videoUrl = block.video.url;
+                const videoUrl = String(block.video.url || '');
                 
                 // Check if it's a YouTube video
                 if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
@@ -577,10 +588,11 @@ async function renderEquation(block) {
             
 async function renderFile(block) {
             if (block.file?.url) {
+                const fileUrl = String(block.file.url || '');
                 const fileName = block.file.name || 'Download File';
                 return `
                     <div class="file-block border rounded-lg p-4 my-4 hover:bg-gray-50 transition-colors">
-                        <a href="${block.file.url}" target="_blank" rel="noopener noreferrer" 
+                        <a href="${fileUrl}" target="_blank" rel="noopener noreferrer" 
                            class="flex items-center gap-3 text-blue-600 hover:text-blue-700">
                             <i class="fas fa-file text-2xl"></i>
                             <div class="flex-1">
