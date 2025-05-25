@@ -239,10 +239,16 @@ async function renderImage(block) {
                     imgSrc = String(block.image_url || '');
                 }
                 
-                // Ensure imgSrc is always a string
+                // Ensure imgSrc is always a string and validate
                 if (typeof imgSrc !== 'string') {
                     console.warn('Image URL is not a string:', imgSrc, 'Block:', block);
                     imgSrc = String(imgSrc || '');
+                }
+                
+                // Additional validation to catch [object Object] cases
+                if (imgSrc === '[object Object]' || imgSrc.includes('[object') && imgSrc.includes('Object]')) {
+                    console.error('Object detected as image URL:', imgSrc, 'Block:', block);
+                    return '<div class="text-red-500">Error: Invalid image URL detected</div>';
                 }
                 
                 if (!imgSrc) {

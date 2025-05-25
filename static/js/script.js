@@ -210,7 +210,7 @@ async function loadFiles() {
         // 异步加载每个文件的预览图
         data.files.forEach(async (file, index) => {
             try {
-                const previewUrl = await compressImage(`/file/${file.id}`);
+                const previewUrl = String(await compressImage(`/file/${file.id}`) || '');
                 const filePreview = fileGrid.children[index].querySelector('.image-preview');
                 filePreview.innerHTML = `<img src="${previewUrl}" alt="${file.title}" loading="lazy">`;
             } catch (err) {

@@ -517,7 +517,7 @@ async function downloadModalImage(event) {
     const modalImg = document.getElementById('modalImage');
     
     // Use original URL for download if available (preserves HEIC format)
-    const downloadUrl = modalOriginalUrl || modalImg?.src;
+    const downloadUrl = String(modalOriginalUrl || modalImg?.src || '');
     
     if (!downloadUrl) {
         console.error('No download URL available');
@@ -609,13 +609,16 @@ function initModalEventListeners() {
  * @param {string} originalUrl - The original high-resolution image URL
  */
 function openImageModalWithPreview(clickedElement, originalUrl) {
+    // Ensure originalUrl is a string
+    originalUrl = String(originalUrl || '');
+    
     let previewUrl = null;
     
     // Try to get preview URL from the clicked element
     if (clickedElement && clickedElement.tagName === 'IMG') {
         // If the image has a src (already loaded), use it as preview
         if (clickedElement.src && clickedElement.src !== window.location.href) {
-            previewUrl = clickedElement.src;
+            previewUrl = String(clickedElement.src);
         }
         // If it has data-src and no src, it's still loading, no preview available
     }
@@ -650,7 +653,7 @@ function openImageModalWithAnimation(originalUrl, previewUrl = null, sourceRect 
     modalSourceRect = sourceRect;
     
     // Store original URL for download (important for HEIC files)
-    modalOriginalUrl = originalUrl;
+    modalOriginalUrl = String(originalUrl || '');
     
     // Reset any existing transforms/state
     resetImageModalState();
@@ -664,7 +667,7 @@ function openImageModalWithAnimation(originalUrl, previewUrl = null, sourceRect 
     
     // If we have a preview, show it immediately with animation
     if (previewUrl && previewUrl !== originalUrl) {
-        modalImg.src = previewUrl;
+        modalImg.src = String(previewUrl || '');
         modalImg.classList.remove('loading');
         
         // Set up the initial animation state if we have source position
@@ -699,13 +702,13 @@ function openImageModalWithAnimation(originalUrl, previewUrl = null, sourceRect 
             modalImg.style.opacity = '0.7';
             
             setTimeout(() => {
-                modalImg.src = originalUrl;
+                modalImg.src = String(originalUrl || '');
                 modalImg.style.opacity = '1';
                 removeImageLoadingIndicator(modal);
             }, 100);
         } else {
             // No preview, show the original with animation
-            modalImg.src = originalUrl;
+            modalImg.src = String(originalUrl || '');
             modalImg.classList.remove('loading');
             
             if (sourceRect) {
@@ -730,13 +733,13 @@ function openImageModalWithAnimation(originalUrl, previewUrl = null, sourceRect 
         
         // If we don't have a preview, set the original URL anyway
         if (!previewUrl) {
-            modalImg.src = originalUrl;
+            modalImg.src = String(originalUrl || '');
             modal.classList.add('visible');
         }
     };
     
     // Start loading original image
-    originalImg.src = originalUrl;
+    originalImg.src = String(originalUrl || '');
     
     // If no preview available, show modal anyway with loading state
     if (!previewUrl) {

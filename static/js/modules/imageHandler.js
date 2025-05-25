@@ -1,3 +1,36 @@
+// Image Handler Module - Enhanced with comprehensive URL validation
+// Handles image loading, optimization, and error recovery
+
+// Global URL validation function
+function validateAndSanitizeUrl(url, context = 'unknown') {
+    if (url === null || url === undefined) {
+        console.warn(`[ImageHandler] Null/undefined URL detected in context: ${context}`);
+        return '';
+    }
+    
+    if (typeof url === 'object') {
+        console.error(`[ImageHandler] Object passed as URL in context: ${context}`, url);
+        return '';
+    }
+    
+    const urlString = String(url);
+    
+    if (urlString === '[object Object]') {
+        console.error(`[ImageHandler] [object Object] detected as URL in context: ${context}`);
+        return '';
+    }
+    
+    if (urlString.includes('[object') && urlString.includes('Object]')) {
+        console.error(`[ImageHandler] Object-like string detected as URL in context: ${context}`, urlString);
+        return '';
+    }
+    
+    return urlString;
+}
+
+// Make the function globally available for debugging
+window.validateAndSanitizeUrl = validateAndSanitizeUrl;
+
 // Enhanced Image handling with robust error handling and HEIC support
 import { smartImageLoader, isHEICImage } from './heicConverter.js';
 
@@ -52,7 +85,7 @@ function initImageObserver() {
  * @returns {Promise<void>}
  */
 async function loadImageWithAnimation(img) {
-    const imgSrc = img.dataset.src;
+    const imgSrc = validateAndSanitizeUrl(img.dataset.src, 'loadImageWithAnimation');
     
     // 防止重复加载
     const isLoading = img.dataset.loading === 'true';
@@ -222,7 +255,8 @@ async function optimizeAndDisplayImage(targetImg, preloadImg, wrapper) {
  */
 function displayImage(img, src, wrapper) {
     try {
-        img.src = src;
+        const validatedSrc = validateAndSanitizeUrl(src, 'displayImage');
+        img.src = validatedSrc;
         
         // 使用更可靠的加载检测
         const checkImageLoad = () => {
@@ -458,9 +492,16 @@ function handleImageError(img, wrapper, originalUrl, isHeic = false, errorType =
  */
 function downloadImage(imageUrl) {
     try {
+        const validatedUrl = validateAndSanitizeUrl(imageUrl, 'downloadImage');
+        if (!validatedUrl) {
+            console.error('Invalid URL for download:', imageUrl);
+            showDownloadToast('Invalid image URL', 'error');
+            return;
+        }
+        
         // Create a temporary anchor element for download
         const link = document.createElement('a');
-        link.href = imageUrl;
+        link.href = validatedUrl;
         link.download = getFilenameFromUrl(imageUrl) || 'image';
         link.target = '_blank';
         
@@ -486,7 +527,13 @@ function downloadImage(imageUrl) {
  */
 function openImageInNewTab(imageUrl) {
     try {
-        window.open(imageUrl, '_blank', 'noopener,noreferrer');
+        const validatedUrl = validateAndSanitizeUrl(imageUrl, 'openImageInNewTab');
+        if (!validatedUrl) {
+            console.error('Invalid URL for opening:', imageUrl);
+            showDownloadToast('Invalid image URL', 'error');
+            return;
+        }
+        window.open(validatedUrl, '_blank', 'noopener,noreferrer');
     } catch (error) {
         console.error('Error opening image:', error);
         showDownloadToast('Failed to open image. Please check the URL.', 'error');
@@ -597,8 +644,8 @@ function retryImageLoad(button) {
         return;
     }
     
-    // Ensure originalSrc is a string
-    originalSrc = String(originalSrc);
+    // Ensure originalSrc is a string and validate
+    originalSrc = validateAndSanitizeUrl(originalSrc, 'retryImageLoad');
     
     console.log('Retrying image load for:', originalSrc);
     
@@ -826,8 +873,8 @@ function checkImageHealthAndRecover() {
         }
         
         if (imgUrl) {
-            // Ensure imgUrl is a string
-            imgUrl = String(imgUrl);
+            // Ensure imgUrl is a string and validate
+            imgUrl = validateAndSanitizeUrl(imgUrl, 'checkImageHealthAndRecover');
             
             // 测试图片是否现在可以加载
             const testImg = new Image();

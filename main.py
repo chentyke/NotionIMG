@@ -300,7 +300,7 @@ def get_file_info(page: dict) -> dict:
             return None
             
         return {
-            "id": page["id"],
+            "id": str(page["id"]),
             "title": title
         }
         
@@ -346,7 +346,7 @@ def get_page_info(page: dict) -> dict:
             cover = page["cover"]  # Return the entire cover object
             
         return {
-            "id": page["id"],
+            "id": str(page["id"]),
             "title": title,
             "created_time": page.get("created_time"),
             "last_edited_time": page.get("last_edited_time"),
@@ -426,7 +426,7 @@ def process_block_content(block: dict) -> dict:
             "type": block_type,
             "text": text,
             "color": color,
-            "id": block.get("id")  # Include block ID for frontend use
+            "id": str(block.get("id", ""))  # Include block ID for frontend use
         }
 
         # Add block content specific data
@@ -777,7 +777,7 @@ async def get_page_content(page_id: str):
                     back_property = page.get("properties", {}).get("Back", {}).get("select", {}).get("name")
                     show_back = True if back_property is None else back_property != "False"
                     page_info = {
-                        "id": block["id"],
+                        "id": str(block["id"]),
                         "title": title,
                         "created_time": block["created_time"],
                         "last_edited_time": block["last_edited_time"],
@@ -1060,7 +1060,7 @@ async def get_page(page_id: str, limit: Optional[int] = None, cursor: Optional[s
                         back_property = page.get("properties", {}).get("Back", {}).get("select", {}).get("name")
                         show_back = True if back_property is None else back_property != "False"
                         page_info = {
-                            "id": block["id"],
+                            "id": str(block["id"]),
                             "title": title,
                             "created_time": block["created_time"],
                             "last_edited_time": block["last_edited_time"],
@@ -1324,7 +1324,7 @@ async def get_more_blocks(page_id: str, cursor: str, limit: Optional[int] = 15):
                             "type": "paragraph",
                             "text": f"[错误: 无法加载此块 - {str(e)[:100]}]",
                             "color": "red",
-                            "id": block.get('id', 'error'),
+                            "id": str(block.get('id', 'error')),
                             "_sequence": blocks_processed,
                             "_error": True
                         }
