@@ -640,11 +640,8 @@ window.addEventListener('beforeunload', () => {
     heicCache.clear();
 });
 
-// 导出函数
+// 导出函数（convertHEICImage 和 smartImageLoader 需要单独导出）
 export {
-    checkHEICSupport,
-    isHEICImage,
     convertHEICImage,
-    smartImageLoader,
-    loadHeic2AnyLibrary
+    smartImageLoader
 }; 
