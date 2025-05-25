@@ -5,7 +5,8 @@ const imageObserver = new IntersectionObserver((entries, observer) => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
             const img = entry.target;
-            if (img.dataset.src) {
+            if (img.dataset.src && !img.dataset.loading) {
+                img.dataset.loading = 'true'; // 防止重复加载
                 loadImageWithAnimation(img);
                 observer.unobserve(img);
             }
@@ -21,10 +22,12 @@ const imageObserver = new IntersectionObserver((entries, observer) => {
  * Can be called multiple times safely
  */
 function initImageObserver() {
-    const lazyImages = document.querySelectorAll('img[data-src]');
+    const lazyImages = document.querySelectorAll('img[data-src]:not([data-observing])');
+    console.log(`Initializing image observer for ${lazyImages.length} images`);
+    
     lazyImages.forEach(img => {
-        // Only observe if not already being observed
-        if (!img.dataset.observing) {
+        // 只观察未被观察且未加载的图片
+        if (!img.dataset.observing && !img.dataset.loading && !img.dataset.loaded) {
             img.dataset.observing = 'true';
             imageObserver.observe(img);
         }
@@ -37,10 +40,19 @@ function initImageObserver() {
  * @returns {Promise<void>}
  */
 async function loadImageWithAnimation(img) {
+    // 防止重复加载
+    if (img.dataset.loading === 'true' || img.dataset.loaded === 'true') {
+        console.log('Image already loading or loaded:', img.dataset.src);
+        return;
+    }
+
+    img.dataset.loading = 'true';
+    
     try {
         const wrapper = img.closest('.image-wrapper') || img.closest('.image-container');
         if (wrapper) {
             wrapper.classList.add('loading');
+            wrapper.classList.remove('error'); // 清除之前的错误状态
         }
 
         // Get original URL
@@ -59,41 +71,92 @@ async function loadImageWithAnimation(img) {
         preloadImg.crossOrigin = "anonymous";
         
         let loadingTimeout;
-        let hasLoaded = false;
+        let loadCompleted = false; // 使用更明确的状态标志
+        let timeoutTriggered = false;
         
-        // Set up loading states with timeout
-        preloadImg.onload = () => {
-            hasLoaded = true;
-            clearTimeout(loadingTimeout);
-            optimizeAndDisplayImage(img, preloadImg, wrapper);
-        };
+        // 创建Promise来处理加载结果
+        const loadPromise = new Promise((resolve, reject) => {
+            // Set up loading states with timeout
+            preloadImg.onload = () => {
+                if (!timeoutTriggered) {
+                    loadCompleted = true;
+                    clearTimeout(loadingTimeout);
+                    console.log('Image loaded successfully:', originalUrl);
+                    resolve(preloadImg);
+                }
+            };
 
-        preloadImg.onerror = (event) => {
-            hasLoaded = true;
-            clearTimeout(loadingTimeout);
-            console.error('Image load error:', {
-                url: originalUrl,
-                error: event,
-                isHeic: isHeicImage
-            });
-            handleImageError(img, wrapper, originalUrl, isHeicImage);
-        };
+            preloadImg.onerror = (event) => {
+                if (!timeoutTriggered) {
+                    loadCompleted = true;
+                    clearTimeout(loadingTimeout);
+                    console.error('Image load error:', {
+                        url: originalUrl,
+                        error: event,
+                        isHeic: isHeicImage
+                    });
+                    reject(new Error('Image load failed'));
+                }
+            };
 
-        // Set loading timeout (15 seconds)
-        loadingTimeout = setTimeout(() => {
-            if (!hasLoaded) {
-                console.warn('Image loading timeout:', originalUrl);
-                handleImageError(img, wrapper, originalUrl, isHeicImage, 'timeout');
-            }
-        }, 15000);
+            // Set loading timeout (增加到20秒，给图片更多加载时间)
+            loadingTimeout = setTimeout(() => {
+                if (!loadCompleted) {
+                    timeoutTriggered = true;
+                    console.warn('Image loading timeout after 20s:', originalUrl);
+                    reject(new Error('timeout'));
+                }
+            }, 20000);
+        });
 
         // Start loading
         preloadImg.src = originalUrl;
+
+        try {
+            const loadedImg = await loadPromise;
+            // 成功加载，优化并显示图片
+            await optimizeAndDisplayImage(img, loadedImg, wrapper);
+            
+            // 标记为成功加载
+            img.dataset.loaded = 'true';
+            img.dataset.loading = 'false';
+            
+        } catch (error) {
+            // 只有在确实失败时才显示错误
+            if (error.message === 'timeout') {
+                console.warn('Image timeout, but attempting to show it anyway:', originalUrl);
+                // 超时情况下，尝试直接设置图片源，可能图片实际已加载
+                try {
+                    img.src = originalUrl;
+                    img.dataset.loaded = 'true';
+                    img.dataset.loading = 'false';
+                    if (wrapper) {
+                        wrapper.classList.remove('loading');
+                        wrapper.classList.add('loaded');
+                    }
+                    // 等待片刻检查图片是否实际加载成功
+                    setTimeout(() => {
+                        if (img.complete && img.naturalWidth > 0) {
+                            console.log('Image actually loaded despite timeout:', originalUrl);
+                            return; // 成功加载，不显示错误
+                        } else {
+                            handleImageError(img, wrapper, originalUrl, isHeicImage, 'timeout');
+                        }
+                    }, 1000);
+                } catch {
+                    handleImageError(img, wrapper, originalUrl, isHeicImage, 'timeout');
+                }
+            } else {
+                handleImageError(img, wrapper, originalUrl, isHeicImage, 'load');
+            }
+            img.dataset.loading = 'false';
+        }
 
     } catch (error) {
         console.error('Error in loadImageWithAnimation:', error);
         const wrapper = img.closest('.image-wrapper') || img.closest('.image-container');
         handleImageError(img, wrapper, img.dataset.src, false, 'exception');
+        img.dataset.loading = 'false';
     }
 }
 
@@ -103,7 +166,7 @@ async function loadImageWithAnimation(img) {
  * @param {HTMLImageElement} preloadImg - The preloaded image
  * @param {HTMLElement} wrapper - The image wrapper element
  */
-function optimizeAndDisplayImage(targetImg, preloadImg, wrapper) {
+async function optimizeAndDisplayImage(targetImg, preloadImg, wrapper) {
     try {
         const naturalWidth = preloadImg.naturalWidth;
         const naturalHeight = preloadImg.naturalHeight;
@@ -111,13 +174,13 @@ function optimizeAndDisplayImage(targetImg, preloadImg, wrapper) {
         
         // For large images, compress them
         if (fileSize > 2000000 || naturalWidth > 1920) {
-            compressImage(preloadImg)
-                .then(compressedSrc => {
-                    displayImage(targetImg, compressedSrc, wrapper);
-                })
-                .catch(() => {
-                    displayImage(targetImg, preloadImg.src, wrapper);
-                });
+            try {
+                const compressedSrc = await compressImage(preloadImg);
+                displayImage(targetImg, compressedSrc, wrapper);
+            } catch (compressionError) {
+                console.warn('Image compression failed, using original:', compressionError);
+                displayImage(targetImg, preloadImg.src, wrapper);
+            }
         } else {
             displayImage(targetImg, preloadImg.src, wrapper);
         }
@@ -134,20 +197,66 @@ function optimizeAndDisplayImage(targetImg, preloadImg, wrapper) {
  * @param {HTMLElement} wrapper - The wrapper element
  */
 function displayImage(img, src, wrapper) {
-    img.src = src;
-    
-    requestAnimationFrame(() => {
-        img.classList.add('loaded');
+    try {
+        img.src = src;
         
+        // 使用更可靠的加载检测
+        const checkImageLoad = () => {
+            if (img.complete && img.naturalWidth > 0) {
+                img.classList.add('loaded');
+                img.style.opacity = '1'; // 确保图片可见
+                
+                if (wrapper) {
+                    wrapper.classList.remove('loading', 'error');
+                    wrapper.classList.add('loaded');
+                }
+                console.log('Image displayed successfully:', src);
+            } else {
+                // 如果图片还没完全加载，等待onload事件
+                img.onload = () => {
+                    img.classList.add('loaded');
+                    img.style.opacity = '1';
+                    
+                    if (wrapper) {
+                        wrapper.classList.remove('loading', 'error');
+                        wrapper.classList.add('loaded');
+                    }
+                    console.log('Image displayed successfully (via onload):', src);
+                };
+                
+                // 添加错误处理，但延迟触发避免误报
+                img.onerror = () => {
+                    setTimeout(() => {
+                        if (!img.complete || img.naturalWidth === 0) {
+                            console.error('Image failed to display:', src);
+                            if (wrapper) {
+                                wrapper.classList.remove('loading');
+                                wrapper.classList.add('error');
+                            }
+                        }
+                    }, 500); // 延迟500ms检查，避免竞态条件
+                };
+            }
+        };
+        
+        // 立即检查一次，然后在下一帧再检查一次
+        checkImageLoad();
+        requestAnimationFrame(() => {
+            checkImageLoad();
+        });
+        
+    } catch (error) {
+        console.error('Error in displayImage:', error);
         if (wrapper) {
             wrapper.classList.remove('loading');
-            wrapper.classList.add('loaded');
+            wrapper.classList.add('error');
         }
-    });
+    }
 }
 
 /**
  * Handles image loading errors gracefully with enhanced error info and download option
+ * Only shows error if image truly failed to load
  * @param {HTMLImageElement} img - The image element
  * @param {HTMLElement} wrapper - The wrapper element
  * @param {string} originalUrl - The original image URL
@@ -155,10 +264,20 @@ function displayImage(img, src, wrapper) {
  * @param {string} errorType - Type of error (timeout, exception, etc.)
  */
 function handleImageError(img, wrapper, originalUrl, isHeic = false, errorType = 'load') {
-    console.warn('Failed to load image:', {
+    // 最后一次检查图片是否实际已经加载成功
+    if (img && img.complete && img.naturalWidth > 0 && img.src) {
+        console.log('Image appears to be loaded despite error, not showing error UI:', originalUrl);
+        displayImage(img, img.src, wrapper);
+        return;
+    }
+    
+    console.warn('Confirmed image load failure:', {
         url: originalUrl,
         isHeic,
-        errorType
+        errorType,
+        imgComplete: img?.complete,
+        imgNaturalWidth: img?.naturalWidth,
+        imgSrc: img?.src
     });
     
     if (!wrapper) {
@@ -170,6 +289,14 @@ function handleImageError(img, wrapper, originalUrl, isHeic = false, errorType =
     }
     
     wrapper.classList.remove('loading');
+    wrapper.classList.add('error');
+    
+    // 为错误的图片添加重试机制的标记
+    if (img) {
+        img.dataset.error = 'true';
+        img.dataset.errorType = errorType;
+        img.dataset.originalUrl = originalUrl;
+    }
     
     // Determine error message based on type and format
     let errorMessage = 'Failed to load image';
@@ -180,7 +307,7 @@ function handleImageError(img, wrapper, originalUrl, isHeic = false, errorType =
         errorDetails = 'Your browser cannot display HEIC images. Please use the download button to save the image.';
     } else if (errorType === 'timeout') {
         errorMessage = 'Image loading timeout';
-        errorDetails = 'The image took too long to load. Check your connection and try again.';
+        errorDetails = 'The image took too long to load. It might still be loading in the background.';
     } else {
         errorMessage = 'Failed to load image';
         errorDetails = 'The image could not be loaded. It may be corrupted or the server is unavailable.';
@@ -416,7 +543,7 @@ function showDownloadToast(message, type = 'info') {
 }
 
 /**
- * Retries loading a failed image
+ * Retries loading a failed image with smarter recovery strategies
  * @param {HTMLElement} button - The retry button
  */
 function retryImageLoad(button) {
@@ -446,54 +573,111 @@ function retryImageLoad(button) {
         return;
     }
     
-    // Reset wrapper and create new img element
-    wrapper.classList.remove('loaded');
-    wrapper.classList.add('loading');
-    wrapper.innerHTML = '<img src="" alt="" class="opacity-0 transition-all duration-300">';
+    console.log('Retrying image load for:', originalSrc);
     
-    const newImg = wrapper.querySelector('img');
-    newImg.dataset.src = originalSrc;
-    newImg.alt = originalAlt;
+    // 智能重试策略：首先尝试直接加载
+    const quickRetry = async () => {
+        try {
+            // 创建一个临时图片来测试是否现在可以加载
+            const testImg = new Image();
+            testImg.crossOrigin = "anonymous";
+            
+            const testPromise = new Promise((resolve, reject) => {
+                testImg.onload = () => resolve(testImg);
+                testImg.onerror = () => reject(new Error('Quick retry failed'));
+                
+                // 快速测试，5秒超时
+                setTimeout(() => reject(new Error('Quick retry timeout')), 5000);
+            });
+            
+            testImg.src = originalSrc;
+            await testPromise;
+            
+            // 如果快速测试成功，直接显示图片
+            console.log('Quick retry successful:', originalSrc);
+            wrapper.classList.remove('error', 'loading');
+            wrapper.innerHTML = `<img src="${originalSrc}" alt="${originalAlt}" class="transition-opacity duration-300" style="opacity: 1;">`;
+            wrapper.classList.add('loaded');
+            
+            return true;
+            
+        } catch (error) {
+            console.log('Quick retry failed, falling back to normal loading:', error.message);
+            return false;
+        }
+    };
     
-    // Add loading indicator
-    wrapper.insertAdjacentHTML('beforeend', `
-        <div class="loading-overlay" style="
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(255,255,255,0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1;
-        ">
-            <div style="
-                width: 40px;
-                height: 40px;
-                border: 3px solid #f3f3f3;
-                border-top: 3px solid #007bff;
-                border-radius: 50%;
-                animation: spin 1s linear infinite;
-            "></div>
-        </div>
-    `);
+    // 首先尝试快速重试
+    quickRetry().then(success => {
+        if (!success) {
+            // 如果快速重试失败，使用完整的加载流程
+            fallbackRetry();
+        }
+    });
     
-    // Add CSS animation if not already present
-    if (!document.querySelector('#spin-animation')) {
-        const style = document.createElement('style');
-        style.id = 'spin-animation';
-        style.textContent = `
-            @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-            }
-        `;
-        document.head.appendChild(style);
-    }
-    
-    loadImageWithAnimation(newImg);
+    const fallbackRetry = () => {
+        // Reset wrapper and create new img element
+        wrapper.classList.remove('loaded', 'error');
+        wrapper.classList.add('loading');
+        wrapper.innerHTML = '<img src="" alt="" class="opacity-0 transition-all duration-300">';
+        
+        const newImg = wrapper.querySelector('img');
+        newImg.dataset.src = originalSrc;
+        newImg.alt = originalAlt;
+        
+        // 清除之前的加载状态
+        newImg.dataset.loading = 'false';
+        newImg.dataset.loaded = 'false';
+        newImg.dataset.observing = 'false';
+        
+        // Add loading indicator
+        wrapper.insertAdjacentHTML('beforeend', `
+            <div class="loading-overlay" style="
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(255,255,255,0.8);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1;
+                border-radius: 8px;
+            ">
+                <div style="
+                    width: 32px;
+                    height: 32px;
+                    border: 3px solid #f3f3f3;
+                    border-top: 3px solid #007bff;
+                    border-radius: 50%;
+                    animation: spin 1s linear infinite;
+                "></div>
+                <span style="
+                    margin-left: 12px;
+                    color: #007bff;
+                    font-size: 14px;
+                    font-weight: 500;
+                ">重新加载中...</span>
+            </div>
+        `);
+        
+        // Add CSS animation if not already present
+        if (!document.querySelector('#spin-animation')) {
+            const style = document.createElement('style');
+            style.id = 'spin-animation';
+            style.textContent = `
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        // 启动完整的加载流程
+        loadImageWithAnimation(newImg);
+    };
 }
 
 /**
@@ -567,10 +751,233 @@ function preloadCriticalImages(imageSources) {
     });
 }
 
+/**
+ * Periodically check for images that might have loaded despite showing error states
+ * This helps recover from race conditions and timing issues
+ */
+function startImageHealthMonitor() {
+    // 运行图片健康检查，每10秒检查一次
+    setInterval(() => {
+        checkImageHealthAndRecover();
+    }, 10000);
+    
+    // 页面可见性变化时也检查一次
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+            setTimeout(checkImageHealthAndRecover, 1000);
+        }
+    });
+}
+
+/**
+ * Check all images for health and recover mis-labeled errors
+ */
+function checkImageHealthAndRecover() {
+    const errorWrappers = document.querySelectorAll('.image-wrapper.error, .image-container.error');
+    let recoveredCount = 0;
+    
+    errorWrappers.forEach(wrapper => {
+        // 查找可能存在的img元素或从错误信息中获取URL
+        let imgUrl = null;
+        
+        // 首先尝试查找隐藏的img元素
+        const hiddenImg = wrapper.querySelector('img[data-original-url], img[src]');
+        if (hiddenImg) {
+            imgUrl = hiddenImg.dataset.originalUrl || hiddenImg.src || hiddenImg.dataset.src;
+        }
+        
+        // 如果没找到，从下载按钮中提取URL
+        if (!imgUrl) {
+            const downloadBtn = wrapper.querySelector('button[onclick*="downloadImage"]');
+            if (downloadBtn) {
+                const onclick = downloadBtn.getAttribute('onclick');
+                const match = onclick.match(/downloadImage\('([^']+)'\)/);
+                if (match) {
+                    imgUrl = match[1];
+                }
+            }
+        }
+        
+        if (imgUrl) {
+            // 测试图片是否现在可以加载
+            const testImg = new Image();
+            testImg.crossOrigin = "anonymous";
+            
+            testImg.onload = () => {
+                console.log('Image health check: recovered failed image:', imgUrl);
+                
+                // 恢复图片显示
+                wrapper.classList.remove('error');
+                wrapper.classList.add('loaded');
+                wrapper.innerHTML = `<img src="${imgUrl}" alt="" class="transition-opacity duration-300" style="opacity: 1;">`;
+                
+                recoveredCount++;
+            };
+            
+            testImg.onerror = () => {
+                // 图片确实无法加载，保持错误状态
+                console.log('Image health check: confirmed failure for:', imgUrl);
+            };
+            
+            // 启动健康检查，短超时
+            setTimeout(() => {
+                // 如果在3秒内没有加载完成，认为仍然失败
+                if (!testImg.complete || testImg.naturalWidth === 0) {
+                    console.log('Image health check: timeout for:', imgUrl);
+                }
+            }, 3000);
+            
+            testImg.src = imgUrl;
+        }
+    });
+    
+    if (recoveredCount > 0) {
+        console.log(`Image health monitor recovered ${recoveredCount} images`);
+    }
+}
+
+/**
+ * Enhanced image loading status check
+ * Checks if an image has actually loaded successfully even if marked as error
+ * @param {HTMLImageElement} img - The image element to check
+ * @returns {boolean} - True if image is actually loaded
+ */
+function isImageActuallyLoaded(img) {
+    if (!img) return false;
+    
+    // 多重检查确保图片真的加载成功
+    return img.complete && 
+           img.naturalWidth > 0 && 
+           img.naturalHeight > 0 && 
+           img.src && 
+           img.src !== window.location.href &&
+           !img.src.includes('data:') || 
+           (img.src.includes('data:') && img.src.length > 100); // 排除空的data URI
+}
+
+// 启动图片健康监控
+if (typeof window !== 'undefined') {
+    // 页面加载完成后启动监控
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', startImageHealthMonitor);
+    } else {
+        startImageHealthMonitor();
+    }
+}
+
 // Make functions globally accessible
 window.retryImageLoad = retryImageLoad;
 window.downloadImage = downloadImage;
 window.openImageInNewTab = openImageInNewTab;
+window.checkImageHealthAndRecover = checkImageHealthAndRecover;
+window.isImageActuallyLoaded = isImageActuallyLoaded;
+
+/**
+ * Show a friendly notification about image loading improvements
+ * This helps users understand the new optimizations
+ */
+function showImageOptimizationInfo() {
+    const hasShownInfo = localStorage.getItem('imageOptimizationInfoShown');
+    
+    if (!hasShownInfo) {
+        const notification = document.createElement('div');
+        notification.className = 'image-optimization-info';
+        notification.innerHTML = `
+            <div style="
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 1rem 1.5rem;
+                border-radius: 12px;
+                box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+                font-size: 0.9rem;
+                max-width: 320px;
+                z-index: 9999;
+                transform: translateX(100%);
+                transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+                backdrop-filter: blur(10px);
+            ">
+                <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+                    <div style="
+                        background: rgba(255,255,255,0.2);
+                        border-radius: 50%;
+                        width: 32px;
+                        height: 32px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 1.2rem;
+                    ">🖼️</div>
+                    <div style="font-weight: 600; font-size: 1rem;">图片加载已优化</div>
+                </div>
+                <div style="line-height: 1.4; margin-bottom: 1rem; opacity: 0.95;">
+                    我们改进了图片加载机制，减少了错误提示。如果图片仍然无法显示，请尝试重新加载或检查网络连接。
+                </div>
+                <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                    <button onclick="closeImageOptimizationInfo()" style="
+                        background: rgba(255,255,255,0.2);
+                        border: 1px solid rgba(255,255,255,0.3);
+                        color: white;
+                        padding: 0.5rem 1rem;
+                        border-radius: 6px;
+                        font-size: 0.85rem;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                    " onmouseover="this.style.background='rgba(255,255,255,0.3)'" 
+                       onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                        知道了
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Animate in
+        setTimeout(() => {
+            notification.firstElementChild.style.transform = 'translateX(0)';
+        }, 100);
+        
+        // Auto hide after 10 seconds
+        setTimeout(() => {
+            closeImageOptimizationInfo();
+        }, 10000);
+        
+        localStorage.setItem('imageOptimizationInfoShown', 'true');
+    }
+}
+
+/**
+ * Close the image optimization info notification
+ */
+function closeImageOptimizationInfo() {
+    const notification = document.querySelector('.image-optimization-info');
+    if (notification) {
+        notification.firstElementChild.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 400);
+    }
+}
+
+// Show info notification on first visit
+if (typeof window !== 'undefined') {
+    setTimeout(() => {
+        // Only show if there are images on the page
+        const hasImages = document.querySelectorAll('img[data-src], .image-container').length > 0;
+        if (hasImages) {
+            showImageOptimizationInfo();
+        }
+    }, 3000); // Show after 3 seconds to not interfere with page loading
+}
+
+// Make notification functions globally accessible
+window.showImageOptimizationInfo = showImageOptimizationInfo;
+window.closeImageOptimizationInfo = closeImageOptimizationInfo;
 
 // Export functions and objects
 export {
@@ -579,5 +986,9 @@ export {
     loadImageWithAnimation as loadImage,
     compressImage,
     preloadCriticalImages,
-    supportsWebP
+    supportsWebP,
+    startImageHealthMonitor,
+    checkImageHealthAndRecover,
+    isImageActuallyLoaded,
+    showImageOptimizationInfo
 }; 

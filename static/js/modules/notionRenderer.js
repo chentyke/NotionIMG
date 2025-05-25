@@ -252,18 +252,25 @@ async function renderImage(block) {
                     caption = processRichText(block.image.caption);
                 }
                 
+                // Generate unique ID for this image to track loading state
+                const imageId = `img-${Math.random().toString(36).substr(2, 9)}`;
+                
                 return `
-                    <figure class="image-container my-4">
+                    <figure class="image-container my-4" data-image-id="${imageId}">
                         <div class="image-wrapper loading">
                             <img src="" data-src="${imgSrc}" alt="${caption}" 
                                 class="rounded-lg shadow-md opacity-0 transition-all duration-300 ease-out"
-                                onclick="openImageModalWithPreview(this, '${imgSrc}')" loading="lazy">
+                                onclick="openImageModalWithPreview(this, '${imgSrc}')" 
+                                loading="lazy"
+                                data-image-id="${imageId}"
+                                data-loading="false"
+                                data-loaded="false">
                         </div>
                         ${caption ? `<figcaption class="text-center text-sm text-gray-500 mt-2">${caption}</figcaption>` : ''}
                     </figure>`;
             } catch (error) {
                 console.error('Error rendering image:', error);
-                return '<div class="text-red-500">Error rendering image</div>';
+                return '<div class="text-red-500">Error rendering image block</div>';
             }
 }
 
@@ -1552,10 +1559,16 @@ function postProcessContent(container) {
         // Initialize lazy loading for new images
         console.log('Setting up lazy loading for images...');
         try {
-            const images = container.querySelectorAll('img[data-src]');
-            console.log(`Found ${images.length} images to observe`);
+            const images = container.querySelectorAll('img[data-src]:not([data-observing])');
+            console.log(`Found ${images.length} new images to observe`);
+            
             images.forEach(img => {
-                imageObserver.observe(img);
+                // 避免重复观察和加载
+                if (!img.dataset.observing && !img.dataset.loading && !img.dataset.loaded) {
+                    img.dataset.observing = 'true';
+                    imageObserver.observe(img);
+                    console.log('Observing image:', img.dataset.src);
+                }
             });
             console.log('Image lazy loading set up successfully');
         } catch (error) {
