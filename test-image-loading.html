@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片加载测试</title>
+    <link rel="stylesheet" href="static/css/images.css">
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 2rem;
+            background: #f8fafc;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .status {
+            background: #f0f9ff;
+            border: 1px solid #0ea5e9;
+            color: #0c4a6e;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>图片加载功能测试</h1>
+        
+        <div class="status">
+            <strong>状态:</strong> <span id="status">初始化中...</span>
+        </div>
+        
+        <h2>测试图片</h2>
+        
+        <!-- 测试图片1 - 标准网络图片 -->
+        <figure class="image-container my-4">
+            <div class="image-wrapper">
+                <img src="" 
+                     data-src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop" 
+                     alt="Mountain landscape" 
+                     class="rounded-lg shadow-md opacity-0 transition-all duration-300 ease-out"
+                     loading="lazy">
+            </div>
+            <figcaption class="text-center text-sm text-gray-500 mt-2">测试图片 1 - Unsplash</figcaption>
+        </figure>
+        
+        <!-- 测试图片2 - 另一个网络图片 -->
+        <figure class="image-container my-4">
+            <div class="image-wrapper">
+                <img src="" 
+                     data-src="https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=600&fit=crop" 
+                     alt="Forest path" 
+                     class="rounded-lg shadow-md opacity-0 transition-all duration-300 ease-out"
+                     loading="lazy">
+            </div>
+            <figcaption class="text-center text-sm text-gray-500 mt-2">测试图片 2 - Forest</figcaption>
+        </figure>
+        
+        <!-- 测试图片3 - 故意的错误URL -->
+        <figure class="image-container my-4">
+            <div class="image-wrapper">
+                <img src="" 
+                     data-src="https://invalid-url-for-testing.example/nonexistent.jpg" 
+                     alt="Error test" 
+                     class="rounded-lg shadow-md opacity-0 transition-all duration-300 ease-out"
+                     loading="lazy">
+            </div>
+            <figcaption class="text-center text-sm text-gray-500 mt-2">测试图片 3 - 错误URL (测试错误处理)</figcaption>
+        </figure>
+        
+        <div style="margin-top: 2rem; padding: 1rem; background: #f8fafc; border-radius: 8px;">
+            <h3>测试说明:</h3>
+            <ul>
+                <li>图片 1 和 2 应该正常加载并显示</li>
+                <li>图片 3 应该显示错误UI，包含重试、下载等按钮</li>
+                <li>所有图片应该有加载动画</li>
+                <li>打开浏览器控制台查看详细日志</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- 引入图片处理模块 -->
+    <script type="module">
+        import { initImageObserver } from './static/js/modules/imageHandler.js';
+        
+        document.getElementById('status').textContent = '开始初始化图片观察器...';
+        
+        // 初始化图片观察器
+        try {
+            initImageObserver();
+            document.getElementById('status').textContent = '✅ 图片观察器初始化成功！观察控制台日志。';
+            console.log('🚀 Test page: Image observer initialized');
+        } catch (error) {
+            document.getElementById('status').textContent = '❌ 初始化失败: ' + error.message;
+            console.error('Test page error:', error);
+        }
+        
+        // 监听图片加载事件
+        document.addEventListener('DOMContentLoaded', () => {
+            const images = document.querySelectorAll('img[data-src]');
+            console.log(`Found ${images.length} images to test`);
+            
+            images.forEach((img, index) => {
+                console.log(`Image ${index + 1}:`, img.dataset.src);
+            });
+        });
+    </script>
+</body>
+</html> 

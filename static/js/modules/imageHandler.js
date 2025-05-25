@@ -5,7 +5,9 @@ const imageObserver = new IntersectionObserver((entries, observer) => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
             const img = entry.target;
-            if (img.dataset.src && !img.dataset.loading) {
+            // 正确检查loading状态：只有当loading不是'true'时才加载
+            if (img.dataset.src && img.dataset.loading !== 'true') {
+                console.log('Observer triggering load for:', img.dataset.src);
                 img.dataset.loading = 'true'; // 防止重复加载
                 loadImageWithAnimation(img);
                 observer.unobserve(img);
@@ -26,8 +28,13 @@ function initImageObserver() {
     console.log(`Initializing image observer for ${lazyImages.length} images`);
     
     lazyImages.forEach(img => {
-        // 只观察未被观察且未加载的图片
-        if (!img.dataset.observing && !img.dataset.loading && !img.dataset.loaded) {
+        // 正确检查状态：只要没有正在加载或已加载，就可以观察
+        const isLoading = img.dataset.loading === 'true';
+        const isLoaded = img.dataset.loaded === 'true';
+        const isObserving = img.dataset.observing === 'true';
+        
+        if (!isObserving && !isLoading && !isLoaded) {
+            console.log('Adding observer for image:', img.dataset.src);
             img.dataset.observing = 'true';
             imageObserver.observe(img);
         }
@@ -40,13 +47,17 @@ function initImageObserver() {
  * @returns {Promise<void>}
  */
 async function loadImageWithAnimation(img) {
+    const imgSrc = img.dataset.src;
+    console.log('🖼️ Starting image load for:', imgSrc);
+    
     // 防止重复加载
     if (img.dataset.loading === 'true' || img.dataset.loaded === 'true') {
-        console.log('Image already loading or loaded:', img.dataset.src);
+        console.log('⚠️ Image already loading or loaded:', imgSrc);
         return;
     }
 
     img.dataset.loading = 'true';
+    console.log('✅ Image loading state set to true for:', imgSrc);
     
     try {
         const wrapper = img.closest('.image-wrapper') || img.closest('.image-container');

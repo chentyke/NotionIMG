@@ -257,14 +257,12 @@ async function renderImage(block) {
                 
                 return `
                     <figure class="image-container my-4" data-image-id="${imageId}">
-                        <div class="image-wrapper loading">
+                        <div class="image-wrapper">
                             <img src="" data-src="${imgSrc}" alt="${caption}" 
                                 class="rounded-lg shadow-md opacity-0 transition-all duration-300 ease-out"
                                 onclick="openImageModalWithPreview(this, '${imgSrc}')" 
                                 loading="lazy"
-                                data-image-id="${imageId}"
-                                data-loading="false"
-                                data-loaded="false">
+                                data-image-id="${imageId}">
                         </div>
                         ${caption ? `<figcaption class="text-center text-sm text-gray-500 mt-2">${caption}</figcaption>` : ''}
                     </figure>`;
@@ -1563,8 +1561,12 @@ function postProcessContent(container) {
             console.log(`Found ${images.length} new images to observe`);
             
             images.forEach(img => {
-                // 避免重复观察和加载
-                if (!img.dataset.observing && !img.dataset.loading && !img.dataset.loaded) {
+                // 正确检查状态：避免重复观察和加载
+                const isObserving = img.dataset.observing === 'true';
+                const isLoading = img.dataset.loading === 'true';
+                const isLoaded = img.dataset.loaded === 'true';
+                
+                if (!isObserving && !isLoading && !isLoaded) {
                     img.dataset.observing = 'true';
                     imageObserver.observe(img);
                     console.log('Observing image:', img.dataset.src);

@@ -226,7 +226,7 @@
     outline-offset: 2px;
 }
 
-/* Improved loading state for images */
+/* Unified loading state for images - replaces old loading styles */
 .image-wrapper.loading {
     position: relative;
     min-height: 160px;
@@ -238,6 +238,11 @@
     animation: improvedShimmer 1.8s ease-in-out infinite;
     border-radius: 0.75rem;
     overflow: hidden;
+}
+
+/* Remove old emoji icon and replace with modern spinner */
+.image-wrapper.loading::before {
+    opacity: 0;
 }
 
 .image-wrapper.loading::after {
@@ -252,6 +257,7 @@
     border-top: 3px solid rgba(59, 130, 246, 0.7);
     border-radius: 50%;
     animation: loadingSpin 1s linear infinite;
+    z-index: 2;
 }
 
 @keyframes improvedShimmer {
