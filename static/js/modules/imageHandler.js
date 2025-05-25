@@ -5,10 +5,10 @@ const imageObserver = new IntersectionObserver((entries, observer) => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
             const img = entry.target;
-            // 正确检查loading状态：只有当loading不是'true'时才加载
+            // 检查loading状态：只有当loading不是'true'时才加载
             if (img.dataset.src && img.dataset.loading !== 'true') {
                 console.log('Observer triggering load for:', img.dataset.src);
-                img.dataset.loading = 'true'; // 防止重复加载
+                // 不在这里设置loading状态，让loadImageWithAnimation函数来处理
                 loadImageWithAnimation(img);
                 observer.unobserve(img);
             }
@@ -50,9 +50,18 @@ async function loadImageWithAnimation(img) {
     const imgSrc = img.dataset.src;
     console.log('🖼️ Starting image load for:', imgSrc);
     
-    // 防止重复加载
-    if (img.dataset.loading === 'true' || img.dataset.loaded === 'true') {
-        console.log('⚠️ Image already loading or loaded:', imgSrc);
+    // 防止重复加载 - 更详细的状态检查
+    const isLoading = img.dataset.loading === 'true';
+    const isLoaded = img.dataset.loaded === 'true';
+    
+    if (isLoading || isLoaded) {
+        console.log('⚠️ Image already loading or loaded:', {
+            url: imgSrc,
+            isLoading,
+            isLoaded,
+            complete: img.complete,
+            naturalWidth: img.naturalWidth
+        });
         return;
     }
 
